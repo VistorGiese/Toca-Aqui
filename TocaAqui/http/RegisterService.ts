@@ -20,6 +20,8 @@ interface EstabelecimentoResponse {
 interface LoginResponse {
   token: string;
   estabelecimentoId: number;
+  user?: any;
+  message?: string;
 }
 
 interface ApiProfileResponse {
@@ -43,6 +45,7 @@ interface ProfileResponse {
 
 type LoginPayload = {
   email_responsavel?: string;
+  email?: string;
   senha?: string;
 };
 
@@ -71,9 +74,22 @@ export const createEstabelecimento = async (
   estabelecimentoData: Partial<AccountProps>
 ): Promise<EstabelecimentoResponse> => {
   try {
+    const payloadNovo = {
+      nome_estabelecimento: estabelecimentoData.nome_estabelecimento,
+      tipo_estabelecimento: "bar",
+      descricao: "Cadastrado via App",
+      generos_musicais: estabelecimentoData.generos_musicais,
+      horario_abertura: estabelecimentoData.horario_funcionamento_inicio,
+      horario_fechamento: estabelecimentoData.horario_funcionamento_fim,
+      endereco_id:
+        (estabelecimentoData as any).endereco_id ||
+        (estabelecimentoData as any).endereco?.id,
+      telefone_contato: estabelecimentoData.celular_responsavel,
+    };
+
     const response = await api.post<EstabelecimentoResponse>(
-      "/estabelecimentos",
-      estabelecimentoData
+      "/usuarios/perfil-estabelecimento",
+      payloadNovo
     );
     return response.data;
   } catch (error) {
@@ -92,16 +108,45 @@ export const loginEstabelecimento = async (
   loginData: LoginPayload
 ): Promise<LoginResponse> => {
   try {
-    const response = await api.post<LoginResponse>("/auth/login", loginData);
-    if (response.data.token && response.data.estabelecimentoId) {
-      await AsyncStorage.setItem("token", response.data.token);
-      await AsyncStorage.setItem(
-        "estabelecimentoId",
-        String(response.data.estabelecimentoId)
-      );
-      console.log("API: Token e ID salvos no AsyncStorage.");
+    const payload = {
+      email: loginData.email_responsavel || loginData.email,
+      senha: loginData.senha,
+    };
+
+    const response = await api.post<LoginResponse>("/usuarios/login", payload);
+    const { token } = response.data;
+    let estabelecimentoId = 0;
+
+    if (token) {
+      await AsyncStorage.setItem("token", token);
+
+      try {
+        const perfilResponse = await api.get("/usuarios/perfil", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const userData: any = perfilResponse.data.user;
+
+        if (
+          userData.establishment_profiles &&
+          userData.establishment_profiles.length > 0
+        ) {
+          estabelecimentoId = userData.establishment_profiles[0].id;
+          await AsyncStorage.setItem(
+            "estabelecimentoId",
+            String(estabelecimentoId)
+          );
+        }
+      } catch (err) {
+        console.error("Erro ao recuperar ID do estabelecimento:", err);
+      }
     }
-    return response.data;
+
+    return {
+      token: token,
+      estabelecimentoId: estabelecimentoId,
+      user: response.data.user,
+    };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error(
@@ -116,17 +161,40 @@ export const loginEstabelecimento = async (
 
 export const getEstabelecimentoProfile = async (): Promise<ProfileResponse> => {
   try {
-    const estabelecimentoId = await AsyncStorage.getItem("estabelecimentoId");
-    if (!estabelecimentoId) {
-      throw new Error("ID do estabelecimento não encontrado no armazenamento.");
+    const response = await api.get("/usuarios/perfil");
+    const user = (response.data as any).user;
+    const estab = user.establishment_profiles
+      ? user.establishment_profiles[0]
+      : null;
+
+    if (!estab) {
+      throw new Error("Perfil de estabelecimento não encontrado.");
     }
-    const response = await api.get<ApiProfileResponse>(
-      `/estabelecimentos/${estabelecimentoId}`
-    );
-    const { endereco, ...estabelecimentoData } = response.data;
+
+    const enderecoData = estab.Address || {
+      id: estab.endereco_id || 0,
+      rua: "",
+      numero: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      cep: "",
+    };
+
     return {
-      estabelecimento: estabelecimentoData,
-      endereco: endereco,
+      estabelecimento: {
+        id: estab.id,
+        nome_estabelecimento: estab.nome_estabelecimento,
+        nome_dono: user.nome,
+        email_responsavel: user.email,
+        celular_responsavel: estab.telefone_contato,
+        generos_musicais: estab.generos_musicais,
+        horario_funcionamento_inicio: estab.horario_abertura,
+        horario_funcionamento_fim: estab.horario_fechamento,
+        endereco_id: estab.endereco_id,
+        senha: "",
+      },
+      endereco: enderecoData,
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {

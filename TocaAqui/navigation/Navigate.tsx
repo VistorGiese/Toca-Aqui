@@ -45,7 +45,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function Navigate() {
   return (
     <Stack.Navigator
-      initialRouteName="EventDetail"
+      initialRouteName="Login"
       screenOptions={{ headerShown: false }}
     >
       {/* Telas principais do app Antes do Login */}
