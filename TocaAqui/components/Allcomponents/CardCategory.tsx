@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
-import { colors } from "@/utils/colors";
 
 const BAR_COLORS = {
   sertanejo: "#4F4F82",
@@ -35,8 +34,8 @@ const CardCategory: React.FC<CardCategoryProps> = ({
 }) => {
   return (
     <TouchableOpacity style={styles.cardContainer} onPress={onPress}>
-            <Text style={styles.categoryText}>{categoryName}</Text>
-            <View style={[styles.colorBar, { backgroundColor: barColor }]} />   {" "}
+      <Text style={styles.categoryText}>{categoryName}</Text>
+      <View style={[styles.colorBar, { backgroundColor: barColor }]} />
     </TouchableOpacity>
   );
 };
@@ -44,7 +43,6 @@ const CardCategory: React.FC<CardCategoryProps> = ({
 export default function CategorySection() {
   return (
     <View style={styles.categoriesContainer}>
-           {" "}
       {MOCK_CATEGORIES.map((cat, index) => (
         <CardCategory
           key={index}
@@ -53,7 +51,6 @@ export default function CategorySection() {
           onPress={() => console.log("Categoria selecionada:", cat.name)}
         />
       ))}
-         {" "}
     </View>
   );
 }

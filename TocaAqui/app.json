@@ -15,7 +15,9 @@
         "foregroundImage": "../TocaAqui/assets/adaptive-icon.png",
         "backgroundColor": "transparent"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "usesCleartextTraffic": true,
+      "package": "com.tocaaqui.app"
     },
     "web": {
       "bundler": "metro",

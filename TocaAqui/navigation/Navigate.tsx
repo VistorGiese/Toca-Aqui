@@ -18,6 +18,7 @@ import RegisterLocationAndress from "../screens/RegisterLocationAndress";
 import RegisterLocationName from "../screens/RegisterLocationName";
 import RegisterPassword from "../screens/RegisterPassword";
 import Schedulling from "../screens/Schedulling";
+import SearchArtists from '../screens/SearchArtists';
 
 export type RootStackParamList = {
   Initial: undefined;
@@ -36,6 +37,7 @@ export type RootStackParamList = {
   ConfirmRegister: undefined;
   Profile: undefined;
   EventDetail: { event: Booking };
+  SearchArtists: undefined
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -43,7 +45,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function Navigate() {
   return (
     <Stack.Navigator
-      initialRouteName="Initial"
+      initialRouteName="Login"
       screenOptions={{ headerShown: false }}
     >
       {/* Telas principais do app Antes do Login */}
@@ -68,6 +70,8 @@ export default function Navigate() {
       <Stack.Screen name="ArtistProfile" component={ArtistProfile} />
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="EventDetail" component={EventDetail} />
+      <Stack.Screen name="SearchArtists" component={SearchArtists} />
+
 
       {/* Telas secundárias do app */}
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />

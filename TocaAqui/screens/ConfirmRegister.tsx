@@ -1,10 +1,23 @@
 import { colors } from "@/utils/colors";
 import React, { useContext, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 import Button from "../components/Allcomponents/Button";
 import ToBack from "../components/Allcomponents/ToBack";
 import { AccontFormContext } from "../contexts/AccountFromContexto";
-import { createEndereco, createEstabelecimento } from "../http/RegisterService";
+import {
+    createEndereco,
+    createEstabelecimento,
+    registerUser,
+    loginEstabelecimento,
+} from "../http/RegisterService";
+import { router } from "expo-router";
 
 export default function ConfirmRegister() {
     const { accountFormData } = useContext(AccontFormContext);
@@ -13,6 +26,17 @@ export default function ConfirmRegister() {
     const handleFinalSubmit = async () => {
         setIsSubmitting(true);
         try {
+            await registerUser(accountFormData);
+
+            const loginResponse = await loginEstabelecimento({
+                email_responsavel: accountFormData.email_responsavel,
+                senha: accountFormData.password,
+            });
+
+            if (!loginResponse.token) {
+                throw new Error("Erro ao autenticar após cadastro.");
+            }
+
             const enderecoPayload = {
                 rua: accountFormData.rua,
                 numero: accountFormData.numero,
@@ -22,45 +46,40 @@ export default function ConfirmRegister() {
                 cep: accountFormData.cep,
             };
 
-            console.log("Enviando para criar endereço:", enderecoPayload);
             const enderecoCriado = await createEndereco(enderecoPayload);
             const enderecoId = enderecoCriado.id;
 
             if (!enderecoId) {
-                throw new Error("O ID do endereço não foi retornado pelo backend.");
+                throw new Error("O ID do endereço não foi retornado.");
             }
 
             const estabelecimentoPayload = {
-                nome_estabelecimento: accountFormData.nome_estabelecimento,
-                nome_dono: accountFormData.nome_dono,
-                email_responsavel: accountFormData.email_responsavel,
-                celular_responsavel: accountFormData.celular_responsavel,
-                generos_musicais: accountFormData.generos_musicais,
-                horario_funcionamento_inicio: `${accountFormData.horario_funcionamento_inicio}:00`,
-                horario_funcionamento_fim: `${accountFormData.horario_funcionamento_fim}:00`,
-                senha: accountFormData.password,
+                ...accountFormData,
                 endereco_id: enderecoId,
+                horario_funcionamento_inicio: accountFormData.horario_funcionamento_inicio?.includes(
+                    ":"
+                )
+                    ? accountFormData.horario_funcionamento_inicio
+                    : `${accountFormData.horario_funcionamento_inicio}:00:00`,
+                horario_funcionamento_fim: accountFormData.horario_funcionamento_fim?.includes(
+                    ":"
+                )
+                    ? accountFormData.horario_funcionamento_fim
+                    : `${accountFormData.horario_funcionamento_fim}:00:00`,
             };
 
-            console.log("Enviando para criar estabelecimento:", estabelecimentoPayload);
             await createEstabelecimento(estabelecimentoPayload);
 
-            Alert.alert("Sucesso!", "Sua conta foi criada com sucesso.");
-
+            Alert.alert("Sucesso!", "Cadastro realizado com sucesso!", [
+                { text: "OK", onPress: () => router.push("/login" as any) },
+            ]);
         } catch (error: any) {
-            console.error("--- ERRO NO PROCESSO DE CADASTRO ---");
-            if (error.response) {
-                console.error("Dados do erro:", error.response.data);
-                console.error("Status do erro:", error.response.status);
-                const errorMessage = error.response.data?.message || "Verifique os dados e tente novamente.";
-                Alert.alert("Erro no Cadastro", `Ocorreu um erro: ${errorMessage}`);
-            } else if (error.request) {
-                console.error("Requisição enviada, mas sem resposta:", error.request);
-                Alert.alert("Erro de Rede", "Não foi possível conectar ao servidor. Verifique sua conexão com a internet.");
-            } else {
-                console.error("Erro ao configurar a requisição:", error.message);
-                Alert.alert("Erro", "Ocorreu um erro inesperado ao preparar os dados.");
-            }
+            console.error(error);
+            const msg =
+                error.response?.data?.error ||
+                error.response?.data?.message ||
+                "Verifique os dados.";
+            Alert.alert("Erro no Cadastro", String(msg));
         } finally {
             setIsSubmitting(false);
         }
@@ -79,20 +98,38 @@ export default function ConfirmRegister() {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Dados de Acesso</Text>
-                    <Text style={styles.text}>Nome do estabelecimento: {accountFormData.nome_estabelecimento}</Text>
-                    <Text style={styles.text}>Nome do responsável: {accountFormData.nome_dono}</Text>
-                    <Text style={styles.text}>E-mail: {accountFormData.email_responsavel}</Text>
-                    <Text style={styles.text}>Telefone: {accountFormData.celular_responsavel}</Text>
-                    <Text style={styles.text}>Senha: {"*".repeat(accountFormData.password?.length || 0)}</Text>
-                    <Text style={styles.text}>Início de atendimento: {accountFormData.horario_funcionamento_inicio}</Text>
-                    <Text style={styles.text}>Fim de atendimento: {accountFormData.horario_funcionamento_fim}</Text>
+                    <Text style={styles.text}>
+                        Nome do estabelecimento: {accountFormData.nome_estabelecimento}
+                    </Text>
+                    <Text style={styles.text}>
+                        Nome do responsável: {accountFormData.nome_dono}
+                    </Text>
+                    <Text style={styles.text}>
+                        E-mail: {accountFormData.email_responsavel}
+                    </Text>
+                    <Text style={styles.text}>
+                        Telefone: {accountFormData.celular_responsavel}
+                    </Text>
+                    <Text style={styles.text}>
+                        Senha: {"*".repeat(accountFormData.password?.length || 0)}
+                    </Text>
+                    <Text style={styles.text}>
+                        Início de atendimento: {accountFormData.horario_funcionamento_inicio}
+                    </Text>
+                    <Text style={styles.text}>
+                        Fim de atendimento: {accountFormData.horario_funcionamento_fim}
+                    </Text>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Dados do Estabelecimento</Text>
-                    <Text style={styles.text}>Rua: {accountFormData.rua}, {accountFormData.numero}</Text>
+                    <Text style={styles.text}>
+                        Rua: {accountFormData.rua}, {accountFormData.numero}
+                    </Text>
                     <Text style={styles.text}>Bairro: {accountFormData.bairro}</Text>
-                    <Text style={styles.text}>Cidade: {accountFormData.cidade} - {accountFormData.estado}</Text>
+                    <Text style={styles.text}>
+                        Cidade: {accountFormData.cidade} - {accountFormData.estado}
+                    </Text>
                     <Text style={styles.text}>CEP: {accountFormData.cep}</Text>
                 </View>
 
@@ -166,4 +203,3 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
     },
 });
-

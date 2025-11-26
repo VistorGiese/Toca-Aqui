@@ -1,51 +1,69 @@
-import React, { useState, useMemo } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../navigation/Navigate";
-import { colors } from "@/utils/colors";
 import { FontAwesome5 } from "@expo/vector-icons";
-import CardArtist from "@/components/Allcomponents/CardArtist";
-import { bookingService, Booking } from "../http/bookingService";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, { useMemo, useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Modal from "react-native-modal";
-import UpdateEvent from "./UpdateEvent";
+
 import { formatDisplayDate } from "@/components/EventDetail/dateUtils";
 import OptionsMenu from "@/components/EventDetail/OptionsMenu";
+import { colors } from "@/utils/colors";
+import { Booking, bookingService } from "../http/bookingService";
+import { RootStackParamList } from "../navigation/Navigate";
+import UpdateEvent from "./UpdateEvent";
+
+import CardArtistProfile from "../components/Allcomponents/CardArtistProfile";
+import { Artist, DEFAULT_EVENT } from "../utils/ArtistProfileMock";
+
+const { width, height } = Dimensions.get("window");
 
 type EventDetailRouteProp = RouteProp<RootStackParamList, "EventDetail">;
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type EventNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function EventDetail() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<EventNavigationProp>();
   const route = useRoute<EventDetailRouteProp>();
-  const [event, setEvent] = useState<Booking>(route.params.event);
-  const [isEditModalVisible, setEditModalVisible] = useState(false);
-  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
-  const imageSource = require("../assets/images/All/imagem_bar.webp");
-  const displayDate = useMemo(
-    () => formatDisplayDate(event.data_show),
-    [event.data_show]
+  const params = route.params as { event: Booking } | undefined;
+  const initialEventData = params?.event || (DEFAULT_EVENT as unknown as Booking);
+
+  const [eventDetails, setEventDetails] = useState<Booking>(initialEventData);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isOptionsMenuVisible, setIsOptionsMenuVisible] = useState(false);
+
+  const backgroundImageSource = require("../assets/images/All/imagem_bar.webp");
+
+  const formattedDate = useMemo(
+    () =>
+      eventDetails.data_show
+        ? formatDisplayDate(eventDetails.data_show)
+        : "Data a definir",
+    [eventDetails.data_show]
   );
 
-  const handleEditEvent = () => {
-    setShowOptionsMenu(false);
-    setEditModalVisible(true);
+  const toggleOptionsMenu = () => {
+    setIsOptionsMenuVisible(!isOptionsMenuVisible);
   };
 
-  const handleDeleteEvent = () => {
-    setShowOptionsMenu(false);
+  const handleOpenEditModal = () => {
+    setIsOptionsMenuVisible(false);
+    setIsEditModalVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setIsOptionsMenuVisible(false);
     Alert.alert(
       "Confirmar Exclusão",
-      `Você tem certeza que deseja excluir o evento "${event.titulo_evento}"?`,
+      `Você tem certeza que deseja excluir o evento "${eventDetails.titulo_evento}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -53,7 +71,7 @@ export default function EventDetail() {
           style: "destructive",
           onPress: async () => {
             try {
-              await bookingService.deleteBooking(event.id);
+              await bookingService.deleteBooking(eventDetails.id);
               Alert.alert("Sucesso!", "O evento foi excluído.");
               navigation.goBack();
             } catch {
@@ -65,76 +83,105 @@ export default function EventDetail() {
     );
   };
 
-  const handleFinishUpdate = (updatedEvent?: Booking) => {
-    setEditModalVisible(false);
-    if (updatedEvent) setEvent(updatedEvent);
+  const handleUpdateCompletion = (updatedEventData?: Booking) => {
+    setIsEditModalVisible(false);
+    if (updatedEventData) setEventDetails(updatedEventData);
   };
 
+  const navigateToArtistProfile = (artist: Artist) => {
+    navigation.navigate("ArtistProfile", { artist } as never);
+  };
+
+  const artistAdapter = useMemo((): Artist | null => {
+    if (!eventDetails.banda) return null;
+
+    return {
+      id: eventDetails.banda.id || "temp-id",
+      name: eventDetails.banda.nome_banda,
+      imageUrl: eventDetails.banda.imagem,
+      rating: 5.0,
+      description: "Artista confirmado para este evento.",
+      instruments: ["Sertanejo", "Ao Vivo"],
+    };
+  }, [eventDetails.banda]);
+
   return (
-    <View style={styles.container}>
+    <View style={styles.mainContainer}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <ImageBackground source={imageSource} style={styles.imageBackground}>
+        <ImageBackground
+          source={backgroundImageSource}
+          style={styles.headerImageBackground}
+        >
           <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            style={styles.backNavigationButton}
+            onPress={() => navigation.navigate("HomePage")}
           >
-            <FontAwesome5 name="arrow-left" size={20} color="#fff" />
+            <FontAwesome5 name="arrow-left" size={width * 0.05} color="#fff" />
           </TouchableOpacity>
         </ImageBackground>
 
-        <View style={styles.contentContainer}>
-          <View style={styles.headerRow}>
-            <Text style={styles.eventName}>{event.titulo_evento}</Text>
-            <View style={styles.optionsWrapper}>
+        <View style={styles.contentWrapper}>
+          <View style={styles.titleRowContainer}>
+            <Text style={styles.eventTitleText}>
+              {eventDetails.titulo_evento}
+            </Text>
+
+            <View style={styles.optionsContainer}>
               <TouchableOpacity
-                onPress={() => setShowOptionsMenu(!showOptionsMenu)}
-                style={styles.moreButton}
+                onPress={toggleOptionsMenu}
+                style={styles.optionsButton}
               >
-                <FontAwesome5 name="ellipsis-v" size={20} color="#fff" />
+                <FontAwesome5 name="pen" size={width * 0.045} color="#fff" />
               </TouchableOpacity>
-              {showOptionsMenu && (
+
+              {isOptionsMenuVisible && (
                 <OptionsMenu
-                  onEdit={handleEditEvent}
-                  onDelete={handleDeleteEvent}
+                  onEdit={handleOpenEditModal}
+                  onDelete={handleConfirmDelete}
                 />
               )}
             </View>
           </View>
 
-          <Text style={styles.description}>{event.descricao_evento}</Text>
+          <View style={styles.genreTagContainer}>
+            <Text style={styles.genreTagText}>Sertanejo</Text>
+          </View>
 
-          <View style={styles.infoSection}>
-            <View style={styles.infoRow}>
+          <Text style={styles.eventDescriptionText}>
+            {eventDetails.descricao_evento}
+          </Text>
+
+          <View style={styles.infoSectionContainer}>
+            <View style={styles.infoItemRow}>
               <FontAwesome5
                 name="calendar-alt"
-                size={16}
+                size={width * 0.04}
                 color={colors.purple}
               />
-              <Text style={styles.infoText}>{displayDate}</Text>
+              <Text style={styles.infoItemText}>{formattedDate}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <FontAwesome5 name="clock" size={16} color={colors.purple} />
-              <Text style={styles.infoText}>
-                {event.horario_inicio} - {event.horario_fim}
+            <View style={styles.infoItemRow}>
+              <FontAwesome5
+                name="clock"
+                size={width * 0.04}
+                color={colors.purple}
+              />
+              <Text style={styles.infoItemText}>
+                {eventDetails.horario_inicio || "--:--"} -{" "}
+                {eventDetails.horario_fim || "--:--"}
               </Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>ARTISTAS INTERESSADOS</Text>
-          {event.banda ? (
-            <View style={styles.centeredCardWrapper}>
-              <CardArtist
-                artist={{
-                  name: event.banda.nome_banda,
-                  photoUrl: event.banda.imagem,
-                  genres: ["Rock", "Pop"],
-                  artistType: "Banda",
-                  rating: 0,
-                }}
+          {artistAdapter ? (
+            <View style={styles.artistCardWrapper}>
+              <CardArtistProfile
+                artist={artistAdapter}
+                onPress={navigateToArtistProfile}
               />
             </View>
           ) : (
-            <Text style={styles.noArtistText}>
+            <Text style={styles.emptyArtistText}>
               Ainda não há artistas confirmados para este evento.
             </Text>
           )}
@@ -143,13 +190,13 @@ export default function EventDetail() {
 
       <Modal
         isVisible={isEditModalVisible}
-        onBackdropPress={handleFinishUpdate}
-        onSwipeComplete={() => handleFinishUpdate()}
+        onBackdropPress={() => setIsEditModalVisible(false)}
+        onSwipeComplete={() => setIsEditModalVisible(false)}
         swipeDirection="down"
-        style={styles.bottomModal}
+        style={styles.bottomSheetModal}
       >
-        <View style={styles.modalContent}>
-          <UpdateEvent event={event} onFinish={handleFinishUpdate} />
+        <View style={styles.modalContentWrapper}>
+          <UpdateEvent event={eventDetails} onFinish={handleUpdateCompletion} />
         </View>
       </Modal>
     </View>
@@ -157,82 +204,109 @@ export default function EventDetail() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.purpleBlack },
-  imageBackground: { width: "100%", height: 250 },
-  backButton: {
-    padding: 15,
-    marginTop: 40,
-    position: "absolute",
-    left: 5,
-    top: 5,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    borderRadius: 50,
-  },
-  contentContainer: {
+  mainContainer: {
+    flex: 1,
     backgroundColor: colors.purpleBlack,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    marginTop: -20,
-    padding: 20,
-    paddingBottom: 40,
   },
-  headerRow: {
+  headerImageBackground: {
+    width: "100%",
+    height: height * 0.35,
+  },
+  backNavigationButton: {
+    padding: width * 0.04,
+    marginTop: height * 0.05,
+    position: "absolute",
+    left: width * 0.02,
+    top: height * 0.01,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: width * 0.1,
+  },
+  contentWrapper: {
+    backgroundColor: colors.purpleBlack,
+    borderTopLeftRadius: width * 0.06,
+    borderTopRightRadius: width * 0.06,
+    marginTop: -height * 0.03,
+    paddingHorizontal: width * 0.05,
+    paddingTop: height * 0.03,
+    paddingBottom: height * 0.05,
+  },
+  titleRowContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: height * 0.015,
   },
-  eventName: {
-    fontSize: 26,
+  eventTitleText: {
+    fontSize: width * 0.07,
     color: "#fff",
     fontFamily: "AkiraExpanded-Superbold",
     flex: 1,
-    marginRight: 10,
+    marginRight: width * 0.03,
   },
-  description: {
+  optionsContainer: {
+    position: "relative",
+  },
+  optionsButton: {
+    padding: width * 0.02,
+  },
+  genreTagContainer: {
+    backgroundColor: "#EBB688",
+    alignSelf: "flex-start",
+    paddingHorizontal: width * 0.04,
+    paddingVertical: height * 0.005,
+    borderRadius: width * 0.04,
+    marginBottom: height * 0.025,
+  },
+  genreTagText: {
+    color: "#3F1D0B",
+    fontFamily: "Montserrat-Bold",
+    fontSize: width * 0.035,
+  },
+  eventDescriptionText: {
     color: "#ccc",
-    fontSize: 15,
-    lineHeight: 24,
-    marginBottom: 20,
+    fontSize: width * 0.038,
+    lineHeight: height * 0.03,
+    marginBottom: height * 0.03,
     fontFamily: "Montserrat-Medium",
   },
-  infoSection: {
-    marginBottom: 30,
+  infoSectionContainer: {
+    marginBottom: height * 0.04,
     borderLeftWidth: 3,
     borderLeftColor: colors.purple,
-    paddingLeft: 15,
+    paddingLeft: width * 0.04,
   },
-  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  infoText: {
+  infoItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: height * 0.012,
+  },
+  infoItemText: {
     color: colors.neutral,
-    fontSize: 16,
+    fontSize: width * 0.04,
     fontFamily: "Montserrat-Regular",
-    marginLeft: 10,
+    marginLeft: width * 0.03,
   },
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontFamily: "AkiraExpanded-Superbold",
-    marginBottom: 20,
+  artistCardWrapper: {
+    marginTop: height * 0.01,
   },
-  optionsWrapper: { position: "relative" },
-  moreButton: { padding: 5 },
-  centeredCardWrapper: { alignItems: "center" },
-  noArtistText: {
+  emptyArtistText: {
     color: "#a9a9a9",
     textAlign: "center",
-    paddingHorizontal: 20,
-    marginTop: 10,
-    fontSize: 15,
+    paddingHorizontal: width * 0.05,
+    marginTop: height * 0.02,
+    fontSize: width * 0.038,
     fontFamily: "Montserrat-Medium",
     fontStyle: "italic",
   },
-  bottomModal: { justifyContent: "flex-end", margin: 0 },
-  modalContent: {
+  bottomSheetModal: {
+    justifyContent: "flex-end",
+    margin: 0,
+  },
+  modalContentWrapper: {
     backgroundColor: colors.purpleBlack2,
     height: "90%",
-    padding: 22,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    padding: width * 0.05,
+    borderTopLeftRadius: width * 0.06,
+    borderTopRightRadius: width * 0.06,
   },
 });
