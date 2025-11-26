@@ -38,13 +38,11 @@ const formatState = (value: string) => {
   return value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2);
 };
 
-
 const brazilianStates = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
   "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
   "RS", "RO", "RR", "SC", "SP", "SE", "TO"
 ];
-
 
 export default function RegisterLocationAndress() {
   const navigation = useNavigation<NavigationProp>();
@@ -75,7 +73,6 @@ export default function RegisterLocationAndress() {
 
   function handleNext(data: AccountProps) {
     updateFormData(data);
-    console.log(data);
     navigation.navigate("RegisterPassword");
   }
 
@@ -90,8 +87,10 @@ export default function RegisterLocationAndress() {
         <Image
           style={styles.image}
           source={require("../assets/images/All/endereco.png")}
-        />        <Text style={styles.subtitle}>
-          Forneça o endereço completo do estabelecimento. Esse campo é importante para que os clientes encontrem facilmente o seu local.        </Text>
+        />
+        <Text style={styles.subtitle}>
+          Forneça o endereço completo do estabelecimento. Esse campo é importante para que os clientes encontrem facilmente o seu local.
+        </Text>
 
         <Controller
           control={control}
@@ -275,7 +274,7 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Regular",
     color: "#ccc",
     marginBottom: 25,
-    textAlign: 'center',
+    textAlign: "center",
     width: "100%",
   },
   button: {

@@ -1,10 +1,18 @@
 import { colors } from "@/utils/colors";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ActivityIndicator, Dimensions, Image, StyleSheet, Text, TextInput, View, } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  Alert,
+} from "react-native";
 
 import Button from "../components/Allcomponents/Button";
 import Fund from "../components/Allcomponents/Fund";
@@ -42,34 +50,19 @@ export default function Login() {
       });
 
       if (response && response.token) {
-        const { token } = response;
-        const payloadBase64 = token.split(".")[1];
-        const decodedPayload = atob(payloadBase64);
-        const payloadJson = JSON.parse(decodedPayload);
-        const estabelecimentoId = payloadJson.id;
-
-        if (!estabelecimentoId) {
-          throw new Error("ID do estabelecimento não encontrado no token.");
-        }
-
-        console.log("LOGIN BEM-SUCEDIDO! Token:", token);
-        console.log("ID do Estabelecimento extraído do Token:", estabelecimentoId);
-
-        await AsyncStorage.setItem("token", token);
-        await AsyncStorage.setItem("estabelecimentoId", String(estabelecimentoId));
-        console.log("Token e ID salvos no AsyncStorage com sucesso.");
-
+        console.log("Login realizado e sessão salva pelo Service.");
         navigation.navigate("HomePage");
       } else {
-        throw new Error("Token não recebido do servidor.");
+        throw new Error("Resposta inválida do servidor.");
       }
     } catch (error: any) {
-      console.error("Erro ao fazer login:", error);
+      console.error("Erro na tela de login:", error);
+
       let errorMessage = "E-mail ou senha inválidos.";
 
+
       if (error.response && error.response.data) {
-        console.error("Detalhes do erro:", error.response.data);
-        errorMessage = error.response.data.message || errorMessage;
+        errorMessage = error.response.data.message || error.response.data.error || errorMessage;
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -249,4 +242,3 @@ const styles = StyleSheet.create({
     color: colors.purpleDark,
   },
 });
-

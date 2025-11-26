@@ -139,6 +139,22 @@ export default function Profile() {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            // 1. Remove os dados
+            await AsyncStorage.multiRemove(["token", "estabelecimentoId"]);
+
+            // 2. Validação Simples: Confere se sumiu
+            const checkToken = await AsyncStorage.getItem("token");
+            console.log("Token existe? (Deve ser null):", checkToken);
+
+            // 3. Redireciona
+            navigation.replace("Login");
+        } catch (error) {
+            Alert.alert("Erro", "Não foi possível sair.");
+        }
+    };
+
     const handleDelete = async () => {
         Alert.alert(
             "Confirmar exclusão",
@@ -405,9 +421,19 @@ export default function Profile() {
                             <Text style={styles.buttonText}>Salvar Dados</Text>
                         )}
                     </Button>
+
+                    <TouchableOpacity
+                        style={styles.logoutButton}
+                        onPress={handleLogout}
+                        disabled={isSubmitting}
+                    >
+                        <Text style={styles.logoutButtonText}>Sair</Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                         style={styles.deleteButton}
                         onPress={handleDelete}
+                        disabled={isSubmitting}
                     >
                         <Text style={styles.deleteButtonText}>Apagar Conta</Text>
                     </TouchableOpacity>
@@ -456,8 +482,23 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "bold",
     },
-    deleteButton: {
+    logoutButton: {
+        width: "100%",
+        height: 60,
         marginTop: 15,
+        justifyContent: "center",
+        alignItems: "center",
+        borderWidth: 2,
+        borderColor: colors.purple,
+        borderRadius: 8,
+    },
+    logoutButtonText: {
+        color: colors.purple,
+        fontSize: 18,
+        fontWeight: "bold",
+    },
+    deleteButton: {
+        marginTop: 20,
     },
     deleteButtonText: {
         color: "#ff4d4d",
@@ -465,4 +506,3 @@ const styles = StyleSheet.create({
         textDecorationLine: "underline",
     },
 });
-

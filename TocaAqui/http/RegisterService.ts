@@ -24,6 +24,17 @@ interface LoginResponse {
   message?: string;
 }
 
+interface RegisterUserResponse {
+  token: string;
+  user: {
+    id: number;
+    nome: string;
+    email: string;
+    role: string;
+  };
+  message: string;
+}
+
 interface ApiProfileResponse {
   id: number;
   nome_estabelecimento: string;
@@ -49,6 +60,48 @@ type LoginPayload = {
   senha?: string;
 };
 
+const salvarTokenEConfigurarAxios = async (token: string) => {
+  try {
+    await AsyncStorage.setItem("token", token);
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    console.log("Token salvo e header configurado com sucesso.");
+  } catch (error) {
+    console.error("Erro ao salvar token internamente:", error);
+  }
+};
+
+export const registerUser = async (
+  userData: Partial<AccountProps>
+): Promise<RegisterUserResponse> => {
+  try {
+    const payload = {
+      nome: userData.nome_dono,
+      email: userData.email_responsavel,
+      senha: userData.password,
+      tipo_usuario: "establishment_owner",
+    };
+
+    const response = await api.post<RegisterUserResponse>(
+      "/usuarios/registro",
+      payload
+    );
+
+    if (response.data.token) {
+      await salvarTokenEConfigurarAxios(response.data.token);
+    }
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Detalhes do erro ao criar usuário:",
+        JSON.stringify(error.response?.data, null, 2)
+      );
+    }
+    throw error;
+  }
+};
+
 export const createEndereco = async (
   enderecoData: Partial<AccountProps>
 ): Promise<EnderecoResponse> => {
@@ -71,7 +124,7 @@ export const createEndereco = async (
 };
 
 export const createEstabelecimento = async (
-  estabelecimentoData: Partial<AccountProps>
+  estabelecimentoData: Partial<AccountProps> & { endereco_id: number }
 ): Promise<EstabelecimentoResponse> => {
   try {
     const payloadNovo = {
@@ -81,9 +134,7 @@ export const createEstabelecimento = async (
       generos_musicais: estabelecimentoData.generos_musicais,
       horario_abertura: estabelecimentoData.horario_funcionamento_inicio,
       horario_fechamento: estabelecimentoData.horario_funcionamento_fim,
-      endereco_id:
-        (estabelecimentoData as any).endereco_id ||
-        (estabelecimentoData as any).endereco?.id,
+      endereco_id: estabelecimentoData.endereco_id,
       telefone_contato: estabelecimentoData.celular_responsavel,
     };
 
@@ -108,23 +159,26 @@ export const loginEstabelecimento = async (
   loginData: LoginPayload
 ): Promise<LoginResponse> => {
   try {
+    delete api.defaults.headers.common["Authorization"];
+
+    const emailRaw = loginData.email_responsavel || loginData.email || "";
+
     const payload = {
-      email: loginData.email_responsavel || loginData.email,
+      email: emailRaw.trim(), // Remove espaços em branco
       senha: loginData.senha,
     };
+
+    console.log("Tentando login com:", payload.email);
 
     const response = await api.post<LoginResponse>("/usuarios/login", payload);
     const { token } = response.data;
     let estabelecimentoId = 0;
 
     if (token) {
-      await AsyncStorage.setItem("token", token);
+      await salvarTokenEConfigurarAxios(token);
 
       try {
-        const perfilResponse = await api.get("/usuarios/perfil", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const perfilResponse = await api.get("/usuarios/perfil");
         const userData: any = perfilResponse.data.user;
 
         if (
@@ -138,7 +192,9 @@ export const loginEstabelecimento = async (
           );
         }
       } catch (err) {
-        console.error("Erro ao recuperar ID do estabelecimento:", err);
+        console.warn(
+          "Aviso: Login ok, mas falha ao buscar ID do estabelecimento (pode não ter perfil ainda)."
+        );
       }
     }
 
@@ -149,12 +205,57 @@ export const loginEstabelecimento = async (
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      console.error("--- ERRO DE LOGIN (401) ---");
+      console.error("URL:", error.config?.url);
+      console.error("Status:", error.response?.status);
       console.error(
-        "Detalhes do erro de login:",
+        "Resposta do Backend:",
         JSON.stringify(error.response?.data, null, 2)
       );
     }
-    console.error("Erro ao fazer login:", error);
+    throw error;
+  }
+};
+
+export const cadastrarEstabelecimentoCompleto = async (
+  fullData: AccountProps
+): Promise<void> => {
+  try {
+    console.log("1. Iniciando registro do usuário...");
+
+    const userResponse = await registerUser(fullData);
+
+    let token = await AsyncStorage.getItem("token");
+
+    if (!token) {
+      console.log(
+        "Token não detectado automaticamente. Realizando login manual..."
+      );
+      await loginEstabelecimento({
+        email: fullData.email_responsavel,
+        senha: fullData.password,
+      });
+      token = await AsyncStorage.getItem("token");
+    }
+
+    if (!token) {
+      throw new Error(
+        "Falha fatal: Não foi possível obter o token de autenticação após o registro."
+      );
+    }
+
+    console.log("2. Criando endereço (autenticado)...");
+    const enderecoResponse = await createEndereco(fullData);
+
+    console.log("3. Criando perfil do estabelecimento...");
+    await createEstabelecimento({
+      ...fullData,
+      endereco_id: enderecoResponse.id,
+    });
+
+    console.log("CADASTRO COMPLETO COM SUCESSO!");
+  } catch (error) {
+    console.error("Erro no fluxo completo de cadastro:", error);
     throw error;
   }
 };
