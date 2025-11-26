@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.DS_Store
+*.log
+REGRAS_DESENVOLVIMENTO.md
+README.md
+docker-implementation-plan.md
+TEST_E2E.md
+PLANO_IMPLEMENTACAO.md
+logs/
+ANALISE_RUBRICA.md

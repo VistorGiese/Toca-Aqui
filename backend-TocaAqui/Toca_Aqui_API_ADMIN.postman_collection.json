@@ -1,0 +1,584 @@
+{
+	"info": {
+		"_postman_id": "admin-dashboard-collection",
+		"name": "Toca Aqui API - Admin Dashboard",
+		"description": "Collection com rotas administrativas para dashboard e gerenciamento completo da plataforma",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{adminToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "00 - Setup & Auth",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "Criar Usuário Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('adminToken', response.token);",
+									"    pm.collectionVariables.set('adminUserId', response.user.id);",
+									"    console.log('✅ Admin criado - Token salvo:', response.token.substring(0, 20) + '...');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Admin Sistema\",\n  \"email\": \"admin@tocaaqui.com\",\n  \"senha\": \"Admin@123\",\n  \"tipo_usuario\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/usuarios/registro",
+							"host": ["{{baseUrl}}"],
+							"path": ["usuarios", "registro"]
+						}
+					}
+				},
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('adminToken', response.token);",
+									"    pm.collectionVariables.set('adminUserId', response.user.id);",
+									"    console.log('✅ Login admin realizado - Token salvo');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@tocaaqui.com\",\n  \"senha\": \"Admin@123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/usuarios/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["usuarios", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 - Dashboard Admin",
+			"item": [
+				{
+					"name": "📊 Dashboard Consolidado",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "dashboard"]
+						},
+						"description": "Retorna métricas consolidadas:\n- Total de usuários, bandas, eventos, aplicações\n- Aplicações pendentes\n- 5 usuários mais recentes\n- 5 eventos mais recentes"
+					}
+				}
+			]
+		},
+		{
+			"name": "02 - Gestão de Usuários",
+			"item": [
+				{
+					"name": "👥 Listar Todos os Usuários",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/usuarios",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "usuarios"]
+						},
+						"description": "Lista completa de todos os usuários cadastrados com seus perfis (artista/estabelecimento)"
+					}
+				},
+				{
+					"name": "📊 Estatísticas de Usuários",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/usuarios/estatisticas",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "usuarios", "estatisticas"]
+						},
+						"description": "Estatísticas:\n- Total de usuários\n- Quantidade por tipo (admin, artista, estabelecimento, comum)\n- Quantos têm perfis criados"
+					}
+				}
+			]
+		},
+		{
+			"name": "03 - Gestão de Eventos",
+			"item": [
+				{
+					"name": "📅 Estatísticas de Eventos",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/eventos/estatisticas",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "eventos", "estatisticas"]
+						},
+						"description": "Estatísticas:\n- Total de eventos\n- Eventos por status (pendente, aceito, cancelado)\n- Top 10 estabelecimentos com mais eventos criados"
+					}
+				},
+				{
+					"name": "🏢 Eventos por Estabelecimento",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/eventos/estabelecimento/:estabelecimentoId",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "eventos", "estabelecimento", ":estabelecimentoId"],
+							"variable": [
+								{
+									"key": "estabelecimentoId",
+									"value": "1",
+									"description": "ID do perfil do estabelecimento"
+								}
+							]
+						},
+						"description": "Lista todos os eventos criados por um estabelecimento específico"
+					}
+				}
+			]
+		},
+		{
+			"name": "04 - Gestão de Bandas",
+			"item": [
+				{
+					"name": "🎸 Estatísticas de Bandas",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/bandas/estatisticas",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "bandas", "estatisticas"]
+						},
+						"description": "Estatísticas:\n- Total de bandas\n- Total de aplicações\n- Aplicações por status (pendente, aceita, rejeitada)\n- Top 10 bandas com mais aplicações"
+					}
+				}
+			]
+		},
+		{
+			"name": "05 - Testes de Permissões Admin",
+			"item": [
+				{
+					"name": "✅ Admin Cria Banda (bypass role artist)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('adminBandId', response.banda.id);",
+									"    console.log('✅ Admin criou banda ID:', response.banda.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome_banda\": \"Banda Admin Test\",\n  \"descricao\": \"Banda criada por admin para testar permissões\",\n  \"data_criacao\": \"2025-01-01\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bandas",
+							"host": ["{{baseUrl}}"],
+							"path": ["bandas"]
+						},
+						"description": "Testa se admin consegue criar banda mesmo sem role 'artist'"
+					}
+				},
+				{
+					"name": "✅ Admin Deleta Banda (bypass ownership)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/bandas/{{adminBandId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["bandas", "{{adminBandId}}"]
+						},
+						"description": "Testa se admin consegue deletar qualquer banda (bypass ownership)"
+					}
+				},
+				{
+					"name": "✅ Admin Cria Evento (bypass role establishment)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('adminEventId', response.id);",
+									"    console.log('✅ Admin criou evento ID:', response.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titulo_evento\": \"Evento Admin Test\",\n  \"descricao_evento\": \"Evento criado por admin\",\n  \"data_show\": \"2025-12-31\",\n  \"horario_inicio\": \"20:00:00\",\n  \"horario_fim\": \"23:00:00\",\n  \"perfil_estabelecimento_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/agendamentos",
+							"host": ["{{baseUrl}}"],
+							"path": ["agendamentos"]
+						},
+						"description": "Testa se admin consegue criar evento mesmo sem role 'establishment_owner'"
+					}
+				},
+				{
+					"name": "✅ Admin Deleta Evento (bypass ownership)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/agendamentos/{{adminEventId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["agendamentos", "{{adminEventId}}"]
+						},
+						"description": "Testa se admin consegue deletar qualquer evento (bypass ownership)"
+					}
+				}
+			]
+		},
+		{
+			"name": "06 - Usuários de Teste (opcional)",
+			"item": [
+				{
+					"name": "Criar Usuário Artista",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('artistToken', response.token);",
+									"    pm.collectionVariables.set('artistUserId', response.user.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"João Artista\",\n  \"email\": \"artista@test.com\",\n  \"senha\": \"Senha@123\",\n  \"tipo_usuario\": \"artist\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/usuarios/registro",
+							"host": ["{{baseUrl}}"],
+							"path": ["usuarios", "registro"]
+						}
+					}
+				},
+				{
+					"name": "Criar Usuário Estabelecimento",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('establishmentToken', response.token);",
+									"    pm.collectionVariables.set('establishmentUserId', response.user.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Bar do João\",\n  \"email\": \"bar@test.com\",\n  \"senha\": \"Senha@123\",\n  \"tipo_usuario\": \"establishment_owner\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/usuarios/registro",
+							"host": ["{{baseUrl}}"],
+							"path": ["usuarios", "registro"]
+						}
+					}
+				},
+				{
+					"name": "Criar Usuário Comum",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('userToken', response.token);",
+									"    pm.collectionVariables.set('userId', response.user.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Maria Silva\",\n  \"email\": \"maria@test.com\",\n  \"senha\": \"Senha@123\",\n  \"tipo_usuario\": \"common_user\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/usuarios/registro",
+							"host": ["{{baseUrl}}"],
+							"path": ["usuarios", "registro"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminBandId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminEventId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artistToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artistUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "establishmentToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "establishmentUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

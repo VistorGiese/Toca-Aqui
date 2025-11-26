@@ -1,0 +1,1711 @@
+{
+	"info": {
+		"_postman_id": "e27edb36-dea1-482c-a538-0abb53247e32",
+		"name": "Toca Aqui Platform - Complete Flow",
+		"description": "Collection completa para testar o fluxo da plataforma Toca Aqui\n\n**Ordem de execução:**\n1. Health Checks\n2. Registro de Usuários\n3. Login de Usuários\n4. Criação de Endereços\n5. Criação de Perfis (Estabelecimento/Artista)\n6. Criação de Bandas\n7. Criação de Eventos\n8. Aplicações de Bandas\n9. Aceitação de Aplicações\n10. Interações Sociais (Comentários, Avaliações, Favoritos)\n\n**Variáveis usadas:**\n- `baseUrl`: http://localhost\n- `mainApi`: http://localhost/api/main\n- `socialApi`: http://localhost:3001\n- Tokens e IDs são salvos automaticamente",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "36033559",
+		"_collection_link": "https://aaaa99-1872.postman.co/workspace/TocaAqui~1a8468cc-1c17-4ac3-80b4-7bd8e53ae056/collection/36033559-e27edb36-dea1-482c-a538-0abb53247e32?action=share&source=collection_link&creator=36033559"
+	},
+	"item": [
+		{
+			"name": "01 - Health Checks",
+			"item": [
+				{
+					"name": "Health - Main API",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{mainApi}}/health",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Health - Social Service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{socialApi}}/health",
+							"host": [
+								"{{socialApi}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Health - Nginx Gateway",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "02 - Registro de Usuários",
+			"item": [
+				{
+					"name": "Registrar Artista 1 (João)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('artistaJoaoToken', response.token);",
+									"    pm.collectionVariables.set('artistaJoaoId', response.user.id);",
+									"    console.log('Token do João salvo:', response.token.substring(0, 30) + '...');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"João Silva\",\n  \"email\": \"joao@banda.com\",\n  \"senha\": \"Banda123!@#\",\n  \"tipo_usuario\": \"artist\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/registro",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"registro"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar Artista 2 (Ana)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('artistaAnaToken', response.token);",
+									"    pm.collectionVariables.set('artistaAnaId', response.user.id);",
+									"    console.log('Token da Ana salvo');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Ana Vocalista\",\n  \"email\": \"ana@banda.com\",\n  \"senha\": \"Banda123!@#\",\n  \"tipo_usuario\": \"artist\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/registro",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"registro"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar Dono Estabelecimento 1 (Maria)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('ownerMariaToken', response.token);",
+									"    pm.collectionVariables.set('ownerMariaId', response.user.id);",
+									"    console.log('Token da Maria salvo');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Maria Santos\",\n  \"email\": \"maria@rockbar.com\",\n  \"senha\": \"RockBar123!@#\",\n  \"tipo_usuario\": \"establishment_owner\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/registro",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"registro"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar Dono Estabelecimento 2 (Roberto)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('ownerRobertoToken', response.token);",
+									"    pm.collectionVariables.set('ownerRobertoId', response.user.id);",
+									"    console.log('Token do Roberto salvo');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Roberto Silva\",\n  \"email\": \"roberto@blueshouse.com\",\n  \"senha\": \"BluesHouse123!@#\",\n  \"tipo_usuario\": \"establishment_owner\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/registro",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"registro"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar Usuário Comum (Pedro)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('commonUserToken', response.token);",
+									"    pm.collectionVariables.set('commonUserId', response.user.id);",
+									"    console.log('Token do Pedro salvo');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Pedro Costa\",\n  \"email\": \"pedro@mail.com\",\n  \"senha\": \"Pedro123!@#\",\n  \"tipo_usuario\": \"common_user\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/registro",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"registro"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "03 - Login de Usuários",
+			"item": [
+				{
+					"name": "Login Artista João",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('artistaJoaoToken', response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"joao@banda.com\",\n  \"senha\": \"Banda123!@#\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/login",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Owner Maria",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('ownerMariaToken', response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"maria@rockbar.com\",\n  \"senha\": \"RockBar123!@#\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/login",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "04 - Criação de Endereços",
+			"item": [
+				{
+					"name": "Criar Endereço Rock Bar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('enderecoRockBarId', response.id);",
+									"    console.log('Endereço Rock Bar ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerMariaToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rua\": \"Rua do Rock\",\n  \"numero\": \"123\",\n  \"bairro\": \"Centro\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\",\n  \"cep\": \"01234567\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/enderecos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"enderecos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Criar Endereço Blues House",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('enderecoBluesHouseId', response.id);",
+									"    console.log('Endereço Blues House ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerRobertoToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rua\": \"Avenida do Blues\",\n  \"numero\": \"456\",\n  \"bairro\": \"Vila Madalena\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\",\n  \"cep\": \"05411000\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/enderecos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"enderecos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "05 - Criação de Estabelecimentos",
+			"item": [
+				{
+					"name": "Criar Perfil Rock Bar 51",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('estabelecimentoRockBarId', response.profile.id);",
+									"    console.log('Rock Bar ID:', response.profile.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerMariaToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome_estabelecimento\": \"Rock Bar 51\",\n  \"tipo_estabelecimento\": \"bar\",\n  \"descricao\": \"Melhor bar de rock da cidade! Shows ao vivo toda semana.\",\n  \"generos_musicais\": \"rock,metal,punk,hard rock\",\n  \"horario_abertura\": \"18:00:00\",\n  \"horario_fechamento\": \"02:00:00\",\n  \"endereco_id\": {{enderecoRockBarId}},\n  \"telefone_contato\": \"11987654321\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/perfil-estabelecimento",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"perfil-estabelecimento"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Criar Perfil Blues House",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('estabelecimentoBluesHouseId', response.profile.id);",
+									"    console.log('Blues House ID:', response.profile.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerRobertoToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome_estabelecimento\": \"Blues House\",\n  \"tipo_estabelecimento\": \"casa_show\",\n  \"descricao\": \"Casa de shows especializada em blues, jazz e soul\",\n  \"generos_musicais\": \"blues,jazz,soul,r&b\",\n  \"horario_abertura\": \"19:00:00\",\n  \"horario_fechamento\": \"03:00:00\",\n  \"endereco_id\": {{enderecoBluesHouseId}},\n  \"telefone_contato\": \"11987654322\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/usuarios/perfil-estabelecimento",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"usuarios",
+								"perfil-estabelecimento"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "06 - Criação de Bandas",
+			"item": [
+				{
+					"name": "Criar Banda The Rockers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('bandaRockersId', response.banda.id);",
+									"    console.log('Banda The Rockers ID:', response.banda.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{artistaJoaoToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"The Rockers\",\n  \"genero_musical\": \"rock\",\n  \"biografia\": \"Banda de rock clássico desde 1985. Repertório com clássicos nacionais e internacionais.\",\n  \"cidade\": \"São Paulo\",\n  \"numero_integrantes\": 4\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/bandas",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"bandas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Criar Banda Rock Stars",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('bandaRockStarsId', response.banda.id);",
+									"    console.log('Banda Rock Stars ID:', response.banda.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{artistaAnaToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Rock Stars\",\n  \"genero_musical\": \"rock\",\n  \"biografia\": \"Banda de rock alternativo com influências de indie e grunge.\",\n  \"cidade\": \"São Paulo\",\n  \"numero_integrantes\": 5\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/bandas",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"bandas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Todas Bandas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{mainApi}}/bandas",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"bandas"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "07 - Criação de Eventos (Agendamentos)",
+			"item": [
+				{
+					"name": "Criar Evento - Noite de Rock Clássico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('eventoRockClassicoId', response.id);",
+									"    console.log('Evento Rock Clássico ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerMariaToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titulo_evento\": \"Noite de Rock Clássico\",\n  \"descricao_evento\": \"Uma noite especial com os maiores clássicos do rock! Venha curtir!\",\n  \"data_show\": \"2025-12-15\",\n  \"perfil_estabelecimento_id\": {{estabelecimentoRockBarId}},\n  \"horario_inicio\": \"20:00:00\",\n  \"horario_fim\": \"23:30:00\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/agendamentos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"agendamentos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Criar Evento - Festival de Blues",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('eventoFestivalBluesId', response.id);",
+									"    console.log('Evento Festival Blues ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerRobertoToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titulo_evento\": \"Festival de Blues\",\n  \"descricao_evento\": \"Festival especial com grandes nomes do blues nacional\",\n  \"data_show\": \"2025-12-20\",\n  \"perfil_estabelecimento_id\": {{estabelecimentoBluesHouseId}},\n  \"horario_inicio\": \"20:00:00\",\n  \"horario_fim\": \"01:00:00\"\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/agendamentos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"agendamentos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Todos Eventos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{commonUserToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{mainApi}}/agendamentos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"agendamentos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "08 - Aplicações de Bandas a Eventos",
+			"item": [
+				{
+					"name": "Banda The Rockers aplica ao Rock Clássico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('aplicacao1Id', response.aplicacao.id);",
+									"    console.log('Aplicação 1 ID:', response.aplicacao.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"banda_id\": {{bandaRockersId}},\n  \"evento_id\": {{eventoRockClassicoId}}\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/eventos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"eventos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Banda Rock Stars aplica ao Festival Blues",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('aplicacao2Id', response.aplicacao.id);",
+									"    console.log('Aplicação 2 ID:', response.aplicacao.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"banda_id\": {{bandaRockStarsId}},\n  \"evento_id\": {{eventoFestivalBluesId}}\n}"
+						},
+						"url": {
+							"raw": "{{mainApi}}/eventos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"eventos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Aplicações para Evento",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{mainApi}}/eventos/{{eventoRockClassicoId}}",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"eventos",
+								"{{eventoRockClassicoId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "09 - Aceitação de Aplicações",
+			"item": [
+				{
+					"name": "Maria aceita The Rockers para Rock Clássico",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerMariaToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{mainApi}}/eventos/{{aplicacao1Id}}/aceitar",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"eventos",
+								"{{aplicacao1Id}}",
+								"aceitar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Roberto aceita Rock Stars para Festival Blues",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerRobertoToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{mainApi}}/eventos/{{aplicacao2Id}}/aceitar",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"eventos",
+								"{{aplicacao2Id}}",
+								"aceitar"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "10 - Interações Sociais",
+			"item": [
+				{
+					"name": "Comentários",
+					"item": [
+						{
+							"name": "Pedro comenta sobre The Rockers",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    pm.collectionVariables.set('comentario1Id', response.comentario.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{commonUserToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"comentavel_tipo\": \"banda\",\n  \"comentavel_id\": {{bandaRockersId}},\n  \"texto\": \"Show incrível! Essa banda é demais! Repertório excelente!\"\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/comentarios",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"comentarios"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Ana comenta sobre Rock Stars",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{artistaAnaToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"comentavel_tipo\": \"banda\",\n  \"comentavel_id\": {{bandaRockStarsId}},\n  \"texto\": \"Energia contagiante! Show profissional e envolvente!\"\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/comentarios",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"comentarios"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar Comentários da Banda",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{socialApi}}/comentarios/banda/{{bandaRockersId}}",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"comentarios",
+										"banda",
+										"{{bandaRockersId}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Deletar Comentário",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{commonUserToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{socialApi}}/comentarios/{{comentario1Id}}",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"comentarios",
+										"{{comentario1Id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Avaliações",
+					"item": [
+						{
+							"name": "Pedro avalia The Rockers - 5 estrelas",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    pm.collectionVariables.set('avaliacao1Id', response.avaliacao.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{commonUserToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"avaliavel_tipo\": \"banda\",\n  \"avaliavel_id\": {{bandaRockersId}},\n  \"nota\": 5,\n  \"comentario\": \"Excelente banda! Muito profissional e ótimo repertório!\"\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/avaliacoes",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"avaliacoes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Ana avalia Rock Stars - 5 estrelas",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{artistaAnaToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"avaliavel_tipo\": \"banda\",\n  \"avaliavel_id\": {{bandaRockStarsId}},\n  \"nota\": 5,\n  \"comentario\": \"Show espetacular! Recomendo muito!\"\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/avaliacoes",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"avaliacoes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "João avalia Rock Bar 51 - 4 estrelas",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{artistaJoaoToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"avaliavel_tipo\": \"perfil_estabelecimento\",\n  \"avaliavel_id\": {{estabelecimentoRockBarId}},\n  \"nota\": 4,\n  \"comentario\": \"Ótimo lugar para tocar! Estrutura excelente.\"\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/avaliacoes",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"avaliacoes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar Avaliações da Banda",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{socialApi}}/avaliacoes/banda/{{bandaRockersId}}",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"avaliacoes",
+										"banda",
+										"{{bandaRockersId}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Atualizar Avaliação",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{commonUserToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nota\": 5,\n  \"comentario\": \"Mudei de ideia: show PERFEITO! 5 estrelas!\"\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/avaliacoes/{{avaliacao1Id}}",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"avaliacoes",
+										"{{avaliacao1Id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Favoritos",
+					"item": [
+						{
+							"name": "Pedro favorita The Rockers",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    pm.collectionVariables.set('favorito1Id', response.favorito.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{commonUserToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"favoritavel_tipo\": \"banda\",\n  \"favoritavel_id\": {{bandaRockersId}}\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/favoritos",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"favoritos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Ana favorita Rock Stars",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{artistaAnaToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"favoritavel_tipo\": \"banda\",\n  \"favoritavel_id\": {{bandaRockStarsId}}\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/favoritos",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"favoritos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "João favorita Rock Bar 51",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{artistaJoaoToken}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"favoritavel_tipo\": \"perfil_estabelecimento\",\n  \"favoritavel_id\": {{estabelecimentoRockBarId}}\n}"
+								},
+								"url": {
+									"raw": "{{socialApi}}/favoritos",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"favoritos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar Favoritos do Usuário (JWT)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{commonUserToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{socialApi}}/favoritos",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"favoritos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Remover Favorito The Rockers",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{commonUserToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{socialApi}}/favoritos/banda/{{bandaRockersId}}",
+									"host": [
+										"{{socialApi}}"
+									],
+									"path": [
+										"favoritos",
+										"banda",
+										"{{bandaRockersId}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "11 - Consultas e Relatórios",
+			"item": [
+				{
+					"name": "Listar Todas Bandas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{mainApi}}/bandas",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"bandas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Banda por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{mainApi}}/bandas/{{bandaRockersId}}",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"bandas",
+								"{{bandaRockersId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Todos Agendamentos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{commonUserToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{mainApi}}/agendamentos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"agendamentos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Agendamento por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{commonUserToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{mainApi}}/agendamentos/{{eventoRockClassicoId}}",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"agendamentos",
+								"{{eventoRockClassicoId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Endereços",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ownerMariaToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{mainApi}}/enderecos",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"enderecos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "99 - Limpeza de Dados (Executar ao final)",
+			"item": [
+				{
+					"name": "⚠️ INSTRUÇÕES - Como limpar o banco",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{mainApi}}/health",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "## ⚠️ Como limpar TODOS os dados do banco ao final da execução\n\n### Opção 1: Via Docker (RECOMENDADO)\n```powershell\n# No terminal PowerShell, execute:\ndocker-compose down -v\ndocker-compose up -d\n```\n\n### Opção 2: Via Adminer (Interface Web)\n1. Acesse: http://localhost:8080\n2. Login:\n   - Server: `mysql`\n   - User: `root`\n   - Password: `rootpassword`\n   - Database: `toca_aqui_db`\n3. Clique em \"SQL Command\"\n4. Cole e execute:\n\n```sql\nSET FOREIGN_KEY_CHECKS = 0;\nTRUNCATE TABLE aplicacoes_bandas;\nTRUNCATE TABLE agendamentos;\nTRUNCATE TABLE bandas;\nTRUNCATE TABLE perfil_estabelecimento;\nTRUNCATE TABLE perfil_artista;\nTRUNCATE TABLE enderecos;\nTRUNCATE TABLE usuarios;\nSET FOREIGN_KEY_CHECKS = 1;\n```\n\n### Opção 3: Via MySQL Client Direto\n```powershell\ndocker exec -it mysql-container mysql -uroot -prootpassword toca_aqui_db -e \"SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE aplicacoes_bandas; TRUNCATE TABLE agendamentos; TRUNCATE TABLE bandas; TRUNCATE TABLE perfil_estabelecimento; TRUNCATE TABLE perfil_artista; TRUNCATE TABLE enderecos; TRUNCATE TABLE usuarios; SET FOREIGN_KEY_CHECKS = 1;\"\n```\n\n### Social Service Database\nPara limpar também a base de dados social:\n\n```powershell\ndocker exec -it mysql-social-container mysql -uroot -prootpassword social_db -e \"SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE favoritos; TRUNCATE TABLE avaliacoes; TRUNCATE TABLE comentarios; SET FOREIGN_KEY_CHECKS = 1;\"\n```\n\n### ⚠️ LEMBRETE\nApós limpar, clique no botão abaixo para limpar as variáveis da Collection!"
+					},
+					"response": []
+				},
+				{
+					"name": "🧹 Limpar Variáveis da Collection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Limpar todas as variáveis da collection",
+									"pm.collectionVariables.set('artistaJoaoToken', '');",
+									"pm.collectionVariables.set('artistaJoaoId', '');",
+									"pm.collectionVariables.set('artistaAnaToken', '');",
+									"pm.collectionVariables.set('artistaAnaId', '');",
+									"pm.collectionVariables.set('ownerMariaToken', '');",
+									"pm.collectionVariables.set('ownerMariaId', '');",
+									"pm.collectionVariables.set('ownerRobertoToken', '');",
+									"pm.collectionVariables.set('ownerRobertoId', '');",
+									"pm.collectionVariables.set('commonUserToken', '');",
+									"pm.collectionVariables.set('commonUserId', '');",
+									"pm.collectionVariables.set('enderecoRockBarId', '');",
+									"pm.collectionVariables.set('enderecoBluesHouseId', '');",
+									"pm.collectionVariables.set('estabelecimentoRockBarId', '');",
+									"pm.collectionVariables.set('estabelecimentoBluesHouseId', '');",
+									"pm.collectionVariables.set('bandaRockersId', '');",
+									"pm.collectionVariables.set('bandaRockStarsId', '');",
+									"pm.collectionVariables.set('eventoRockClassicoId', '');",
+									"pm.collectionVariables.set('eventoFestivalBluesId', '');",
+									"pm.collectionVariables.set('aplicacao1Id', '');",
+									"pm.collectionVariables.set('aplicacao2Id', '');",
+									"pm.collectionVariables.set('comentario1Id', '');",
+									"pm.collectionVariables.set('avaliacao1Id', '');",
+									"pm.collectionVariables.set('favorito1Id', '');",
+									"",
+									"console.log('✅ Todas as variáveis da collection foram limpas!');",
+									"console.log('🔄 Você pode executar a Collection novamente do zero.');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{mainApi}}/health",
+							"host": [
+								"{{mainApi}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Executa script que limpa todas as variáveis da Collection (tokens, IDs, etc).\n\n**Execute esta requisição APÓS limpar o banco de dados** para resetar o estado da Collection."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "mainApi",
+			"value": "http://localhost/api/main",
+			"type": "string"
+		},
+		{
+			"key": "socialApi",
+			"value": "http://localhost/api/social",
+			"type": "string"
+		},
+		{
+			"key": "artistaJoaoToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artistaJoaoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artistaAnaToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artistaAnaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ownerMariaToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ownerMariaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ownerRobertoToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ownerRobertoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "commonUserToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "commonUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "enderecoRockBarId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "enderecoBluesHouseId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "estabelecimentoRockBarId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "estabelecimentoBluesHouseId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bandaRockersId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bandaRockStarsId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "eventoRockClassicoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "eventoFestivalBluesId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "aplicacao1Id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "aplicacao2Id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "comentario1Id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "avaliacao1Id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "favorito1Id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
