@@ -10,14 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Install Dependencies
         run: npm install
-      - name: Run Tests
-        run: npm test
 
-  deploy:
+  test:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy to Staging
-        run: echo "Deploy staging..."
+      - uses: actions/checkout@v3
+      - name: Run Tests
+        run: echo "Rodando testes..."
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Deploy to staging
+        run: echo "Deploy para staging..."
