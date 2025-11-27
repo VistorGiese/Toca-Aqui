@@ -1,53 +1,36 @@
-# Documento — Estratégia de Deploy
+# Checklist de Segurança do Pipeline CI/CD — Toca Aqui
 
-**Projeto:** Toca Aqui  
-**Versão:** 1.0
+## 1. Análise de Dependências
 
----
+- Adicionar `npm audit` no job **build**.
+- Falhar o pipeline se houver vulnerabilidades críticas.
 
-## 1. Objetivo
+## 2. Testes Automatizados
 
-Definir como o sistema é implantado (deploy) nos ambientes de desenvolvimento e produção, incluindo mecanismos de segurança, rollback e disponibilidade.
+- Garantir que o job **test** só executa após o **build** (já configurado).
+- Incluir testes mínimos para validar comportamentos básicos.
 
----
+## 3. Proteção de Segredos
 
-## 2. Estratégia Geral de Deploy
+- Usar apenas **GitHub Secrets** em futuros passos de deploy.
+- Nunca colocar tokens ou chaves diretamente no arquivo YAML.
 
-Como o Toca Aqui é um projeto de porte médio com arquitetura simples (monolito + microserviço social), a estratégia adotada é:
+## 4. Proteção de Branch
 
-### ✅ Deploy Simples com Suporte a Rollback Rápido
+- Ativar **branch protection rules**:
+  - Bloquear push direto para `main` e `dev`.
+  - Exigir Pull Request + pipeline passando.
 
-Ou seja:
+## 5. Validação do Código
 
-- O sistema sobe como contêineres via **Docker Compose**
-- O deploy é feito substituindo a versão antiga pela nova
-- Em caso de falha, o rollback consiste em restaurar rapidamente a imagem anterior
+- Ativar **Code Scanning** (GitHub Advanced Security ou CodeQL), opcionalmente.
 
-A estratégia prioriza **simplicidade, controle e baixo custo**.
+## 6. Integridade do Pipeline
 
----
+- Limitar quem pode modificar `.github/workflows/`.
+- Usar a opção **Require reviewers** no repositório.
 
-## 3. Pipeline de Build e Deploy
+## 7. Segurança no Deploy
 
-### 3.1 Build
-
-Para cada nova release:
-
-1. Código é commitado no repositório
-2. Uma nova imagem Docker é construída, por exemplo:
-   - `backend:1.0.3`
-   - `social:1.0.3`
-3. As imagens são armazenadas localmente ou em registry (ex.: Docker Hub)
-
-### 3.2 Deploy
-
-O deploy consiste em:
-
-1. Parar as versões atuais
-2. Substituir as imagens usadas
-3. Subir novamente via:
-
-```bash
-docker-compose pull   # opcional se usar registry
-docker-compose up -d --build
-```
+- Deploy só deve acontecer após todos os testes concluídos (já configurado).
+- Prever um processo simples de **rollback manual** caso algo falhe.
