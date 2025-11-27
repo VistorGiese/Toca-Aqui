@@ -1,0 +1,16 @@
+%% C4 Model - Level 1: Context Diagram (Atualizado)
+
+C4Context
+    title Sistema "Toca Aqui" - Contexto
+
+    Person(donoEstabelecimento, "Dono do Estabelecimento", "Contratante: cria e gerencia eventos, busca artistas, contrata e avalia performances.")
+    Person(artista, "Artista/Banda", "Prestador de serviço: gerencia perfil, envia candidaturas, aceita contratações e recebe avaliações.")
+
+    System(tocaAqui, "Toca Aqui", "Plataforma mobile que conecta artistas e estabelecimentos, permitindo criação de eventos, candidaturas, contratações e avaliações.")
+
+    System_Ext(sistemaAval, "Sistema de Avaliações", "Armazena notas e comentários de ambos os lados após eventos.")
+
+    Rel(donoEstabelecimento, tocaAqui, "Cadastra eventos, busca artistas, contrata, avalia")
+    Rel(artista, tocaAqui, "Cadastra perfil artístico, envia candidaturas, aceita contratação")
+
+    Rel(tocaAqui, sistemaAval, "Envia e recebe dados de notas e comentários")

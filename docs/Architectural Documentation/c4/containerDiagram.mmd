@@ -1,0 +1,34 @@
+%% C4 Model - Level 2: Container Diagram
+
+C4Container
+    title Sistema "Toca Aqui" - Contêineres
+
+    Person(donoEstabelecimento, "Dono do Estabelecimento", "Cria eventos, busca artistas, contrata e avalia.")
+    Person(artista, "Artista/Banda", "Gerencia perfil artístico, envia candidatura e aceita contratação.")
+
+    System_Boundary(tocaAqui, "Toca Aqui") {
+        Container(appMobile, "App Mobile", "React Native", "Interface utilizada por artistas e donos de estabelecimentos.")
+        Container(apiGateway, "API Gateway", "Node.js + Express", "Ponto único de entrada para o backend.")
+        Container(authService, "Auth Service", "Node.js + Express", "Gerencia autenticação e autorizações via JWT.")
+        Container(userService, "User Service", "Node.js + Express", "Gerencia perfis e usuários.")
+        Container(eventService, "Event Service", "Node.js + Express", "Gerencia eventos, candidaturas, contratações.")
+        Container(avaliacaoService, "Review Service", "Node.js + Express", "Gerencia avaliações de ambos os lados.")
+        ContainerDb(db, "Banco de Dados", "PostgreSQL", "Armazena usuários, eventos, avaliações e perfis.")
+        Container(queue, "Mensageria", "Kafka ou RabbitMQ", "Comunicação assíncrona entre microsserviços.")
+    }
+
+    Rel(donoEstabelecimento, appMobile, "Usa")
+    Rel(artista, appMobile, "Usa")
+
+    Rel(appMobile, apiGateway, "Requisições HTTP")
+    Rel(apiGateway, authService, "Encaminha autenticação")
+    Rel(apiGateway, userService, "Encaminha operações de usuário")
+    Rel(apiGateway, eventService, "Encaminha operações de eventos")
+
+    Rel(authService, db, "Lê/Escreve")
+    Rel(userService, db, "Lê/Escreve")
+    Rel(eventService, db, "Lê/Escreve")
+    Rel(avaliacaoService, db, "Lê/Escreve")
+
+    Rel(eventService, queue, "Publica eventos")
+    Rel(queue, avaliacaoService, "Consome eventos")
