@@ -8,16 +8,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
+
       - name: Install Dependencies
         run: npm install
+        working-directory: ./backend
+
       - name: Run Tests
         run: npm test
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to Staging
-        run: echo "Deploy staging..."
+        working-directory: ./backend
