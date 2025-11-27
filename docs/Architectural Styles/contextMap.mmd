@@ -1,0 +1,42 @@
+flowchart LR
+%% ============================
+%% Context Map — Toca Aqui (Mermaid)
+%% ============================
+
+subgraph CoreDomain["Core Domain - Matchmaking Artistico"]
+  direction TB
+  ES[Event Scheduling - Agendamentos e Candidaturas]
+  BC[Band Context - Gestao de Bandas]
+  PC[Profile Context - Perfis de Artistas e Estabelecimentos]
+end
+
+subgraph SupportingDomain["Supporting Domain"]
+  direction TB
+  UMC[User Management - Autenticacao e Autorizacao]
+  AC[Address Context - Enderecos e Localizacao]
+end
+
+subgraph GenericDomain["Generic Domain - Social Interactions"]
+  direction TB
+  SC[Social Context - Comentarios, Avaliacoes e Favoritos]
+end
+
+%% ============================
+%% Relationships
+%% ============================
+
+UMC -->|Conformist / Upstream| PC
+UMC -->|Conformist / Upstream| BC
+UMC -->|Conformist / Upstream| ES
+UMC -->|Conformist / Upstream| SC
+UMC -->|Conformist / Upstream| AC
+
+AC -->|Supplier - Address fornece dados| PC
+
+PC -->|Supplier - Perfis alimentam eventos| ES
+
+PC <--> |Shared Kernel - Modelos compartilhados| BC
+
+ES -->|Open Host Service - Consome API REST| SC
+PC -->|Open Host Service - Consome API REST| SC
+BC -->|Open Host Service - Consome API REST| SC
