@@ -49,35 +49,20 @@ app.use("/estabelecimentos", EstablishmentRoutes);
 import sequelize from "./config/database"; 
 
 
-sequelize
-  .authenticate()
-  .then(async () => {
-    console.log("Banco de dados conectado com sucesso!");
-    // Para criar as tabelas automaticamente 
-    await sequelize.sync();
-    console.log("Sincronização do banco concluída!");
-    
-    await pubSubService.initializeSubscribers();
-    console.log("Redis Pub/Sub subscribers inicializados");
-  })
-  .catch((error) => {
-    console.error("Erro ao conectar ao banco de dados:", error);
-  });
-
 app.get("/", (req, res) => {
   res.json({ message: "API funcionando!" });
 });
 
 app.get("/health", async (req, res) => {
   try {
-    const dbHealthy = sequelize.authenticate().then(() => true).catch(() => false);
+    const dbHealthy = await sequelize.authenticate().then(() => true).catch(() => false);
     const redisHealthy = await redisService.healthCheck();
-    
+
     const health = {
-      status: (await dbHealthy) && redisHealthy ? "healthy" : "unhealthy",
+      status: dbHealthy && redisHealthy ? "healthy" : "unhealthy",
       timestamp: new Date().toISOString(),
       services: {
-        database: await dbHealthy ? "up" : "down",
+        database: dbHealthy ? "up" : "down",
         redis: redisHealthy ? "up" : "down",
       },
     };
@@ -93,8 +78,23 @@ app.get("/health", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+sequelize
+  .authenticate()
+  .then(async () => {
+    console.log("Banco de dados conectado com sucesso!");
+    await sequelize.sync();
+    console.log("Sincronização do banco concluída!");
+
+    await pubSubService.initializeSubscribers();
+    console.log("Redis Pub/Sub subscribers inicializados");
+
+    app.listen(PORT, () => {
+      console.log(`Servidor rodando na porta ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Erro ao conectar ao banco de dados:", error);
+    process.exit(1);
+  });
 
 export default app;

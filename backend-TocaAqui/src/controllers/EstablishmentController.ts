@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import AddressModel from '../models/AddressModel';
 import UserModel from '../models/UserModel';
@@ -54,7 +55,6 @@ export const getEstablishment = async (req: Request, res: Response) => {
     const { id } = req.params;
     const cacheKey = `estabelecimento:${id}`;
 
-    // Verificar cache
     const cachedData = await redisService.get<any>(cacheKey);
     if (cachedData) {
       console.log(`[CACHE HIT] ${cacheKey}`);
@@ -62,7 +62,7 @@ export const getEstablishment = async (req: Request, res: Response) => {
     }
     console.log(`[CACHE MISS] ${cacheKey}`);
 
-    const establishment = await EstablishmentProfileModel.findByPk(id, {
+    const establishment = await EstablishmentProfileModel.findByPk(id as string, {
       include: [
         {
           model: AddressModel,
@@ -98,10 +98,10 @@ export const getEstablishment = async (req: Request, res: Response) => {
 export const updateEstablishment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).userId;
-    const userRole = (req as any).userRole;
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
 
-    const establishment = await EstablishmentProfileModel.findByPk(id);
+    const establishment = await EstablishmentProfileModel.findByPk(id as string);
 
     if (!establishment) {
       return res.status(404).json({ error: 'Estabelecimento não encontrado' });
@@ -129,7 +129,7 @@ export const updateEstablishment = async (req: Request, res: Response) => {
         where: {
           endereco_id: endereco_id,
           esta_ativo: true,
-          id: { [require('sequelize').Op.ne]: id }, // Excluir o próprio estabelecimento
+          id: { [Op.ne]: Number(id) },
         },
       });
 
@@ -175,10 +175,10 @@ export const updateEstablishment = async (req: Request, res: Response) => {
 export const deleteEstablishment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).userId;
-    const userRole = (req as any).userRole;
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
 
-    const establishment = await EstablishmentProfileModel.findByPk(id);
+    const establishment = await EstablishmentProfileModel.findByPk(id as string);
 
     if (!establishment) {
       return res.status(404).json({ error: 'Estabelecimento não encontrado' });

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import UserModel, { UserRole } from '../models/UserModel';
 import BandModel from '../models/BandModel';
 import BookingModel from '../models/BookingModel';
@@ -41,7 +42,6 @@ export const getAllUsers = async (req: Request, res: Response) => {
     }
 
     if (searchTerm) {
-      const { Op } = require('sequelize');
       const sanitizedSearch = searchTerm.trim();
       whereClause[Op.or] = [
         { nome: { [Op.like]: `%${sanitizedSearch}%` } },

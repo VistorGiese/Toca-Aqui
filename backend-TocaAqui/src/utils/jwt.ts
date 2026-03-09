@@ -5,7 +5,11 @@ dotenv.config();
 
 import type { Secret, SignOptions } from "jsonwebtoken";
 
-const JWT_SECRET: Secret = process.env.JWT_SECRET!;
+if (!process.env.JWT_SECRET) {
+  throw new Error("Variável de ambiente JWT_SECRET é obrigatória");
+}
+
+const JWT_SECRET: Secret = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN: SignOptions["expiresIn"] = (process.env.JWT_EXPIRES_IN || "7d") as SignOptions["expiresIn"];
 
 export const generateToken = (payload: string | object | Buffer) => {

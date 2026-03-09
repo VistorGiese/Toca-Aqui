@@ -56,7 +56,7 @@ export const createBand = async (req: Request, res: Response) => {
       nome_banda: nomeBanda, 
       descricao: descricaoBanda, 
       imagem: imagemPath,
-      generos_musicais: JSON.stringify(generos),
+      generos_musicais: generos,
       data_criacao: data_criacao || new Date()
     });
     
@@ -113,7 +113,7 @@ export const getBands = async (_req: Request, res: Response) => {
 
 export const getBandById = async (req: Request, res: Response) => {
   try {
-    const bandId = req.params.id;
+    const bandId = req.params.id as string;
     const cacheKey = `banda:${bandId}`;
     
     const cachedData = await redisService.get<any>(cacheKey);
@@ -148,7 +148,7 @@ export const getBandById = async (req: Request, res: Response) => {
 
 export const updateBand = async (req: Request, res: Response) => {
   try {
-    const bandId = req.params.id;
+    const bandId = req.params.id as string;
     const band = await BandModel.findByPk(bandId);
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
     
@@ -214,7 +214,7 @@ export const updateBand = async (req: Request, res: Response) => {
 
 export const deleteBand = async (req: Request, res: Response) => {
   try {
-    const bandId = req.params.id;
+    const bandId = req.params.id as string;
     const band = await BandModel.findByPk(bandId);
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
     

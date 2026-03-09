@@ -37,7 +37,7 @@ export const getAddresses = async (_req: Request, res: Response) => {
 
 export const getAddressById = async (req: Request, res: Response) => {
   try {
-    const address = await AddressModel.findByPk(req.params.id);
+    const address = await AddressModel.findByPk(req.params.id as string);
     if (!address)
       return res.status(404).json({ error: "Endereço não encontrado" });
     res.json(address);
@@ -48,7 +48,7 @@ export const getAddressById = async (req: Request, res: Response) => {
 
 export const updateAddress = async (req: Request, res: Response) => {
   try {
-    const address = await AddressModel.findByPk(req.params.id);
+    const address = await AddressModel.findByPk(req.params.id as string);
     if (!address)
       return res.status(404).json({ error: "Endereço não encontrado" });
     await address.update(req.body);
@@ -60,7 +60,7 @@ export const updateAddress = async (req: Request, res: Response) => {
 
 export const deleteAddress = async (req: Request, res: Response) => {
   try {
-    const address = await AddressModel.findByPk(req.params.id);
+    const address = await AddressModel.findByPk(req.params.id as string);
     if (!address)
       return res.status(404).json({ error: "Endereço não encontrado" });
     await address.destroy();

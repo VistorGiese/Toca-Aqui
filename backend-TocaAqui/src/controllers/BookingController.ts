@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import BookingModel, { BookingStatus } from "../models/BookingModel";
+import BandApplicationModel from "../models/BandApplicationModel";
 
 
 export const createBooking = async (req: Request, res: Response) => {
   try {
     const { titulo_evento, descricao_evento, data_show, perfil_estabelecimento_id, horario_inicio, horario_fim } = req.body;
-    const { Op } = require('sequelize');
     const conflito = await BookingModel.findOne({
       where: {
         perfil_estabelecimento_id,
@@ -47,7 +48,7 @@ export const getBookings = async (_req: Request, res: Response) => {
 
 export const getBookingById = async (req: Request, res: Response) => {
   try {
-    const booking = await BookingModel.findByPk(req.params.id);
+    const booking = await BookingModel.findByPk(req.params.id as string);
     if (!booking)
       return res.status(404).json({ error: "Agendamento não encontrado" });
     res.json(booking);
@@ -58,11 +59,10 @@ export const getBookingById = async (req: Request, res: Response) => {
 
 export const updateBooking = async (req: Request, res: Response) => {
   try {
-    const booking = await BookingModel.findByPk(req.params.id);
+    const booking = await BookingModel.findByPk(req.params.id as string);
     if (!booking)
       return res.status(404).json({ error: "Agendamento não encontrado" });
 
-    const BandApplicationModel = require("../models/BandApplicationModel").default;
     const candidaturas = await BandApplicationModel.count({ where: { evento_id: booking.id } });
     if (candidaturas > 0) {
       return res.status(400).json({ error: "Não é possível editar: já existem candidaturas para este evento." });
@@ -77,9 +77,15 @@ export const updateBooking = async (req: Request, res: Response) => {
 
 export const deleteBooking = async (req: Request, res: Response) => {
   try {
-    const booking = await BookingModel.findByPk(req.params.id);
+    const booking = await BookingModel.findByPk(req.params.id as string);
     if (!booking)
       return res.status(404).json({ error: "Agendamento não encontrado" });
+
+    const candidaturas = await BandApplicationModel.count({ where: { evento_id: booking.id } });
+    if (candidaturas > 0) {
+      return res.status(400).json({ error: "Não é possível remover: já existem candidaturas para este evento." });
+    }
+
     await booking.destroy();
     res.json({ message: "Agendamento removido com sucesso" });
   } catch (error) {

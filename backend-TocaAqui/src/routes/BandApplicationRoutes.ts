@@ -20,7 +20,7 @@ router.post("/", checkRolesOrAdmin(UserRole.ARTIST), applyBandToEvent);
 router.get("/:evento_id", getBandApplicationsForEvent);
 
 const checkEventOwnership = checkOwnership(async (req: AuthRequest) => {
-	const application = await BandApplicationModel.findByPk(req.params.id);
+	const application = await BandApplicationModel.findByPk(req.params.id as string);
 	if (!application) return undefined;
 	
 	const booking = await BookingModel.findByPk(application.evento_id);

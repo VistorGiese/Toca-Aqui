@@ -63,7 +63,7 @@ export const getBandDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const band = await BandModel.findByPk(id, {
+    const band = await BandModel.findByPk(id as string, {
       include: [
         {
           model: BandMemberModel,

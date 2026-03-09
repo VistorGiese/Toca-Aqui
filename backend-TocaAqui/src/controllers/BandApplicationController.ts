@@ -84,7 +84,7 @@ export const acceptBandApplication = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    const aplicacao = await BandApplicationModel.findByPk(id);
+    const aplicacao = await BandApplicationModel.findByPk(id as string);
     if (!aplicacao) {
       return res.status(404).json({ error: "Candidatura não encontrada" });
     }
@@ -146,7 +146,7 @@ export const getBandApplicationsForEvent = async (req: Request, res: Response) =
   try {
     const { evento_id } = req.params;
     
-    const evento = await BookingModel.findByPk(evento_id);
+    const evento = await BookingModel.findByPk(evento_id as string);
     if (!evento) {
       return res.status(404).json({ error: "Evento não encontrado" });
     }

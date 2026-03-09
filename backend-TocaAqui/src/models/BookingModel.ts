@@ -19,6 +19,8 @@ class BookingModel extends Model {
   horario_inicio!: string;
   horario_fim!: string;
   status!: BookingStatus;
+  readonly createdAt!: Date;
+  readonly updatedAt!: Date;
 }
 
 BookingModel.init(
@@ -67,7 +69,8 @@ BookingModel.init(
     sequelize,
     modelName: 'Booking',
     tableName: 'agendamentos',
-    timestamps: false,
+    timestamps: true,
+    underscored: true,
   }
 );
 
