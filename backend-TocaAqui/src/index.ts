@@ -18,6 +18,7 @@ import EstablishmentRoutes from "./routes/EstablishmentRoutes";
 import './models/associations';
 import redisService from './config/redis';
 import pubSubService from './services/PubSubService';
+import { generalLimiter } from './middleware/rateLimiter';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(generalLimiter);
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
