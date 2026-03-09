@@ -5,6 +5,8 @@ import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import ArtistProfileModel from '../models/ArtistProfileModel';
 import { generateToken } from '../utils/jwt';
 import { validateEmailFormat, validatePasswordFormat } from '../services/userValidationServices';
+import redisService from '../config/redis';
+import { AuthRequest } from '../middleware/authmiddleware';
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -249,5 +251,32 @@ export const createArtistProfile = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao criar perfil de artista' });
+  }
+};
+
+export const logoutUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const token = req.token;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token não encontrado' });
+    }
+
+    const decoded: any = req.user;
+    const exp: number = decoded?.exp;
+
+    if (!exp) {
+      return res.status(400).json({ error: 'Token sem data de expiração' });
+    }
+
+    const ttlSeconds = exp - Math.floor(Date.now() / 1000);
+
+    if (ttlSeconds > 0) {
+      await redisService.getClient().setex(`blacklist:${token}`, ttlSeconds, '1');
+    }
+
+    res.json({ message: 'Logout realizado com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao realizar logout' });
   }
 };
