@@ -8,6 +8,7 @@ import BandMemberModel from './BandMemberModel';
 import BookingModel from './BookingModel';
 import BandApplicationModel from './BandApplicationModel';
 import FavoriteModel from './FavoriteModel';
+import NotificationModel from './NotificationModel';
 
 // Associações do novo sistema de usuários
 UserModel.hasMany(EstablishmentProfileModel, {
@@ -103,6 +104,16 @@ FavoriteModel.belongsTo(UserModel, {
   as: 'User',
 });
 
+UserModel.hasMany(NotificationModel, {
+  foreignKey: 'usuario_id',
+  as: 'Notifications',
+});
+
+NotificationModel.belongsTo(UserModel, {
+  foreignKey: 'usuario_id',
+  as: 'User',
+});
+
 export {
   UserModel,
   EstablishmentProfileModel,
@@ -113,4 +124,5 @@ export {
   BookingModel,
   BandApplicationModel,
   FavoriteModel,
+  NotificationModel,
 };

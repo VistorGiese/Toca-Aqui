@@ -15,6 +15,7 @@ import UserRoutes from "./routes/UserRoutes";
 import BandManagementRoutes from "./routes/BandManagementRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
 import EstablishmentRoutes from "./routes/EstablishmentRoutes";
+import NotificationRoutes from "./routes/NotificationRoutes";
 
 import './models/associations';
 import redisService from './config/redis';
@@ -50,6 +51,7 @@ app.use("/usuarios", UserRoutes);
 app.use("/gerenciamento-bandas", BandManagementRoutes);
 app.use("/admin", AdminRoutes);
 app.use("/estabelecimentos", EstablishmentRoutes);
+app.use("/notificacoes", NotificationRoutes);
 
 import sequelize from "./config/database"; 
 
