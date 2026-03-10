@@ -1,151 +1,91 @@
 import { Request, Response } from 'express';
-import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
-import UserModel from '../models/UserModel';
-import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
-import ArtistProfileModel from '../models/ArtistProfileModel';
-import { generateToken } from '../utils/jwt';
-import { validateEmailFormat, validatePasswordFormat } from '../services/userValidationServices';
-import redisService from '../config/redis';
 import { AuthRequest } from '../middleware/authmiddleware';
-import { sendPasswordResetEmail, sendVerificationEmail } from '../services/EmailService';
+import { authService } from '../services/AuthService';
 import { uploadService } from '../services/UploadService';
+import ArtistProfileModel from '../models/ArtistProfileModel';
+
+const handleServiceError = (res: Response, err: any) => {
+  const status = err.statusCode || 500;
+  res.status(status).json({ error: err.message || 'Erro interno do servidor' });
+};
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { nome, email, senha, tipo_usuario } = req.body;
-
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
-    }
-
-    const emailError = validateEmailFormat(email);
-    if (emailError) {
-      return res.status(400).json({ error: emailError });
-    }
-
-    const passwordError = validatePasswordFormat(senha);
-    if (passwordError) {
-      return res.status(400).json({ error: passwordError });
-    }
-
-    const rolesValidas = ['admin', 'establishment_owner', 'artist', 'common_user'];
-    
-    const role = tipo_usuario && rolesValidas.includes(tipo_usuario) 
-      ? tipo_usuario 
-      : 'common_user';
-
-    const existingUser = await UserModel.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email já está em uso' });
-    }
-
-    const hashedPassword = await bcrypt.hash(senha, 10);
-
-    const user = await UserModel.create({
-      nome,
-      email,
-      senha: hashedPassword,
-      role,
-      email_verificado: false,
-    });
-
-    const verifyToken = crypto.randomBytes(32).toString('hex');
-    await redisService.getClient().setex(`verify:${verifyToken}`, 60 * 60 * 24, String(user.id));
-    await sendVerificationEmail(email, verifyToken).catch((err) => {
-      console.error('Falha ao enviar email de verificação:', err);
-    });
-
+    const user = await authService.register(req.body);
     res.status(201).json({
       message: 'Usuário criado com sucesso. Verifique seu email para ativar a conta.',
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        role: user.role,
-        email_verificado: false,
-      },
+      user,
     });
-  } catch (error) {
-    console.error('Erro ao criar usuário:', error);
-    res.status(500).json({ error: 'Erro ao criar usuário' });
+  } catch (err: any) {
+    handleServiceError(res, err);
   }
 };
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
     const { email, senha } = req.body;
-
-    if (!email || !senha) {
+    if (!email || !senha)
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
-    }
 
-    const user = await UserModel.findOne({ where: { email } });
-    if (!user) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
+    const result = await authService.login(email, senha);
+    res.json({ message: 'Login realizado com sucesso', ...result });
+  } catch (err: any) {
+    handleServiceError(res, err);
+  }
+};
 
-    const isValidPassword = await bcrypt.compare(senha, user.senha);
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
+export const logoutUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const token = req.token;
+    if (!token) return res.status(400).json({ error: 'Token não encontrado' });
 
-    if (!user.email_verificado) {
-      return res.status(403).json({ error: 'Email não verificado. Verifique sua caixa de entrada.' });
-    }
+    const exp = (req.user as any)?.exp;
+    if (!exp) return res.status(400).json({ error: 'Token sem data de expiração' });
 
-    const token = generateToken({ 
-      id: user.id, 
-      email: user.email,
-      role: user.role 
-    });
+    await authService.logout(token, exp);
+    res.json({ message: 'Logout realizado com sucesso' });
+  } catch (err: any) {
+    handleServiceError(res, err);
+  }
+};
 
-    res.json({
-      message: 'Login realizado com sucesso',
-      token,
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao realizar login' });
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    await authService.forgotPassword(req.body.email);
+    res.json({ message: 'Se este email estiver cadastrado, você receberá as instruções em breve.' });
+  } catch (err: any) {
+    handleServiceError(res, err);
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    await authService.resetPassword(req.body.token, req.body.nova_senha);
+    res.json({ message: 'Senha redefinida com sucesso.' });
+  } catch (err: any) {
+    handleServiceError(res, err);
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query as { token: string };
+    if (!token) return res.status(400).json({ error: 'Token é obrigatório.' });
+
+    const result = await authService.verifyEmail(token);
+    if (result.alreadyVerified) return res.json({ message: 'Email já verificado.' });
+    res.json({ message: 'Email verificado com sucesso. Você já pode fazer login.' });
+  } catch (err: any) {
+    handleServiceError(res, err);
   }
 };
 
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'Usuário não identificado' });
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuário não identificado' });
-    }
-
-    const user = await UserModel.findByPk(userId, {
-      include: [
-        {
-          model: EstablishmentProfileModel,
-          as: 'EstablishmentProfiles',
-          include: [
-            {
-              association: 'Address',
-              attributes: ['rua', 'cidade', 'estado'],
-            },
-          ],
-        },
-        {
-          model: ArtistProfileModel,
-          as: 'ArtistProfiles',
-        },
-      ],
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-
+    const user = await authService.getUserProfile(userId);
     res.json({
       user: {
         id: user.id,
@@ -155,222 +95,35 @@ export const getUserProfile = async (req: Request, res: Response) => {
         artist_profiles: (user as any).ArtistProfiles || [],
       },
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar perfil do usuário' });
+  } catch (err: any) {
+    handleServiceError(res, err);
   }
 };
 
 export const createEstablishmentProfile = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const {
-      nome_estabelecimento,
-      tipo_estabelecimento,
-      descricao,
-      generos_musicais,
-      horario_abertura,
-      horario_fechamento,
-      endereco_id,
-      telefone_contato,
-    } = req.body;
+    if (!userId) return res.status(401).json({ error: 'Usuário não identificado' });
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuário não identificado' });
+    const profile = await authService.createEstablishmentProfile(userId, req.body);
+    res.status(201).json({ message: 'Perfil de estabelecimento criado com sucesso', profile });
+  } catch (err: any) {
+    if (err.extra) {
+      return res.status(err.statusCode || 400).json({ error: err.message, estabelecimento_existente: err.extra });
     }
-
-    if (!nome_estabelecimento || !generos_musicais || !horario_abertura || !horario_fechamento || !endereco_id || !telefone_contato) {
-      return res.status(400).json({ error: 'Campos obrigatórios não preenchidos' });
-    }
-
-    // Verificar se o endereço já está sendo usado por outro estabelecimento ativo
-    const existingEstablishment = await EstablishmentProfileModel.findOne({
-      where: {
-        endereco_id: endereco_id,
-        esta_ativo: true,
-      },
-    });
-
-    if (existingEstablishment) {
-      return res.status(400).json({ 
-        error: 'Este endereço já está sendo utilizado por outro estabelecimento ativo',
-        estabelecimento_existente: {
-          id: existingEstablishment.id,
-          nome: existingEstablishment.nome_estabelecimento,
-        },
-      });
-    }
-
-    const profile = await EstablishmentProfileModel.create({
-      usuario_id: userId,
-      nome_estabelecimento,
-      tipo_estabelecimento: tipo_estabelecimento || 'bar',
-      descricao,
-      generos_musicais,
-      horario_abertura,
-      horario_fechamento,
-      endereco_id,
-      telefone_contato,
-    });
-
-    res.status(201).json({
-      message: 'Perfil de estabelecimento criado com sucesso',
-      profile,
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar perfil de estabelecimento' });
+    handleServiceError(res, err);
   }
 };
 
 export const createArtistProfile = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const {
-      nome_artistico,
-      biografia,
-      instrumentos,
-      generos,
-      anos_experiencia,
-      url_portfolio,
-      foto_perfil,
-    } = req.body;
+    if (!userId) return res.status(401).json({ error: 'Usuário não identificado' });
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuário não identificado' });
-    }
-
-    if (!nome_artistico) {
-      return res.status(400).json({ error: 'Nome artístico é obrigatório' });
-    }
-
-    const profile = await ArtistProfileModel.create({
-      usuario_id: userId,
-      nome_artistico,
-      biografia,
-      instrumentos: JSON.stringify(instrumentos || []),
-      generos: JSON.stringify(generos || []),
-      anos_experiencia: anos_experiencia || 0,
-      url_portfolio,
-      foto_perfil,
-    });
-
-    res.status(201).json({
-      message: 'Perfil de artista criado com sucesso',
-      profile,
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar perfil de artista' });
-  }
-};
-
-export const logoutUser = async (req: AuthRequest, res: Response) => {
-  try {
-    const token = req.token;
-
-    if (!token) {
-      return res.status(400).json({ error: 'Token não encontrado' });
-    }
-
-    const decoded: any = req.user;
-    const exp: number = decoded?.exp;
-
-    if (!exp) {
-      return res.status(400).json({ error: 'Token sem data de expiração' });
-    }
-
-    const ttlSeconds = exp - Math.floor(Date.now() / 1000);
-
-    if (ttlSeconds > 0) {
-      await redisService.getClient().setex(`blacklist:${token}`, ttlSeconds, '1');
-    }
-
-    res.json({ message: 'Logout realizado com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao realizar logout' });
-  }
-};
-
-export const forgotPassword = async (req: Request, res: Response) => {
-  try {
-    const { email } = req.body;
-
-    const user = await UserModel.findOne({ where: { email } });
-
-    // Resposta genérica para não revelar se o email existe
-    if (!user) {
-      return res.json({ message: 'Se este email estiver cadastrado, você receberá as instruções em breve.' });
-    }
-
-    const token = crypto.randomBytes(32).toString('hex');
-    const TTL_SECONDS = 60 * 60; // 1 hora
-
-    await redisService.getClient().setex(`reset:${token}`, TTL_SECONDS, String(user.id));
-
-    await sendPasswordResetEmail(email, token);
-
-    res.json({ message: 'Se este email estiver cadastrado, você receberá as instruções em breve.' });
-  } catch (error) {
-    console.error('Erro ao solicitar redefinição de senha:', error);
-    res.status(500).json({ error: 'Erro ao processar solicitação' });
-  }
-};
-
-export const resetPassword = async (req: Request, res: Response) => {
-  try {
-    const { token, nova_senha } = req.body;
-
-    const userId = await redisService.getClient().get(`reset:${token}`);
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Token inválido ou expirado.' });
-    }
-
-    const user = await UserModel.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
-    const hashedPassword = await bcrypt.hash(nova_senha, 10);
-    await user.update({ senha: hashedPassword });
-
-    await redisService.getClient().del(`reset:${token}`);
-
-    res.json({ message: 'Senha redefinida com sucesso.' });
-  } catch (error) {
-    console.error('Erro ao redefinir senha:', error);
-    res.status(500).json({ error: 'Erro ao redefinir senha' });
-  }
-};
-
-export const verifyEmail = async (req: Request, res: Response) => {
-  try {
-    const { token } = req.query as { token: string };
-
-    if (!token) {
-      return res.status(400).json({ error: 'Token é obrigatório.' });
-    }
-
-    const userId = await redisService.getClient().get(`verify:${token}`);
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Token inválido ou expirado.' });
-    }
-
-    const user = await UserModel.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
-    if (user.email_verificado) {
-      return res.json({ message: 'Email já verificado.' });
-    }
-
-    await user.update({ email_verificado: true });
-    await redisService.getClient().del(`verify:${token}`);
-
-    res.json({ message: 'Email verificado com sucesso. Você já pode fazer login.' });
-  } catch (error) {
-    console.error('Erro ao verificar email:', error);
-    res.status(500).json({ error: 'Erro ao verificar email' });
+    const profile = await authService.createArtistProfile(userId, req.body);
+    res.status(201).json({ message: 'Perfil de artista criado com sucesso', profile });
+  } catch (err: any) {
+    handleServiceError(res, err);
   }
 };
 
@@ -402,10 +155,7 @@ export const uploadArtistPhoto = async (req: Request, res: Response) => {
 
     await profile.update({ foto_perfil: novaFoto });
 
-    res.json({
-      message: 'Foto de perfil atualizada com sucesso',
-      foto_perfil: novaFoto,
-    });
+    res.json({ message: 'Foto de perfil atualizada com sucesso', foto_perfil: novaFoto });
   } catch (error) {
     if (req.file) {
       uploadService.deleteFile(uploadService.getRelativePath(req.file));
