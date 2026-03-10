@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
@@ -26,6 +27,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(generalLimiter);
 
