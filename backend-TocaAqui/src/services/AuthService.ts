@@ -7,6 +7,7 @@ import { generateToken } from '../utils/jwt';
 import { validateEmailFormat, validatePasswordFormat } from './userValidationServices';
 import redisService from '../config/redis';
 import { sendPasswordResetEmail, sendVerificationEmail } from './EmailService';
+import { AppError } from '../errors/AppError';
 
 export interface RegisterParams {
   nome: string;
@@ -25,17 +26,17 @@ export class AuthService {
     const { nome, email, senha, tipo_usuario } = params;
 
     const emailError = validateEmailFormat(email);
-    if (emailError) throw { statusCode: 400, message: emailError };
+    if (emailError) throw new AppError(emailError, 400);
 
     const passwordError = validatePasswordFormat(senha);
-    if (passwordError) throw { statusCode: 400, message: passwordError };
+    if (passwordError) throw new AppError(passwordError, 400);
 
     const rolesValidas = ['admin', 'establishment_owner', 'artist', 'common_user'];
     const role =
       tipo_usuario && rolesValidas.includes(tipo_usuario) ? tipo_usuario : 'common_user';
 
     const existingUser = await UserModel.findOne({ where: { email } });
-    if (existingUser) throw { statusCode: 400, message: 'Email já está em uso' };
+    if (existingUser) throw new AppError('Email já está em uso', 400);
 
     const hashedPassword = await bcrypt.hash(senha, 10);
     const user = await UserModel.create({ nome, email, senha: hashedPassword, role: role as any, email_verificado: false });
@@ -51,13 +52,13 @@ export class AuthService {
 
   async login(email: string, senha: string): Promise<LoginResult> {
     const user = await UserModel.findOne({ where: { email } });
-    if (!user) throw { statusCode: 401, message: 'Credenciais inválidas' };
+    if (!user) throw new AppError('Credenciais inválidas', 401);
 
     const isValid = await bcrypt.compare(senha, user.senha);
-    if (!isValid) throw { statusCode: 401, message: 'Credenciais inválidas' };
+    if (!isValid) throw new AppError('Credenciais inválidas', 401);
 
     if (!user.email_verificado) {
-      throw { statusCode: 403, message: 'Email não verificado. Verifique sua caixa de entrada.' };
+      throw new AppError('Email não verificado. Verifique sua caixa de entrada.', 403);
     }
 
     const token = generateToken({ id: user.id, email: user.email, role: user.role });
@@ -82,10 +83,10 @@ export class AuthService {
 
   async resetPassword(token: string, nova_senha: string) {
     const userId = await redisService.getClient().get(`reset:${token}`);
-    if (!userId) throw { statusCode: 400, message: 'Token inválido ou expirado.' };
+    if (!userId) throw new AppError('Token inválido ou expirado.', 400);
 
     const user = await UserModel.findByPk(userId);
-    if (!user) throw { statusCode: 404, message: 'Usuário não encontrado.' };
+    if (!user) throw new AppError('Usuário não encontrado.', 404);
 
     const hashedPassword = await bcrypt.hash(nova_senha, 10);
     await user.update({ senha: hashedPassword });
@@ -94,10 +95,10 @@ export class AuthService {
 
   async verifyEmail(token: string) {
     const userId = await redisService.getClient().get(`verify:${token}`);
-    if (!userId) throw { statusCode: 400, message: 'Token inválido ou expirado.' };
+    if (!userId) throw new AppError('Token inválido ou expirado.', 400);
 
     const user = await UserModel.findByPk(userId);
-    if (!user) throw { statusCode: 404, message: 'Usuário não encontrado.' };
+    if (!user) throw new AppError('Usuário não encontrado.', 404);
 
     if (user.email_verificado) return { alreadyVerified: true };
 
@@ -117,7 +118,7 @@ export class AuthService {
         { model: ArtistProfileModel, as: 'ArtistProfiles' },
       ],
     });
-    if (!user) throw { statusCode: 404, message: 'Usuário não encontrado' };
+    if (!user) throw new AppError('Usuário não encontrado', 404);
     return user;
   }
 
@@ -135,11 +136,11 @@ export class AuthService {
       where: { endereco_id: data.endereco_id, esta_ativo: true },
     });
     if (existing) {
-      throw {
-        statusCode: 400,
-        message: 'Este endereço já está sendo utilizado por outro estabelecimento ativo',
-        extra: { id: existing.id, nome: existing.nome_estabelecimento },
-      };
+      throw new AppError(
+        'Este endereço já está sendo utilizado por outro estabelecimento ativo',
+        400,
+        { estabelecimento_existente: { id: existing.id, nome: existing.nome_estabelecimento } }
+      );
     }
 
     return EstablishmentProfileModel.create({
@@ -172,3 +173,4 @@ export class AuthService {
 }
 
 export const authService = new AuthService();
+

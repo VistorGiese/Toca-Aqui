@@ -16,6 +16,7 @@ import BandManagementRoutes from "./routes/BandManagementRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
 import EstablishmentRoutes from "./routes/EstablishmentRoutes";
 import NotificationRoutes from "./routes/NotificationRoutes";
+import { errorHandler } from "./middleware/errorHandler";
 
 import './models/associations';
 import redisService from './config/redis';
@@ -84,6 +85,9 @@ app.get("/health", async (req, res) => {
     });
   }
 });
+
+// Handler de erros centralizado — deve vir após todas as rotas
+app.use(errorHandler);
 
 sequelize
   .authenticate()
