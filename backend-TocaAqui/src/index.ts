@@ -89,8 +89,6 @@ sequelize
   .authenticate()
   .then(async () => {
     console.log("Banco de dados conectado com sucesso!");
-    await sequelize.sync();
-    console.log("Sincronização do banco concluída!");
 
     await pubSubService.initializeSubscribers();
     console.log("Redis Pub/Sub subscribers inicializados");
