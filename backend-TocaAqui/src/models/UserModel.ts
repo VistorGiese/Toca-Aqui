@@ -1,13 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../config/database';
-
-
-export enum UserRole {
-  ADMIN = 'admin',
-  ESTABLISHMENT_OWNER = 'establishment_owner',
-  ARTIST = 'artist',
-  COMMON_USER = 'common_user'
-}
+export { UserRole } from '../types/roles';
+import { UserRole } from '../types/roles';
 
 export interface UserAttributes {
   id?: number;
@@ -15,6 +9,7 @@ export interface UserAttributes {
   senha: string;
   nome: string;
   role?: UserRole;
+  email_verificado?: boolean;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -25,6 +20,7 @@ class UserModel extends Model<UserAttributes> implements UserAttributes {
   public senha!: string;
   public nome!: string;
   public role!: UserRole;
+  public email_verificado!: boolean;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -54,6 +50,11 @@ UserModel.init(
       allowNull: false,
       defaultValue: UserRole.COMMON_USER,
       comment: 'Role do usuário para RBAC (admin, establishment_owner, artist, common_user)'
+    },
+    email_verificado: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
   {

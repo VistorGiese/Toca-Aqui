@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole } from '../models/UserModel';
+import { UserRole } from '../types/roles';
 
 export const registroSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter ao menos 2 caracteres').trim(),
