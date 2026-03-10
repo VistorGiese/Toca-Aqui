@@ -1,5 +1,5 @@
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { cpf } from "cpf-cnpj-validator";
 
 export const validateName = (name: string): string | null => {
