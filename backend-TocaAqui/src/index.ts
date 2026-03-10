@@ -20,6 +20,7 @@ import './models/associations';
 import redisService from './config/redis';
 import pubSubService from './services/PubSubService';
 import { generalLimiter } from './middleware/rateLimiter';
+import { initCronJobs } from './services/CronService';
 
 dotenv.config();
 
@@ -91,6 +92,8 @@ sequelize
 
     await pubSubService.initializeSubscribers();
     console.log("Redis Pub/Sub subscribers inicializados");
+
+    initCronJobs();
 
     app.listen(PORT, () => {
       console.log(`Servidor rodando na porta ${PORT}`);
