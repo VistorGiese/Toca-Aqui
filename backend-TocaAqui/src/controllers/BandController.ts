@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import sequelize from "../config/database";
 import BandModel from "../models/BandModel";
 import { uploadService } from "../services/UploadService";
@@ -88,16 +89,26 @@ export const getBands = async (req: Request, res: Response) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const offset = (page - 1) * limit;
 
-    const cacheKey = `bandas:list:p${page}:l${limit}`;
-    const cachedData = await redisService.get<any>(cacheKey);
+    const { nome, genero } = req.query as Record<string, string>;
 
+    const where: any = {};
+    if (nome)   where.nome_banda        = { [Op.like]: `%${nome}%` };
+    if (genero) where.generos_musicais  = { [Op.like]: `%${genero}%` };
+
+    const sortedParams = Object.entries(req.query)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join(':');
+    const cacheKey = `bandas:list:${sortedParams || 'all'}`;
+
+    const cachedData = await redisService.get<any>(cacheKey);
     if (cachedData) {
       console.log(`Cache HIT: ${cacheKey}`);
       return res.json({ ...cachedData, source: 'cache' });
     }
 
-    console.log(`Cache MISS: ${cacheKey} - Buscando do banco de dados...`);
-    const { count, rows } = await BandModel.findAndCountAll({ limit, offset });
+    console.log(`Cache MISS: ${cacheKey}`);
+    const { count, rows } = await BandModel.findAndCountAll({ where, limit, offset });
 
     const payload = {
       data: rows,

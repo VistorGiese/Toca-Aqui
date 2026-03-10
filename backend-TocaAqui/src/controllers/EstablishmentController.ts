@@ -13,7 +13,21 @@ export const listEstablishments = async (req: Request, res: Response) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const offset = (page - 1) * limit;
 
-    const cacheKey = `estabelecimentos:list:p${page}:l${limit}`;
+    const { nome, tipo, cidade, genero } = req.query as Record<string, string>;
+
+    const where: any = { esta_ativo: true };
+    if (nome)   where.nome_estabelecimento = { [Op.like]: `%${nome}%` };
+    if (tipo)   where.tipo_estabelecimento = tipo;
+    if (genero) where.generos_musicais     = { [Op.like]: `%${genero}%` };
+
+    const addressWhere: any = {};
+    if (cidade) addressWhere.cidade = { [Op.like]: `%${cidade}%` };
+
+    const sortedParams = Object.entries(req.query)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join(':');
+    const cacheKey = `estabelecimentos:list:${sortedParams || 'all'}`;
 
     const cachedData = await redisService.get<any>(cacheKey);
     if (cachedData) {
@@ -23,9 +37,14 @@ export const listEstablishments = async (req: Request, res: Response) => {
     console.log(`[CACHE MISS] ${cacheKey}`);
 
     const { count, rows } = await EstablishmentProfileModel.findAndCountAll({
-      where: { esta_ativo: true },
+      where,
       include: [
-        { model: AddressModel, as: 'Address' },
+        {
+          model: AddressModel,
+          as: 'Address',
+          where: Object.keys(addressWhere).length ? addressWhere : undefined,
+          required: !!cidade,
+        },
         { model: UserModel, as: 'User', attributes: ['id', 'nome', 'email'] },
       ],
       order: [['created_at', 'DESC']],

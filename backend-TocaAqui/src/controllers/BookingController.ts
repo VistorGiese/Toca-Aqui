@@ -43,7 +43,17 @@ export const getBookings = async (req: Request, res: Response) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const offset = (page - 1) * limit;
 
+    const { data_inicio, data_fim, status, estabelecimento_id } = req.query as Record<string, string>;
+
+    const where: any = {};
+    if (data_inicio && data_fim) where.data_show = { [Op.between]: [data_inicio, data_fim] };
+    else if (data_inicio)        where.data_show = { [Op.gte]: data_inicio };
+    else if (data_fim)           where.data_show = { [Op.lte]: data_fim };
+    if (status)           where.status = status;
+    if (estabelecimento_id) where.perfil_estabelecimento_id = estabelecimento_id;
+
     const { count, rows } = await BookingModel.findAndCountAll({
+      where,
       order: [['data_show', 'DESC']],
       limit,
       offset,
