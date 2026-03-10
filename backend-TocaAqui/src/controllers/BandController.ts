@@ -4,22 +4,20 @@ import sequelize from "../config/database";
 import BandModel from "../models/BandModel";
 import { uploadService } from "../services/UploadService";
 import redisService from "../config/redis";
-
-
-const CACHE_TTL = 3000;
+import { CACHE_TTL, CACHE_KEYS } from "../config/cache";
 
 export const createBand = async (req: Request, res: Response) => {
   try {
-    const { 
-      nome_banda, 
-      nome, 
-      descricao, 
-      biografia, 
-      genero_musical, 
+    const {
+      nome_banda,
+      nome,
+      descricao,
+      biografia,
+      genero_musical,
       generos_musicais,
-      data_criacao 
+      data_criacao
     } = req.body;
-    
+
     let imagemPath: string | undefined;
     if (req.file) {
       imagemPath = uploadService.getRelativePath(req.file);
@@ -53,17 +51,16 @@ export const createBand = async (req: Request, res: Response) => {
       }
     }
 
-    const band = await BandModel.create({ 
-      nome_banda: nomeBanda, 
-      descricao: descricaoBanda, 
+    const band = await BandModel.create({
+      nome_banda: nomeBanda,
+      descricao: descricaoBanda,
       imagem: imagemPath,
       generos_musicais: generos,
       data_criacao: data_criacao || new Date()
     });
-    
+
     await redisService.invalidatePattern('bandas:*');
-    console.log('Cache invalidado: bandas:* (nova banda criada)');
-    
+
     res.status(201).json({
       message: "Banda criada com sucesso",
       banda: band,
@@ -77,7 +74,6 @@ export const createBand = async (req: Request, res: Response) => {
   } catch (error) {
     if (req.file) {
       uploadService.deleteFile(uploadService.getRelativePath(req.file));
-      console.log(`Imagem deletada devido a erro na criação da banda`);
     }
     res.status(400).json({ error: "Erro ao criar banda", details: error });
   }
@@ -99,15 +95,15 @@ export const getBands = async (req: Request, res: Response) => {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([k, v]) => `${k}=${v}`)
       .join(':');
-    const cacheKey = `bandas:list:${sortedParams || 'all'}`;
+    const cacheKey = CACHE_KEYS.bandas(sortedParams || 'all');
 
     const cachedData = await redisService.get<any>(cacheKey);
     if (cachedData) {
-      console.log(`Cache HIT: ${cacheKey}`);
-      return res.json({ ...cachedData, source: 'cache' });
+      console.log(`[CACHE HIT] ${cacheKey}`);
+      return res.json(cachedData);
     }
 
-    console.log(`Cache MISS: ${cacheKey}`);
+    console.log(`[CACHE MISS] ${cacheKey}`);
     const { count, rows } = await BandModel.findAndCountAll({ where, limit, offset });
 
     const payload = {
@@ -120,8 +116,8 @@ export const getBands = async (req: Request, res: Response) => {
       },
     };
 
-    await redisService.set(cacheKey, payload, CACHE_TTL);
-    res.json({ ...payload, source: 'database' });
+    await redisService.set(cacheKey, payload, CACHE_TTL.LONG);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar bandas", details: error });
   }
@@ -130,33 +126,23 @@ export const getBands = async (req: Request, res: Response) => {
 export const getBandById = async (req: Request, res: Response) => {
   try {
     const bandId = req.params.id as string;
-    const cacheKey = `banda:${bandId}`;
-    
+    const cacheKey = CACHE_KEYS.banda(bandId);
+
     const cachedData = await redisService.get<any>(cacheKey);
-    
     if (cachedData) {
-      console.log(`Cache HIT: ${cacheKey}`);
-      return res.json({
-        data: cachedData,
-        source: 'cache'
-      });
+      console.log(`[CACHE HIT] ${cacheKey}`);
+      return res.json({ data: cachedData });
     }
 
-    console.log(`Cache MISS: ${cacheKey} - Buscando do banco de dados...`);
+    console.log(`[CACHE MISS] ${cacheKey}`);
     const band = await BandModel.findByPk(bandId);
-    
+
     if (!band) {
       return res.status(404).json({ error: "Banda não encontrada" });
     }
-    
 
-    await redisService.set(cacheKey, band, CACHE_TTL);
-    console.log(`Cache armazenado: ${cacheKey} (TTL: ${CACHE_TTL}s)`);
-    
-    res.json({
-      data: band,
-      source: 'database'
-    });
+    await redisService.set(cacheKey, band, CACHE_TTL.LONG);
+    res.json({ data: band });
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar banda", details: error });
   }
@@ -167,7 +153,7 @@ export const updateBand = async (req: Request, res: Response) => {
     const bandId = req.params.id as string;
     const band = await BandModel.findByPk(bandId);
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
-    
+
     const novoNome = req.body.nome_banda || req.body.nome;
     if (novoNome && novoNome !== band.nome_banda) {
       const existingBand = await BandModel.findOne({
@@ -180,7 +166,6 @@ export const updateBand = async (req: Request, res: Response) => {
       if (existingBand && existingBand.id !== band.id) {
         if (req.file) {
           uploadService.deleteFile(uploadService.getRelativePath(req.file));
-          console.log(`Imagem deletada: nome de banda duplicado detectado`);
         }
         return res.status(400).json({
           error: 'Já existe uma banda cadastrada com este nome',
@@ -191,24 +176,21 @@ export const updateBand = async (req: Request, res: Response) => {
         });
       }
     }
-    
+
     if (req.file && band.imagem) {
       uploadService.deleteFile(band.imagem);
-      console.log(`Imagem antiga deletada: ${band.imagem}`);
     }
 
     const updateData = { ...req.body };
     if (req.file) {
       updateData.imagem = uploadService.getRelativePath(req.file);
-      console.log(`Nova imagem da banda: ${updateData.imagem}`);
     }
 
     await band.update(updateData);
 
-    await redisService.invalidate(`banda:${bandId}`);
+    await redisService.invalidate(CACHE_KEYS.banda(bandId));
     await redisService.invalidatePattern('bandas:*');
-    console.log(`Cache invalidado: banda:${bandId} e bandas:* (banda atualizada)`);
-    
+
     res.json({
       message: "Banda atualizada com sucesso",
       banda: band,
@@ -222,7 +204,6 @@ export const updateBand = async (req: Request, res: Response) => {
   } catch (error) {
     if (req.file) {
       uploadService.deleteFile(uploadService.getRelativePath(req.file));
-      console.log(`Imagem deletada devido a erro na atualização da banda`);
     }
     res.status(400).json({ error: "Erro ao atualizar banda", details: error });
   }
@@ -233,19 +214,16 @@ export const deleteBand = async (req: Request, res: Response) => {
     const bandId = req.params.id as string;
     const band = await BandModel.findByPk(bandId);
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
-    
 
     if (band.imagem) {
       uploadService.deleteFile(band.imagem);
-      console.log(`Imagem da banda deletada: ${band.imagem}`);
     }
 
     await band.destroy();
-    
-    await redisService.invalidate(`banda:${bandId}`);
+
+    await redisService.invalidate(CACHE_KEYS.banda(bandId));
     await redisService.invalidatePattern('bandas:*');
-    console.log(`Cache invalidado: banda:${bandId} e bandas:* (banda deletada)`);
-    
+
     res.json({ message: "Banda removida com sucesso" });
   } catch (error) {
     res.status(500).json({ error: "Erro ao remover banda", details: error });

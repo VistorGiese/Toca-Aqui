@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import BookingModel, { BookingStatus } from "../models/BookingModel";
 import BandApplicationModel from "../models/BandApplicationModel";
-
+import redisService from "../config/redis";
+import { CACHE_TTL, CACHE_KEYS } from "../config/cache";
 
 export const createBooking = async (req: Request, res: Response) => {
   try {
@@ -31,6 +32,9 @@ export const createBooking = async (req: Request, res: Response) => {
       horario_fim,
       status: BookingStatus.PENDENTE,
     });
+
+    await redisService.invalidatePattern('agendamentos:*');
+
     res.status(201).json(booking);
   } catch (error) {
     res.status(400).json({ error: "Erro ao criar evento", details: error });
@@ -52,6 +56,19 @@ export const getBookings = async (req: Request, res: Response) => {
     if (status)           where.status = status;
     if (estabelecimento_id) where.perfil_estabelecimento_id = estabelecimento_id;
 
+    const sortedParams = Object.entries(req.query)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join(':');
+    const cacheKey = CACHE_KEYS.agendamentos(sortedParams || 'all');
+
+    const cachedData = await redisService.get<any>(cacheKey);
+    if (cachedData) {
+      console.log(`[CACHE HIT] ${cacheKey}`);
+      return res.json(cachedData);
+    }
+    console.log(`[CACHE MISS] ${cacheKey}`);
+
     const { count, rows } = await BookingModel.findAndCountAll({
       where,
       order: [['data_show', 'DESC']],
@@ -59,7 +76,7 @@ export const getBookings = async (req: Request, res: Response) => {
       offset,
     });
 
-    res.json({
+    const payload = {
       data: rows,
       pagination: {
         total: count,
@@ -67,7 +84,10 @@ export const getBookings = async (req: Request, res: Response) => {
         limit,
         totalPages: Math.ceil(count / limit),
       },
-    });
+    };
+
+    await redisService.set(cacheKey, payload, CACHE_TTL.MEDIUM);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar agendamentos", details: error });
   }
@@ -75,9 +95,20 @@ export const getBookings = async (req: Request, res: Response) => {
 
 export const getBookingById = async (req: Request, res: Response) => {
   try {
-    const booking = await BookingModel.findByPk(req.params.id as string);
-    if (!booking)
-      return res.status(404).json({ error: "Agendamento não encontrado" });
+    const id = req.params.id as string;
+    const cacheKey = CACHE_KEYS.agendamento(id);
+
+    const cachedData = await redisService.get<any>(cacheKey);
+    if (cachedData) {
+      console.log(`[CACHE HIT] ${cacheKey}`);
+      return res.json(cachedData);
+    }
+    console.log(`[CACHE MISS] ${cacheKey}`);
+
+    const booking = await BookingModel.findByPk(id);
+    if (!booking) return res.status(404).json({ error: "Agendamento não encontrado" });
+
+    await redisService.set(cacheKey, booking, CACHE_TTL.MEDIUM);
     res.json(booking);
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar agendamento", details: error });
@@ -86,9 +117,9 @@ export const getBookingById = async (req: Request, res: Response) => {
 
 export const updateBooking = async (req: Request, res: Response) => {
   try {
-    const booking = await BookingModel.findByPk(req.params.id as string);
-    if (!booking)
-      return res.status(404).json({ error: "Agendamento não encontrado" });
+    const id = req.params.id as string;
+    const booking = await BookingModel.findByPk(id);
+    if (!booking) return res.status(404).json({ error: "Agendamento não encontrado" });
 
     const candidaturas = await BandApplicationModel.count({ where: { evento_id: booking.id } });
     if (candidaturas > 0) {
@@ -96,6 +127,10 @@ export const updateBooking = async (req: Request, res: Response) => {
     }
 
     await booking.update(req.body);
+
+    await redisService.invalidate(CACHE_KEYS.agendamento(id));
+    await redisService.invalidatePattern('agendamentos:*');
+
     res.json(booking);
   } catch (error) {
     res.status(400).json({ error: "Erro ao atualizar agendamento", details: error });
@@ -104,9 +139,9 @@ export const updateBooking = async (req: Request, res: Response) => {
 
 export const deleteBooking = async (req: Request, res: Response) => {
   try {
-    const booking = await BookingModel.findByPk(req.params.id as string);
-    if (!booking)
-      return res.status(404).json({ error: "Agendamento não encontrado" });
+    const id = req.params.id as string;
+    const booking = await BookingModel.findByPk(id);
+    if (!booking) return res.status(404).json({ error: "Agendamento não encontrado" });
 
     const candidaturas = await BandApplicationModel.count({ where: { evento_id: booking.id } });
     if (candidaturas > 0) {
@@ -114,6 +149,10 @@ export const deleteBooking = async (req: Request, res: Response) => {
     }
 
     await booking.destroy();
+
+    await redisService.invalidate(CACHE_KEYS.agendamento(id));
+    await redisService.invalidatePattern('agendamentos:*');
+
     res.json({ message: "Agendamento removido com sucesso" });
   } catch (error) {
     res.status(500).json({ error: "Erro ao remover agendamento", details: error });

@@ -5,8 +5,7 @@ import AddressModel from '../models/AddressModel';
 import UserModel from '../models/UserModel';
 import redisService from '../config/redis';
 import { uploadService } from '../services/UploadService';
-
-const CACHE_TTL = 3000; 
+import { CACHE_TTL, CACHE_KEYS } from '../config/cache';
 
 export const listEstablishments = async (req: Request, res: Response) => {
   try {
@@ -28,7 +27,7 @@ export const listEstablishments = async (req: Request, res: Response) => {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([k, v]) => `${k}=${v}`)
       .join(':');
-    const cacheKey = `estabelecimentos:list:${sortedParams || 'all'}`;
+    const cacheKey = CACHE_KEYS.estabelecimentos(sortedParams || 'all');
 
     const cachedData = await redisService.get<any>(cacheKey);
     if (cachedData) {
@@ -64,7 +63,7 @@ export const listEstablishments = async (req: Request, res: Response) => {
       },
     };
 
-    await redisService.set(cacheKey, response, CACHE_TTL);
+    await redisService.set(cacheKey, response, CACHE_TTL.LONG);
     res.json(response);
   } catch (error) {
     console.error('Erro ao listar estabelecimentos:', error);
@@ -75,7 +74,7 @@ export const listEstablishments = async (req: Request, res: Response) => {
 export const getEstablishment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const cacheKey = `estabelecimento:${id}`;
+    const cacheKey = CACHE_KEYS.estabelecimento(id as string);
 
     const cachedData = await redisService.get<any>(cacheKey);
     if (cachedData) {
@@ -108,7 +107,7 @@ export const getEstablishment = async (req: Request, res: Response) => {
     };
 
     // Salvar no cache
-    await redisService.set(cacheKey, response, CACHE_TTL);
+    await redisService.set(cacheKey, response, CACHE_TTL.LONG);
 
     res.json(response);
   } catch (error) {
@@ -180,7 +179,7 @@ export const updateEstablishment = async (req: Request, res: Response) => {
     });
 
     // Invalidar cache
-    await redisService.invalidate(`estabelecimento:${id}`);
+    await redisService.invalidate(CACHE_KEYS.estabelecimento(id as string));
     await redisService.invalidatePattern('estabelecimentos:*');
 
     res.json({
@@ -213,7 +212,7 @@ export const deleteEstablishment = async (req: Request, res: Response) => {
     await establishment.update({ esta_ativo: false });
 
     // Invalidar cache
-    await redisService.invalidate(`estabelecimento:${id}`);
+    await redisService.invalidate(CACHE_KEYS.estabelecimento(id as string));
     await redisService.invalidatePattern('estabelecimentos:*');
 
     res.json({
@@ -260,7 +259,7 @@ export const uploadEstablishmentPhotos = async (req: Request, res: Response) => 
 
     await establishment.update({ fotos: JSON.stringify(fotosAtualizadas) });
 
-    await redisService.invalidate(`estabelecimento:${id}`);
+    await redisService.invalidate(CACHE_KEYS.estabelecimento(id as string));
     await redisService.invalidatePattern('estabelecimentos:*');
 
     res.json({
@@ -314,7 +313,7 @@ export const removeEstablishmentPhoto = async (req: Request, res: Response) => {
 
     uploadService.deleteFile(fotoParaRemover);
 
-    await redisService.invalidate(`estabelecimento:${id}`);
+    await redisService.invalidate(CACHE_KEYS.estabelecimento(id as string));
     await redisService.invalidatePattern('estabelecimentos:*');
 
     res.json({

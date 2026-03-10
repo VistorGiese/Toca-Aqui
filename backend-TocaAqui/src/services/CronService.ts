@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { Op } from 'sequelize';
 import BookingModel, { BookingStatus } from '../models/BookingModel';
+import redisService from '../config/redis';
 
 const markPastEventsAsRealizado = async () => {
   try {
@@ -18,6 +19,7 @@ const markPastEventsAsRealizado = async () => {
 
     if (updated > 0) {
       console.log(`[CronService] ${updated} evento(s) marcado(s) como realizado.`);
+      await redisService.invalidatePattern('agendamentos:*');
     }
   } catch (error) {
     console.error('[CronService] Erro ao atualizar status de eventos:', error);
