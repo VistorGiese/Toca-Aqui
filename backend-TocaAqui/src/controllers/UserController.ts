@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import UserModel from '../models/UserModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
@@ -7,6 +8,7 @@ import { generateToken } from '../utils/jwt';
 import { validateEmailFormat, validatePasswordFormat } from '../services/userValidationServices';
 import redisService from '../config/redis';
 import { AuthRequest } from '../middleware/authmiddleware';
+import { sendPasswordResetEmail } from '../services/EmailService';
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -278,5 +280,57 @@ export const logoutUser = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'Logout realizado com sucesso' });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao realizar logout' });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const user = await UserModel.findOne({ where: { email } });
+
+    // Resposta genérica para não revelar se o email existe
+    if (!user) {
+      return res.json({ message: 'Se este email estiver cadastrado, você receberá as instruções em breve.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const TTL_SECONDS = 60 * 60; // 1 hora
+
+    await redisService.getClient().setex(`reset:${token}`, TTL_SECONDS, String(user.id));
+
+    await sendPasswordResetEmail(email, token);
+
+    res.json({ message: 'Se este email estiver cadastrado, você receberá as instruções em breve.' });
+  } catch (error) {
+    console.error('Erro ao solicitar redefinição de senha:', error);
+    res.status(500).json({ error: 'Erro ao processar solicitação' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, nova_senha } = req.body;
+
+    const userId = await redisService.getClient().get(`reset:${token}`);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Token inválido ou expirado.' });
+    }
+
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(nova_senha, 10);
+    await user.update({ senha: hashedPassword });
+
+    await redisService.getClient().del(`reset:${token}`);
+
+    res.json({ message: 'Senha redefinida com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao redefinir senha:', error);
+    res.status(500).json({ error: 'Erro ao redefinir senha' });
   }
 };

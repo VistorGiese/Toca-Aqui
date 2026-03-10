@@ -33,3 +33,12 @@ export const createArtistProfileSchema = z.object({
   url_portfolio: z.string().url('URL do portfólio inválida').optional().or(z.literal('')),
   foto_perfil: z.string().optional(),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Formato de email inválido').toLowerCase().trim(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token é obrigatório'),
+  nova_senha: z.string().min(8, 'A nova senha deve ter ao menos 8 caracteres'),
+});
