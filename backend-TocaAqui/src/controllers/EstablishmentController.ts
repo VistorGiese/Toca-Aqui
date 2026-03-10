@@ -9,8 +9,12 @@ const CACHE_TTL = 3000;
 
 export const listEstablishments = async (req: Request, res: Response) => {
   try {
-    const cacheKey = 'estabelecimentos:list';
-    
+    const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
+    const cacheKey = `estabelecimentos:list:p${page}:l${limit}`;
+
     const cachedData = await redisService.get<any>(cacheKey);
     if (cachedData) {
       console.log(`[CACHE HIT] ${cacheKey}`);
@@ -18,31 +22,29 @@ export const listEstablishments = async (req: Request, res: Response) => {
     }
     console.log(`[CACHE MISS] ${cacheKey}`);
 
-    const establishments = await EstablishmentProfileModel.findAll({
+    const { count, rows } = await EstablishmentProfileModel.findAndCountAll({
       where: { esta_ativo: true },
       include: [
-        {
-          model: AddressModel,
-          as: 'Address',
-        },
-        {
-          model: UserModel,
-          as: 'User',
-          attributes: ['id', 'nome', 'email'],
-        },
+        { model: AddressModel, as: 'Address' },
+        { model: UserModel, as: 'User', attributes: ['id', 'nome', 'email'] },
       ],
       order: [['created_at', 'DESC']],
+      limit,
+      offset,
     });
 
     const response = {
       success: true,
-      count: establishments.length,
-      data: establishments,
+      data: rows,
+      pagination: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit),
+      },
     };
 
-    // Salvar no cache
     await redisService.set(cacheKey, response, CACHE_TTL);
-
     res.json(response);
   } catch (error) {
     console.error('Erro ao listar estabelecimentos:', error);

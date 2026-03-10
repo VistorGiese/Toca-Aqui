@@ -37,10 +37,27 @@ export const createBooking = async (req: Request, res: Response) => {
   }
 };
 
-export const getBookings = async (_req: Request, res: Response) => {
+export const getBookings = async (req: Request, res: Response) => {
   try {
-    const bookings = await BookingModel.findAll();
-    res.json(bookings);
+    const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await BookingModel.findAndCountAll({
+      order: [['data_show', 'DESC']],
+      limit,
+      offset,
+    });
+
+    res.json({
+      data: rows,
+      pagination: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit),
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar agendamentos", details: error });
   }

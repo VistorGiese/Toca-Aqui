@@ -82,30 +82,35 @@ export const createBand = async (req: Request, res: Response) => {
   }
 };
 
-export const getBands = async (_req: Request, res: Response) => {
+export const getBands = async (req: Request, res: Response) => {
   try {
-    const cacheKey = 'bandas:list';
-    
-    const cachedData = await redisService.get<any[]>(cacheKey);
-    
+    const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
+    const cacheKey = `bandas:list:p${page}:l${limit}`;
+    const cachedData = await redisService.get<any>(cacheKey);
+
     if (cachedData) {
       console.log(`Cache HIT: ${cacheKey}`);
-      return res.json({
-        data: cachedData,
-        source: 'cache'
-      });
+      return res.json({ ...cachedData, source: 'cache' });
     }
-    
+
     console.log(`Cache MISS: ${cacheKey} - Buscando do banco de dados...`);
-    const bands = await BandModel.findAll();
-    
-    await redisService.set(cacheKey, bands, CACHE_TTL);
-    console.log(`Cache armazenado: ${cacheKey} (TTL: ${CACHE_TTL}s)`);
-    
-    res.json({
-      data: bands,
-      source: 'database'
-    });
+    const { count, rows } = await BandModel.findAndCountAll({ limit, offset });
+
+    const payload = {
+      data: rows,
+      pagination: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit),
+      },
+    };
+
+    await redisService.set(cacheKey, payload, CACHE_TTL);
+    res.json({ ...payload, source: 'database' });
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar bandas", details: error });
   }
