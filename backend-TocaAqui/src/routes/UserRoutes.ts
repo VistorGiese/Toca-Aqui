@@ -8,6 +8,7 @@ import {
   logoutUser,
   forgotPassword,
   resetPassword,
+  verifyEmail,
 } from '../controllers/UserController';
 import { authMiddleware } from '../middleware/authmiddleware';
 import { authLimiter } from '../middleware/rateLimiter';
@@ -28,6 +29,7 @@ router.post('/login', authLimiter, validate(loginSchema), loginUser);
 router.post('/logout', authMiddleware, logoutUser);
 router.post('/esqueci-senha', authLimiter, validate(forgotPasswordSchema), forgotPassword);
 router.post('/redefinir-senha', validate(resetPasswordSchema), resetPassword);
+router.get('/verificar-email', verifyEmail);
 router.get('/perfil', authMiddleware, getUserProfile);
 router.post('/perfil-estabelecimento', authMiddleware, validate(createEstablishmentProfileSchema), createEstablishmentProfile);
 router.post('/perfil-artista', authMiddleware, validate(createArtistProfileSchema), createArtistProfile);

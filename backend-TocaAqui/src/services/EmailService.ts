@@ -9,6 +9,24 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export const sendVerificationEmail = async (email: string, token: string): Promise<void> => {
+  const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email?token=${token}`;
+
+  await transporter.sendMail({
+    from: `"Toca Aqui" <${process.env.SMTP_FROM || 'noreply@tocaaqui.com'}>`,
+    to: email,
+    subject: 'Confirme seu email — Toca Aqui',
+    html: `
+      <h2>Bem-vindo ao Toca Aqui!</h2>
+      <p>Clique no botão abaixo para confirmar seu email. O link expira em <strong>24 horas</strong>.</p>
+      <a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#6d28d9;color:#fff;border-radius:6px;text-decoration:none;">
+        Confirmar email
+      </a>
+      <p>Se você não criou uma conta, ignore este email.</p>
+    `,
+  });
+};
+
 export const sendPasswordResetEmail = async (email: string, token: string): Promise<void> => {
   const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/redefinir-senha?token=${token}`;
 

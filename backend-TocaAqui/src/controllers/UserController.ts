@@ -8,7 +8,7 @@ import { generateToken } from '../utils/jwt';
 import { validateEmailFormat, validatePasswordFormat } from '../services/userValidationServices';
 import redisService from '../config/redis';
 import { AuthRequest } from '../middleware/authmiddleware';
-import { sendPasswordResetEmail } from '../services/EmailService';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/EmailService';
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -46,22 +46,23 @@ export const registerUser = async (req: Request, res: Response) => {
       email,
       senha: hashedPassword,
       role,
+      email_verificado: false,
     });
 
-    const token = generateToken({ 
-      id: user.id, 
-      email: user.email,
-      role: user.role 
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    await redisService.getClient().setex(`verify:${verifyToken}`, 60 * 60 * 24, String(user.id));
+    await sendVerificationEmail(email, verifyToken).catch((err) => {
+      console.error('Falha ao enviar email de verificação:', err);
     });
 
     res.status(201).json({
-      message: 'Usuário criado com sucesso',
-      token,
+      message: 'Usuário criado com sucesso. Verifique seu email para ativar a conta.',
       user: {
         id: user.id,
         nome: user.nome,
         email: user.email,
         role: user.role,
+        email_verificado: false,
       },
     });
   } catch (error) {
@@ -86,6 +87,10 @@ export const loginUser = async (req: Request, res: Response) => {
     const isValidPassword = await bcrypt.compare(senha, user.senha);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+
+    if (!user.email_verificado) {
+      return res.status(403).json({ error: 'Email não verificado. Verifique sua caixa de entrada.' });
     }
 
     const token = generateToken({ 
@@ -332,5 +337,38 @@ export const resetPassword = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Erro ao redefinir senha:', error);
     res.status(500).json({ error: 'Erro ao redefinir senha' });
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query as { token: string };
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token é obrigatório.' });
+    }
+
+    const userId = await redisService.getClient().get(`verify:${token}`);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Token inválido ou expirado.' });
+    }
+
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (user.email_verificado) {
+      return res.json({ message: 'Email já verificado.' });
+    }
+
+    await user.update({ email_verificado: true });
+    await redisService.getClient().del(`verify:${token}`);
+
+    res.json({ message: 'Email verificado com sucesso. Você já pode fazer login.' });
+  } catch (error) {
+    console.error('Erro ao verificar email:', error);
+    res.status(500).json({ error: 'Erro ao verificar email' });
   }
 };
