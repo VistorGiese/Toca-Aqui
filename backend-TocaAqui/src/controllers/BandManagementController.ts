@@ -64,16 +64,19 @@ export const getBandDetails = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const band = await BandModel.findByPk(id as string, {
+      attributes: ['id', 'nome_banda', 'descricao', 'generos_musicais', 'esta_ativo'],
       include: [
         {
           model: BandMemberModel,
           as: 'Members',
           where: { status: 'approved' },
           required: false,
+          attributes: ['id', 'funcao', 'e_lider', 'data_entrada'],
           include: [
             {
               model: ArtistProfileModel,
               as: 'ArtistProfile',
+              attributes: ['id', 'nome_artistico'],
               include: [
                 {
                   model: UserModel,
@@ -129,11 +132,13 @@ export const inviteMemberToBand = async (req: Request, res: Response) => {
         e_lider: true,
         status: 'approved',
       },
+      attributes: ['id'],
       include: [
         {
           model: ArtistProfileModel,
           as: 'ArtistProfile',
           where: { usuario_id: userId },
+          attributes: ['id'],
         },
       ],
     });
@@ -205,11 +210,13 @@ export const respondToBandInvitation = async (req: Request, res: Response) => {
         id: invitation_id,
         status: 'pending',
       },
+      attributes: ['id', 'status', 'data_entrada'],
       include: [
         {
           model: ArtistProfileModel,
           as: 'ArtistProfile',
           where: { usuario_id: userId },
+          attributes: ['id'],
         },
       ],
     });
@@ -250,16 +257,19 @@ export const getUserBands = async (req: Request, res: Response) => {
 
     const userArtistProfiles = await ArtistProfileModel.findAll({
       where: { usuario_id: userId },
+      attributes: ['id'],
       include: [
         {
           model: BandMemberModel,
           as: 'BandMemberships',
           where: { status: 'approved' },
           required: false,
+          attributes: ['id', 'funcao', 'e_lider', 'data_entrada'],
           include: [
             {
               model: BandModel,
               as: 'Band',
+              attributes: ['id', 'nome_banda', 'descricao', 'generos_musicais'],
             },
           ],
         },

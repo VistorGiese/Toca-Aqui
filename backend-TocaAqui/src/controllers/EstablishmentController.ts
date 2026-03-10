@@ -44,6 +44,7 @@ export const listEstablishments = async (req: Request, res: Response) => {
           as: 'Address',
           where: Object.keys(addressWhere).length ? addressWhere : undefined,
           required: !!cidade,
+          attributes: ['id', 'rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'],
         },
         { model: UserModel, as: 'User', attributes: ['id', 'nome', 'email'] },
       ],
@@ -88,6 +89,7 @@ export const getEstablishment = async (req: Request, res: Response) => {
         {
           model: AddressModel,
           as: 'Address',
+          attributes: ['id', 'rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'],
         },
         {
           model: UserModel,

@@ -58,11 +58,13 @@ export const getAllUsers = async (req: Request, res: Response) => {
           model: ArtistProfileModel,
           as: 'ArtistProfiles',
           required: false,
+          attributes: ['id', 'nome_artistico', 'foto_perfil'],
         },
         {
           model: EstablishmentProfileModel,
           as: 'EstablishmentProfiles',
           required: false,
+          attributes: ['id', 'nome_estabelecimento', 'tipo_estabelecimento'],
         },
       ],
       order: [['createdAt', 'DESC']],
@@ -306,11 +308,13 @@ export const getUserById = async (req: Request, res: Response) => {
           model: ArtistProfileModel,
           as: 'ArtistProfiles',
           required: false,
+          attributes: { exclude: ['created_at', 'updated_at'] },
         },
         {
           model: EstablishmentProfileModel,
           as: 'EstablishmentProfiles',
           required: false,
+          attributes: { exclude: ['created_at', 'updated_at'] },
         },
       ],
     });
@@ -364,6 +368,7 @@ export const getEventsByEstablishment = async (req: Request, res: Response) => {
 
     const events = await BookingModel.findAll({
       where: { perfil_estabelecimento_id: establishmentId },
+      attributes: { exclude: ['created_at', 'updated_at'] },
       include: [
         {
           model: EstablishmentProfileModel,
@@ -373,6 +378,7 @@ export const getEventsByEstablishment = async (req: Request, res: Response) => {
         {
           model: BandApplicationModel,
           as: 'BandApplications',
+          attributes: ['id', 'status', 'banda_id'],
           include: [
             {
               model: BandModel,
