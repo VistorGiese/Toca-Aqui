@@ -1,19 +1,20 @@
 import nodemailer from 'nodemailer';
+import { env } from '../config/env';
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.mailtrap.io',
-  port: parseInt(process.env.SMTP_PORT || '587'),
+  host: env.SMTP_HOST,
+  port: env.SMTP_PORT,
   auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
   },
 });
 
 export const sendVerificationEmail = async (email: string, token: string): Promise<void> => {
-  const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email?token=${token}`;
+  const verifyUrl = `${env.FRONTEND_URL}/verificar-email?token=${token}`;
 
   await transporter.sendMail({
-    from: `"Toca Aqui" <${process.env.SMTP_FROM || 'noreply@tocaaqui.com'}>`,
+    from: `"Toca Aqui" <${env.SMTP_FROM}>`,
     to: email,
     subject: 'Confirme seu email — Toca Aqui',
     html: `
@@ -28,10 +29,10 @@ export const sendVerificationEmail = async (email: string, token: string): Promi
 };
 
 export const sendPasswordResetEmail = async (email: string, token: string): Promise<void> => {
-  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/redefinir-senha?token=${token}`;
+  const resetUrl = `${env.FRONTEND_URL}/redefinir-senha?token=${token}`;
 
   await transporter.sendMail({
-    from: `"Toca Aqui" <${process.env.SMTP_FROM || 'noreply@tocaaqui.com'}>`,
+    from: `"Toca Aqui" <${env.SMTP_FROM}>`,
     to: email,
     subject: 'Redefinição de senha — Toca Aqui',
     html: `

@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { env } from './env';
 
 class RedisService {
   private static instance: RedisService;
@@ -7,8 +8,9 @@ class RedisService {
 
   private constructor() {
     this.client = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD,
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);
         return delay;
@@ -100,7 +102,6 @@ class RedisService {
       console.error(`Erro ao invalidar padrão [${pattern}]:`, error);
     }
   }
-
 
   public async exists(key: string): Promise<boolean> {
     try {

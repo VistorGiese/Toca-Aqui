@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import redisService from "../config/redis";
+import { env } from "../config/env";
 
 
 class PubSubService {
@@ -10,8 +11,9 @@ class PubSubService {
   constructor() {
     // criar cliente Redis dedicado para subscription
     this.subscriber = new Redis({
-      host: process.env.REDIS_HOST || "localhost",
-      port: parseInt(process.env.REDIS_PORT || "6379"),
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD,
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);
         return delay;

@@ -1,7 +1,7 @@
+import { env } from "./config/env"; // validate env vars at startup
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import dotenv from "dotenv";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
@@ -19,15 +19,13 @@ import NotificationRoutes from "./routes/NotificationRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 import './models/associations';
+import sequelize from "./config/database";
 import redisService from './config/redis';
 import pubSubService from './services/PubSubService';
 import { generalLimiter } from './middleware/rateLimiter';
 import { initCronJobs } from './services/CronService';
 
-dotenv.config();
-
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -54,14 +52,11 @@ app.use("/admin", AdminRoutes);
 app.use("/estabelecimentos", EstablishmentRoutes);
 app.use("/notificacoes", NotificationRoutes);
 
-import sequelize from "./config/database"; 
-
-
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.json({ message: "API funcionando!" });
 });
 
-app.get("/health", async (req, res) => {
+app.get("/health", async (_req, res) => {
   try {
     const dbHealthy = await sequelize.authenticate().then(() => true).catch(() => false);
     const redisHealthy = await redisService.healthCheck();
@@ -99,8 +94,8 @@ sequelize
 
     initCronJobs();
 
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
+    app.listen(env.PORT, () => {
+      console.log(`Servidor rodando na porta ${env.PORT}`);
     });
   })
   .catch((error) => {
