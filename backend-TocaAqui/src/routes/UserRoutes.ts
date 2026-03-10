@@ -9,6 +9,7 @@ import {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  uploadArtistPhoto,
 } from '../controllers/UserController';
 import { authMiddleware } from '../middleware/authmiddleware';
 import { authLimiter } from '../middleware/rateLimiter';
@@ -21,6 +22,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '../schemas/userSchemas';
+import { uploadService } from '../services/UploadService';
 
 const router = Router();
 
@@ -33,5 +35,6 @@ router.get('/verificar-email', verifyEmail);
 router.get('/perfil', authMiddleware, getUserProfile);
 router.post('/perfil-estabelecimento', authMiddleware, validate(createEstablishmentProfileSchema), createEstablishmentProfile);
 router.post('/perfil-artista', authMiddleware, validate(createArtistProfileSchema), createArtistProfile);
+router.patch('/perfil-artista/:id/foto', authMiddleware, uploadService.uploadSingle, uploadArtistPhoto);
 
 export default router;

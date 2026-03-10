@@ -4,6 +4,7 @@ import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import AddressModel from '../models/AddressModel';
 import UserModel from '../models/UserModel';
 import redisService from '../config/redis';
+import { uploadService } from '../services/UploadService';
 
 const CACHE_TTL = 3000; 
 
@@ -222,5 +223,106 @@ export const deleteEstablishment = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Erro ao excluir estabelecimento:', error);
     res.status(500).json({ error: 'Erro ao excluir estabelecimento' });
+  }
+};
+
+export const uploadEstablishmentPhotos = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+    }
+
+    const novasFotos = files.map((f) => uploadService.getRelativePath(f));
+
+    const establishment = await EstablishmentProfileModel.findByPk(id as string);
+    if (!establishment) {
+      novasFotos.forEach((p) => uploadService.deleteFile(p));
+      return res.status(404).json({ error: 'Estabelecimento não encontrado' });
+    }
+
+    if (userRole !== 'admin' && establishment.usuario_id !== userId) {
+      novasFotos.forEach((p) => uploadService.deleteFile(p));
+      return res.status(403).json({ error: 'Você não tem permissão para editar este estabelecimento' });
+    }
+
+    const fotosAtuais: string[] = Array.isArray(establishment.fotos)
+      ? (establishment.fotos as unknown as string[])
+      : establishment.fotos
+        ? JSON.parse(establishment.fotos as unknown as string)
+        : [];
+
+    const fotosAtualizadas = [...fotosAtuais, ...novasFotos];
+
+    await establishment.update({ fotos: JSON.stringify(fotosAtualizadas) });
+
+    await redisService.invalidate(`estabelecimento:${id}`);
+    await redisService.invalidatePattern('estabelecimentos:*');
+
+    res.json({
+      message: 'Fotos adicionadas com sucesso',
+      fotos: fotosAtualizadas,
+    });
+  } catch (error) {
+    if (req.files) {
+      (req.files as Express.Multer.File[]).forEach((f) =>
+        uploadService.deleteFile(uploadService.getRelativePath(f))
+      );
+    }
+    console.error('Erro ao fazer upload de fotos:', error);
+    res.status(500).json({ error: 'Erro ao fazer upload de fotos' });
+  }
+};
+
+export const removeEstablishmentPhoto = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { filename } = req.body;
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+
+    if (!filename) {
+      return res.status(400).json({ error: 'filename é obrigatório' });
+    }
+
+    const establishment = await EstablishmentProfileModel.findByPk(id as string);
+    if (!establishment) {
+      return res.status(404).json({ error: 'Estabelecimento não encontrado' });
+    }
+
+    if (userRole !== 'admin' && establishment.usuario_id !== userId) {
+      return res.status(403).json({ error: 'Você não tem permissão para editar este estabelecimento' });
+    }
+
+    const fotosAtuais: string[] = Array.isArray(establishment.fotos)
+      ? (establishment.fotos as unknown as string[])
+      : establishment.fotos
+        ? JSON.parse(establishment.fotos as unknown as string)
+        : [];
+
+    const fotoParaRemover = fotosAtuais.find((f) => f.includes(filename));
+    if (!fotoParaRemover) {
+      return res.status(404).json({ error: 'Foto não encontrada no perfil do estabelecimento' });
+    }
+
+    const fotosAtualizadas = fotosAtuais.filter((f) => !f.includes(filename));
+    await establishment.update({ fotos: JSON.stringify(fotosAtualizadas) });
+
+    uploadService.deleteFile(fotoParaRemover);
+
+    await redisService.invalidate(`estabelecimento:${id}`);
+    await redisService.invalidatePattern('estabelecimentos:*');
+
+    res.json({
+      message: 'Foto removida com sucesso',
+      fotos: fotosAtualizadas,
+    });
+  } catch (error) {
+    console.error('Erro ao remover foto:', error);
+    res.status(500).json({ error: 'Erro ao remover foto' });
   }
 };

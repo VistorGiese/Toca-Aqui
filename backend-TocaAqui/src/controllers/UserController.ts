@@ -9,6 +9,7 @@ import { validateEmailFormat, validatePasswordFormat } from '../services/userVal
 import redisService from '../config/redis';
 import { AuthRequest } from '../middleware/authmiddleware';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../services/EmailService';
+import { uploadService } from '../services/UploadService';
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -370,5 +371,46 @@ export const verifyEmail = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Erro ao verificar email:', error);
     res.status(500).json({ error: 'Erro ao verificar email' });
+  }
+};
+
+export const uploadArtistPhoto = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id;
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+    }
+
+    const novaFoto = uploadService.getRelativePath(req.file);
+
+    const profile = await ArtistProfileModel.findByPk(id as string);
+    if (!profile) {
+      uploadService.deleteFile(novaFoto);
+      return res.status(404).json({ error: 'Perfil de artista não encontrado' });
+    }
+
+    if (profile.usuario_id !== userId && (req as any).user?.role !== 'admin') {
+      uploadService.deleteFile(novaFoto);
+      return res.status(403).json({ error: 'Você não tem permissão para editar este perfil' });
+    }
+
+    if (profile.foto_perfil) {
+      uploadService.deleteFile(profile.foto_perfil);
+    }
+
+    await profile.update({ foto_perfil: novaFoto });
+
+    res.json({
+      message: 'Foto de perfil atualizada com sucesso',
+      foto_perfil: novaFoto,
+    });
+  } catch (error) {
+    if (req.file) {
+      uploadService.deleteFile(uploadService.getRelativePath(req.file));
+    }
+    console.error('Erro ao fazer upload de foto:', error);
+    res.status(500).json({ error: 'Erro ao fazer upload de foto' });
   }
 };
