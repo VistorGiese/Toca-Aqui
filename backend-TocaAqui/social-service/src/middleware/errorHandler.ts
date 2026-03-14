@@ -26,6 +26,12 @@ export const errorHandler = (
     return;
   }
 
+  // Erros de JWT
+  if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+    res.status(401).json({ error: 'Token inválido ou expirado' });
+    return;
+  }
+
   console.error('[Social Service] Unhandled Error:', err);
   res.status(500).json({ error: 'Erro interno do servidor' });
 };
