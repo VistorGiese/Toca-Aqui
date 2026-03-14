@@ -31,7 +31,16 @@ app.use(cors({
   origin: env.NODE_ENV === 'production' ? env.FRONTEND_URL : '*',
   credentials: true,
 }));
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+    },
+  },
+}));
 app.use(express.json());
 app.use(generalLimiter);
 
