@@ -94,18 +94,15 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 export const getUserStatistics = async (req: Request, res: Response) => {
   try {
-    // Contar total de usuários
-    const total = await UserModel.count();
-    
-    // Contar por role
-    const admins = await UserModel.count({ where: { role: UserRole.ADMIN } });
-    const artists = await UserModel.count({ where: { role: UserRole.ARTIST } });
-    const establishments = await UserModel.count({ where: { role: UserRole.ESTABLISHMENT_OWNER } });
-    const commonUsers = await UserModel.count({ where: { role: UserRole.COMMON_USER } });
-
-    // Contar usuários com perfis criados
-    const artistsWithProfile = await ArtistProfileModel.count();
-    const establishmentsWithProfile = await EstablishmentProfileModel.count();
+    const [total, admins, artists, establishments, commonUsers, artistsWithProfile, establishmentsWithProfile] = await Promise.all([
+      UserModel.count(),
+      UserModel.count({ where: { role: UserRole.ADMIN } }),
+      UserModel.count({ where: { role: UserRole.ARTIST } }),
+      UserModel.count({ where: { role: UserRole.ESTABLISHMENT_OWNER } }),
+      UserModel.count({ where: { role: UserRole.COMMON_USER } }),
+      ArtistProfileModel.count(),
+      EstablishmentProfileModel.count(),
+    ]);
 
     res.json({
       usuarios: {
