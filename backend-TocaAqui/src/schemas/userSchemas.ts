@@ -5,7 +5,7 @@ export const registroSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter ao menos 2 caracteres').trim(),
   email: z.string().email('Formato de email inválido').toLowerCase().trim(),
   senha: z.string().min(8, 'Senha deve ter ao menos 8 caracteres'),
-  tipo_usuario: z.enum([UserRole.ADMIN, UserRole.ESTABLISHMENT_OWNER, UserRole.ARTIST, UserRole.COMMON_USER]).optional(),
+  tipo_usuario: z.enum([UserRole.ESTABLISHMENT_OWNER, UserRole.ARTIST, UserRole.COMMON_USER]).optional(),
 });
 
 export const loginSchema = z.object({
