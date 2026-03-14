@@ -151,7 +151,7 @@ export const checkOwnershipOrAdmin = (
         console.error(`Model "${resourceModel}" não registrado no modelRegistry`);
         return res.status(500).json({ error: 'Erro ao validar permissões' });
       }
-      const resource = await Model.findByPk(resourceId);
+      const resource = await Model.findByPk(resourceId as string);
 
       if (!resource) {
         return res.status(404).json({
