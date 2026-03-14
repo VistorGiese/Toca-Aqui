@@ -27,7 +27,10 @@ import { initCronJobs } from './services/CronService';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: env.NODE_ENV === 'production' ? env.FRONTEND_URL : '*',
+  credentials: true,
+}));
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(generalLimiter);
