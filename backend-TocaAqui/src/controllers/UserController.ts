@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { authService } from '../services/AuthService';
 import { uploadService } from '../services/UploadService';
 import { AppError } from '../errors/AppError';
+import { verifyToken } from '../utils/jwt';
 import ArtistProfileModel from '../models/ArtistProfileModel';
 
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
@@ -25,10 +26,10 @@ export const logoutUser = asyncHandler(async (req: AuthRequest, res: Response) =
   const token = req.token;
   if (!token) throw new AppError('Token não encontrado', 400);
 
-  const exp = (req.user as any)?.exp;
-  if (!exp) throw new AppError('Token sem data de expiração', 400);
+  const decoded = verifyToken(token);
+  if (!decoded?.exp) throw new AppError('Token sem data de expiração', 400);
 
-  await authService.logout(token, exp);
+  await authService.logout(token, decoded.exp);
   res.json({ message: 'Logout realizado com sucesso' });
 });
 
