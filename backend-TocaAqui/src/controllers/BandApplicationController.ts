@@ -1,11 +1,9 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { bandApplicationService } from '../services/BandApplicationService';
-import { AppError } from '../errors/AppError';
 
 export const applyBandToEvent = asyncHandler(async (req: Request, res: Response) => {
   const { banda_id, evento_id } = req.body;
-  if (!banda_id || !evento_id) throw new AppError('banda_id e evento_id são obrigatórios', 400);
   const aplicacao = await bandApplicationService.apply(banda_id, evento_id);
   res.status(201).json({ message: 'Banda aplicou ao evento com sucesso', aplicacao });
 });
