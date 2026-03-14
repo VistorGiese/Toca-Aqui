@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Sequelize } from "sequelize";
 import { AuthRequest } from "../middleware/authMiddleware";
 import { asyncHandler, AppError } from "../middleware/errorHandler";
 import RatingModel from "../models/RatingModel";
@@ -126,9 +127,12 @@ export const getRatings = asyncHandler(async (req: Request, res: Response) => {
     offset,
   });
 
-  const media = count > 0
-    ? rows.reduce((acc, av) => acc + av.nota, 0) / rows.length
-    : 0;
+  const avgResult = await RatingModel.findOne({
+    where: { avaliavel_tipo, avaliavel_id },
+    attributes: [[Sequelize.fn('AVG', Sequelize.col('nota')), 'media']],
+    raw: true,
+  });
+  const media = avgResult ? parseFloat((avgResult as any).media) || 0 : 0;
 
   const resultado = {
     message: "Avaliações recuperadas com sucesso",
