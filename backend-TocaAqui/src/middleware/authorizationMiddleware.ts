@@ -1,6 +1,18 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "./authmiddleware";
 import { UserRole } from "../models/UserModel";
+import { Model, ModelStatic } from "sequelize";
+import AddressModel from "../models/AddressModel";
+import BandModel from "../models/BandModel";
+import BookingModel from "../models/BookingModel";
+import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
+
+const modelRegistry: Record<string, ModelStatic<Model>> = {
+  Address: AddressModel,
+  Band: BandModel,
+  Booking: BookingModel,
+  EstablishmentProfile: EstablishmentProfileModel,
+};
 
 
 export const checkRole = (...allowedRoles: UserRole[]) => {
@@ -145,31 +157,28 @@ export const checkOwnershipOrAdmin = (
         return next();
       }
 
-      try {
-        const Model = require(`../models/${resourceModel}Model`).default;
-        const resource = await Model.findByPk(resourceId);
+      const Model = modelRegistry[resourceModel];
+      if (!Model) {
+        console.error(`Model "${resourceModel}" não registrado no modelRegistry`);
+        return res.status(500).json({ error: 'Erro ao validar permissões' });
+      }
+      const resource = await Model.findByPk(resourceId);
 
-        if (!resource) {
-          return res.status(404).json({ 
-            error: `${resourceModel} não encontrado` 
+      if (!resource) {
+        return res.status(404).json({
+          error: `${resourceModel} não encontrado`
         });
       }
 
-      const ownerId = resource[ownerField];        if (ownerId !== user.id) {
-          console.warn(`[OWNERSHIP DENIED] User ${user.id} tentou acessar ${resourceModel} ${resourceId} (owner: ${ownerId})`);
-          return res.status(403).json({ 
-            error: 'Você não tem permissão para acessar este recurso' 
-          });
-        }
-
-        console.log(`[OWNERSHIP OK] User ${user.id} é dono de ${resourceModel} ${resourceId}`);
-        next();
-      } catch (modelError) {
-        console.error(`Erro ao carregar model ${resourceModel}:`, modelError);
-        return res.status(500).json({ 
-          error: 'Erro ao validar permissões' 
+      const ownerId = (resource as any)[ownerField];
+      if (ownerId !== user.id) {
+        console.warn(`[OWNERSHIP DENIED] User ${user.id} tentou acessar ${resourceModel} ${resourceId} (owner: ${ownerId})`);
+        return res.status(403).json({
+          error: 'Você não tem permissão para acessar este recurso'
         });
       }
+
+      next();
     } catch (error) {
       console.error('Erro no middleware checkOwnershipOrAdmin:', error);
       res.status(500).json({ error: 'Erro interno ao verificar permissões' });
