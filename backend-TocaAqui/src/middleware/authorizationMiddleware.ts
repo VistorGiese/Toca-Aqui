@@ -58,25 +58,6 @@ export const checkAdmin = () => {
 };
 
 
-export const checkEstablishmentOwner = () => {
-  return checkRole(UserRole.ADMIN, UserRole.ESTABLISHMENT_OWNER);
-};
-
-
-export const checkArtist = () => {
-  return checkRole(UserRole.ADMIN, UserRole.ARTIST);
-};
-
-
-export const checkAnyRole = () => {
-  return checkRole(
-    UserRole.ADMIN,
-    UserRole.ESTABLISHMENT_OWNER,
-    UserRole.ARTIST,
-    UserRole.COMMON_USER
-  );
-};
-
 
 export const checkOwnership = (
   getResourceOwnerId: (req: AuthRequest) => Promise<number | undefined>
@@ -116,16 +97,6 @@ export const checkOwnership = (
       });
     }
   };
-};
-
-
-export const getAllRoles = (): UserRole[] => {
-  return Object.values(UserRole);
-};
-
-
-export const isValidRole = (role: string): role is UserRole => {
-  return Object.values(UserRole).includes(role as UserRole);
 };
 
 

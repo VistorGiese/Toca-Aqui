@@ -13,4 +13,3 @@ export class AppError extends Error {
 export const notFound = (message = 'Recurso não encontrado') => new AppError(message, 404);
 export const badRequest = (message: string, extra?: Record<string, unknown>) => new AppError(message, 400, extra);
 export const unauthorized = (message = 'Não autorizado') => new AppError(message, 401);
-export const forbidden = (message = 'Acesso negado') => new AppError(message, 403);

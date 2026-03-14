@@ -45,10 +45,6 @@ export const checkRole = (...allowedRoles: UserRole[]) => {
   };
 };
 
-export const checkAdmin = () => {
-  return checkRole(UserRole.ADMIN);
-};
-
 export const checkOwnership = (
   getResourceOwnerId: (req: AuthRequest) => Promise<number | null>
 ) => {
