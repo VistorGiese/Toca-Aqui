@@ -106,7 +106,7 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
     id: fav.id,
     tipo: fav.favoritavel_tipo,
     item_id: fav.favoritavel_id,
-    data_criacao: (fav as any).createdAt || fav.data_criacao
+    data_criacao: fav.created_at
   }));
 
   const resultado = {
