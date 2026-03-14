@@ -22,9 +22,21 @@ export const createAddress = asyncHandler(async (req: Request, res: Response) =>
   res.status(201).json(address);
 });
 
-export const getAddresses = asyncHandler(async (_req: Request, res: Response) => {
-  const addresses = await AddressModel.findAll();
-  res.json(addresses);
+export const getAddresses = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const offset = (page - 1) * limit;
+
+  const { count, rows } = await AddressModel.findAndCountAll({ limit, offset });
+  res.json({
+    data: rows,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    },
+  });
 });
 
 export const getAddressById = asyncHandler(async (req: Request, res: Response) => {
