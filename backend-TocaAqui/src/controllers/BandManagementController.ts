@@ -31,7 +31,7 @@ export const createBand = async (req: Request, res: Response) => {
     const band = await BandModel.create({
       nome_banda,
       descricao,
-      generos_musicais: JSON.stringify(generos_musicais || []),
+      generos_musicais: generos_musicais || [],
       esta_ativo: true,
     });
 
@@ -50,7 +50,7 @@ export const createBand = async (req: Request, res: Response) => {
         id: band.id,
         nome_banda: band.nome_banda,
         descricao: band.descricao,
-        generos_musicais: JSON.parse(band.generos_musicais || '[]'),
+        generos_musicais: band.generos_musicais,
         esta_ativo: band.esta_ativo,
       },
     });
@@ -98,7 +98,7 @@ export const getBandDetails = async (req: Request, res: Response) => {
       id: band.id,
       nome_banda: band.nome_banda,
       descricao: band.descricao,
-      generos_musicais: JSON.parse(band.generos_musicais || '[]'),
+      generos_musicais: band.generos_musicais,
       esta_ativo: band.esta_ativo,
       members: (band as any).Members?.map((member: any) => ({
         id: member.id,
@@ -281,7 +281,7 @@ export const getUserBands = async (req: Request, res: Response) => {
         id: membership.Band.id,
         nome_banda: membership.Band.nome_banda,
         descricao: membership.Band.descricao,
-        generos_musicais: JSON.parse(membership.Band.generos_musicais || '[]'),
+        generos_musicais: membership.Band.generos_musicais,
         funcao: membership.funcao,
         e_lider: membership.e_lider,
         data_entrada: membership.data_entrada,
