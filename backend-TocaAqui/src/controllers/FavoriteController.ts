@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import FavoriteModel from "../models/FavoriteModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
 import ArtistProfileModel from "../models/ArtistProfileModel";
@@ -106,28 +107,33 @@ export const getFavorites = async (req: Request, res: Response) => {
       order: [['data_criacao', 'DESC']]
     });
 
-    const favoritosComDetalhes = [];
-    for (const favorito of favoritos) {
-      let detalheItem;
-      switch (favorito.favoritavel_tipo) {
-        case 'perfil_estabelecimento':
-          detalheItem = await EstablishmentProfileModel.findByPk(favorito.favoritavel_id);
-          break;
-        case 'perfil_artista':
-          detalheItem = await ArtistProfileModel.findByPk(favorito.favoritavel_id);
-          break;
-        case 'banda':
-          detalheItem = await BandModel.findByPk(favorito.favoritavel_id);
-          break;
-      }
+    const estabelecimentoIds = favoritos.filter(f => f.favoritavel_tipo === 'perfil_estabelecimento').map(f => f.favoritavel_id);
+    const artistaIds = favoritos.filter(f => f.favoritavel_tipo === 'perfil_artista').map(f => f.favoritavel_id);
+    const bandaIds = favoritos.filter(f => f.favoritavel_tipo === 'banda').map(f => f.favoritavel_id);
 
-      favoritosComDetalhes.push({
-        id: favorito.id,
-        tipo: favorito.favoritavel_tipo,
-        data_criacao: favorito.data_criacao,
-        item: detalheItem
-      });
-    }
+    const [estabelecimentos, artistas, bandas] = await Promise.all([
+      estabelecimentoIds.length > 0
+        ? EstablishmentProfileModel.findAll({ where: { id: { [Op.in]: estabelecimentoIds } } })
+        : [],
+      artistaIds.length > 0
+        ? ArtistProfileModel.findAll({ where: { id: { [Op.in]: artistaIds } } })
+        : [],
+      bandaIds.length > 0
+        ? BandModel.findAll({ where: { id: { [Op.in]: bandaIds } } })
+        : [],
+    ]);
+
+    const detalhesMap = new Map<string, any>();
+    (estabelecimentos as any[]).forEach(e => detalhesMap.set(`perfil_estabelecimento:${e.id}`, e));
+    (artistas as any[]).forEach(a => detalhesMap.set(`perfil_artista:${a.id}`, a));
+    (bandas as any[]).forEach(b => detalhesMap.set(`banda:${b.id}`, b));
+
+    const favoritosComDetalhes = favoritos.map(favorito => ({
+      id: favorito.id,
+      tipo: favorito.favoritavel_tipo,
+      data_criacao: favorito.data_criacao,
+      item: detalhesMap.get(`${favorito.favoritavel_tipo}:${favorito.favoritavel_id}`) || null,
+    }));
 
     res.json({
       message: "Lista de favoritos recuperada com sucesso",
