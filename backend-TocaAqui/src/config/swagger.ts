@@ -14,12 +14,8 @@ const swaggerDefinition: SwaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost/api/main',
+      url: 'http://localhost:3000',
       description: 'Servidor Local - API Principal',
-    },
-    {
-      url: 'http://localhost/api/social',
-      description: 'Servidor Local - API Social',
     },
   ],
   components: {
@@ -171,7 +167,7 @@ const swaggerDefinition: SwaggerDefinition = {
           },
           tipo_estabelecimento: {
             type: 'string',
-            enum: ['bar', 'casa_show', 'restaurante', 'pub', 'outro'],
+            enum: ['bar', 'casa_show', 'restaurante', 'club', 'outro'],
             description: 'Tipo do estabelecimento',
           },
           descricao: {
@@ -227,10 +223,10 @@ const swaggerDefinition: SwaggerDefinition = {
             type: 'integer',
             description: 'ID do perfil do estabelecimento',
           },
-          data_evento: {
+          data_show: {
             type: 'string',
             format: 'date',
-            description: 'Data do evento',
+            description: 'Data do show',
           },
           horario_inicio: {
             type: 'string',
@@ -242,22 +238,13 @@ const swaggerDefinition: SwaggerDefinition = {
             format: 'time',
             description: 'Horário de término',
           },
-          genero_musical: {
-            type: 'string',
-            description: 'Gênero musical do evento',
-          },
           descricao: {
             type: 'string',
             description: 'Descrição do evento',
           },
-          cache_artista: {
-            type: 'number',
-            format: 'decimal',
-            description: 'Valor do cachê oferecido',
-          },
           status: {
             type: 'string',
-            enum: ['aberto', 'em_negociacao', 'confirmado', 'cancelado', 'concluido'],
+            enum: ['pendente', 'aceito', 'rejeitado', 'cancelado', 'realizado'],
             description: 'Status do evento',
           },
         },
@@ -272,71 +259,14 @@ const swaggerDefinition: SwaggerDefinition = {
             type: 'integer',
             description: 'ID do usuário',
           },
-          tipo_favorito: {
+          favoritavel_tipo: {
             type: 'string',
             enum: ['perfil_estabelecimento', 'perfil_artista', 'banda'],
             description: 'Tipo do item favoritado',
           },
-          id_favorito: {
+          favoritavel_id: {
             type: 'integer',
             description: 'ID do item favoritado',
-          },
-        },
-      },
-      Comment: {
-        type: 'object',
-        properties: {
-          id: {
-            type: 'integer',
-          },
-          usuario_id: {
-            type: 'integer',
-            description: 'ID do usuário que comentou',
-          },
-          tipo_comentario: {
-            type: 'string',
-            enum: ['perfil_estabelecimento', 'perfil_artista', 'banda', 'agendamento'],
-            description: 'Tipo do item comentado',
-          },
-          id_comentario: {
-            type: 'integer',
-            description: 'ID do item comentado',
-          },
-          conteudo: {
-            type: 'string',
-            description: 'Conteúdo do comentário',
-          },
-        },
-      },
-      Rating: {
-        type: 'object',
-        properties: {
-          id: {
-            type: 'integer',
-          },
-          usuario_id: {
-            type: 'integer',
-            description: 'ID do usuário que avaliou',
-          },
-          tipo_avaliacao: {
-            type: 'string',
-            enum: ['perfil_estabelecimento', 'perfil_artista', 'banda'],
-            description: 'Tipo do item avaliado',
-          },
-          id_avaliacao: {
-            type: 'integer',
-            description: 'ID do item avaliado',
-          },
-          nota: {
-            type: 'integer',
-            minimum: 1,
-            maximum: 5,
-            description: 'Nota de 1 a 5',
-          },
-          comentario: {
-            type: 'string',
-            nullable: true,
-            description: 'Comentário opcional da avaliação',
           },
         },
       },
@@ -365,15 +295,7 @@ const swaggerDefinition: SwaggerDefinition = {
     },
     {
       name: 'Favoritos',
-      description: 'Sistema de favoritos (Social Service)',
-    },
-    {
-      name: 'Comentários',
-      description: 'Sistema de comentários (Social Service)',
-    },
-    {
-      name: 'Avaliações',
-      description: 'Sistema de avaliações/ratings (Social Service)',
+      description: 'Sistema de favoritos',
     },
     {
       name: 'Admin',
