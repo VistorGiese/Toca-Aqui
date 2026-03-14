@@ -12,8 +12,11 @@ import redisService from "../config/redis";
 import { CACHE_TTL, CACHE_KEYS } from "../config/cache";
 import { asyncHandler } from '../middleware/errorHandler';
 import { AppError } from '../errors/AppError';
+import { AuthRequest } from '../middleware/authmiddleware';
 
-export const createBand = asyncHandler(async (req: Request, res: Response) => {
+export const createBand = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
   const {
     nome_banda,
     nome,
@@ -139,7 +142,9 @@ export const getBandById = asyncHandler(async (req: Request, res: Response) => {
   res.json({ data: band });
 });
 
-export const updateBand = asyncHandler(async (req: Request, res: Response) => {
+export const updateBand = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
   const bandId = req.params.id as string;
   const band = await BandModel.findByPk(bandId);
   if (!band) throw new AppError('Banda não encontrada', 404);
@@ -197,7 +202,9 @@ export const updateBand = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const deleteBand = asyncHandler(async (req: Request, res: Response) => {
+export const deleteBand = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
   const bandId = req.params.id as string;
   const band = await BandModel.findByPk(bandId);
   if (!band) throw new AppError('Banda não encontrada', 404);

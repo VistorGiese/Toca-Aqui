@@ -6,8 +6,11 @@ import redisService from "../config/redis";
 import { CACHE_TTL, CACHE_KEYS } from "../config/cache";
 import { asyncHandler } from "../middleware/errorHandler";
 import { AppError } from "../errors/AppError";
+import { AuthRequest } from '../middleware/authmiddleware';
 
-export const createBooking = asyncHandler(async (req: Request, res: Response) => {
+export const createBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
   const { titulo_evento, descricao_evento, data_show, perfil_estabelecimento_id, horario_inicio, horario_fim } = req.body;
   const conflito = await BookingModel.findOne({
     where: {
@@ -105,7 +108,9 @@ export const getBookingById = asyncHandler(async (req: Request, res: Response) =
   res.json(booking);
 });
 
-export const updateBooking = asyncHandler(async (req: Request, res: Response) => {
+export const updateBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
   const id = req.params.id as string;
   const booking = await BookingModel.findByPk(id);
   if (!booking) throw new AppError("Agendamento não encontrado", 404);
@@ -123,7 +128,9 @@ export const updateBooking = asyncHandler(async (req: Request, res: Response) =>
   res.json(booking);
 });
 
-export const deleteBooking = asyncHandler(async (req: Request, res: Response) => {
+export const deleteBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
   const id = req.params.id as string;
   const booking = await BookingModel.findByPk(id);
   if (!booking) throw new AppError("Agendamento não encontrado", 404);

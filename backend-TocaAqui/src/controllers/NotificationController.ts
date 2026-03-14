@@ -5,7 +5,8 @@ import { AppError } from '../errors/AppError';
 import NotificationModel from '../models/NotificationModel';
 
 export const getNotifications = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const userId = req.user!.id;
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+  const userId = req.user.id;
   const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
   const offset = (page - 1) * limit;
@@ -29,7 +30,8 @@ export const getNotifications = asyncHandler(async (req: AuthRequest, res: Respo
 });
 
 export const markAsRead = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const userId = req.user!.id;
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+  const userId = req.user.id;
   const notification = await NotificationModel.findOne({
     where: { id: req.params.id, usuario_id: userId },
   });
@@ -41,7 +43,8 @@ export const markAsRead = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const markAllAsRead = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const userId = req.user!.id;
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+  const userId = req.user.id;
   const [updated] = await NotificationModel.update(
     { lida: true },
     { where: { usuario_id: userId, lida: false } }
