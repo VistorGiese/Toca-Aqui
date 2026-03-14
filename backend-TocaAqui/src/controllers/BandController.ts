@@ -1,3 +1,8 @@
+/**
+ * BandController — CRUD público/admin de bandas (rotas /bandas).
+ * Usado para listagem pública, criação com upload de imagem, e gerenciamento admin.
+ * Para operações de artistas (criar banda como membro, convites), ver BandManagementController.
+ */
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 import sequelize from "../config/database";

@@ -1,3 +1,8 @@
+/**
+ * BandManagementController — Gerenciamento de bandas por artistas (rotas /gerenciamento-bandas).
+ * Permite artistas criarem bandas como líderes, convidarem membros e responderem convites.
+ * Para CRUD público/admin de bandas, ver BandController.
+ */
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/authmiddleware';
 import { asyncHandler } from '../middleware/errorHandler';
