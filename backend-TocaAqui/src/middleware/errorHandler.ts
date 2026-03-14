@@ -38,8 +38,8 @@ export const errorHandler = (
 };
 
 /** Wrapper para controllers async — propaga exceções para o errorHandler global */
-export const asyncHandler =
-  (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) =>
-  (req: Request, res: Response, next: NextFunction): void => {
+export const asyncHandler = <T extends Request = Request>(
+  fn: (req: T, res: Response, next: NextFunction) => Promise<unknown>
+) => (req: T, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
