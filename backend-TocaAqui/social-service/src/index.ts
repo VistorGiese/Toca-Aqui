@@ -1,7 +1,10 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+
+dotenv.config();
 
 import sequelize from "./config/database";
 import redisService from "./config/redis";
@@ -26,6 +29,13 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(express.json());
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: "Muitas requisições. Tente novamente mais tarde." },
+});
+app.use(generalLimiter);
 
 sequelize
   .authenticate()
