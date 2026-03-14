@@ -29,12 +29,16 @@ export const authMiddleware = async (
       return res.status(401).json({ error: "Token inválido" });
     }
 
+    if (typeof decoded.id !== 'number' || !decoded.role) {
+      return res.status(401).json({ error: "Token com estrutura inválida" });
+    }
+
     const isBlacklisted = await redisService.exists(`blacklist:${token}`);
     if (isBlacklisted) {
       return res.status(401).json({ error: "Token revogado. Faça login novamente." });
     }
 
-    req.user = decoded;
+    req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
     req.token = token;
     next();
   } catch (error) {
