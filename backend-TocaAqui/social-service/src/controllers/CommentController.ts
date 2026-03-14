@@ -91,7 +91,7 @@ export const deleteComment = asyncHandler(async (req: AuthRequest, res: Response
 
   if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
 
-  const comentario = await CommentModel.findByPk(id);
+  const comentario = await CommentModel.findByPk(id as string);
   if (!comentario) throw new AppError("Comentário não encontrado", 404);
 
   if (comentario.usuario_id !== usuario_id) {

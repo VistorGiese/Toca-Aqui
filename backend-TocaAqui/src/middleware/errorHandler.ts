@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/AppError';
+import { env } from '../config/env';
 
 export const errorHandler = (
   err: Error,
@@ -17,7 +18,10 @@ export const errorHandler = (
 
   // Erros de validação do Sequelize
   if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-    res.status(400).json({ error: 'Dados inválidos', details: err.message });
+    res.status(400).json({
+      error: 'Dados inválidos',
+      ...(env.NODE_ENV !== 'production' ? { details: err.message } : {}),
+    });
     return;
   }
 
@@ -29,7 +33,10 @@ export const errorHandler = (
 
   // Erros de Multer
   if (err.name === 'MulterError') {
-    res.status(400).json({ error: 'Erro no upload de arquivo', details: err.message });
+    res.status(400).json({
+      error: 'Erro no upload de arquivo',
+      ...(env.NODE_ENV !== 'production' ? { details: err.message } : {}),
+    });
     return;
   }
 

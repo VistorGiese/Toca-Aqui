@@ -16,13 +16,18 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
+  const showDetails = process.env.NODE_ENV !== 'production';
+
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ error: err.message });
     return;
   }
 
   if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-    res.status(400).json({ error: 'Dados inválidos', details: err.message });
+    res.status(400).json({
+      error: 'Dados inválidos',
+      ...(showDetails ? { details: err.message } : {}),
+    });
     return;
   }
 

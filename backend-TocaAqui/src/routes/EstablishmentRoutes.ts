@@ -10,6 +10,7 @@ import {
 import { authMiddleware } from '../middleware/authmiddleware';
 import { checkOwnershipOrAdmin } from '../middleware/authorizationMiddleware';
 import { uploadService } from '../services/UploadService';
+import { uploadLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.get('/:id', getEstablishment);
 router.put('/:id', authMiddleware, checkOwnershipOrAdmin('EstablishmentProfile'), updateEstablishment);
 router.delete('/:id', authMiddleware, checkOwnershipOrAdmin('EstablishmentProfile'), deleteEstablishment);
 
-router.patch('/:id/fotos', authMiddleware, uploadService.uploadMultiple, uploadEstablishmentPhotos);
+router.patch('/:id/fotos', authMiddleware, uploadLimiter, uploadService.uploadMultiple, uploadEstablishmentPhotos);
 router.delete('/:id/fotos', authMiddleware, removeEstablishmentPhoto);
 
 export default router;

@@ -27,6 +27,13 @@ import { initCronJobs } from './services/CronService';
 
 const app = express();
 
+if (env.NODE_ENV === 'production') {
+  // Necessary behind reverse proxy (Nginx) so rate limiter sees client IP.
+  app.set('trust proxy', 1);
+}
+
+app.disable('x-powered-by');
+
 app.use(cors({
   origin: env.NODE_ENV === 'production' ? env.FRONTEND_URL : '*',
   credentials: true,

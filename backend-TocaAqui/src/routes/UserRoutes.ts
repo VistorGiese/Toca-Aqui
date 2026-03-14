@@ -12,7 +12,7 @@ import {
   uploadArtistPhoto,
 } from '../controllers/UserController';
 import { authMiddleware } from '../middleware/authmiddleware';
-import { authLimiter } from '../middleware/rateLimiter';
+import { authLimiter, uploadLimiter } from '../middleware/rateLimiter';
 import { validate } from '../middleware/validate';
 import {
   registroSchema,
@@ -35,6 +35,6 @@ router.get('/verificar-email', verifyEmail);
 router.get('/perfil', authMiddleware, getUserProfile);
 router.post('/perfil-estabelecimento', authMiddleware, validate(createEstablishmentProfileSchema), createEstablishmentProfile);
 router.post('/perfil-artista', authMiddleware, validate(createArtistProfileSchema), createArtistProfile);
-router.patch('/perfil-artista/:id/foto', authMiddleware, uploadService.uploadSingle, uploadArtistPhoto);
+router.patch('/perfil-artista/:id/foto', authMiddleware, uploadLimiter, uploadService.uploadSingle, uploadArtistPhoto);
 
 export default router;

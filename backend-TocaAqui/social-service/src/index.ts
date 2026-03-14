@@ -18,10 +18,14 @@ import FavoriteRoutes from "./routes/FavoriteRoutes";
 import CommentRoutes from "./routes/CommentRoutes";
 import RatingRoutes from "./routes/RatingRoutes";
 
-dotenv.config();
-
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
+app.disable('x-powered-by');
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : '*',
@@ -36,19 +40,6 @@ const generalLimiter = rateLimit({
   message: { error: "Muitas requisições. Tente novamente mais tarde." },
 });
 app.use(generalLimiter);
-
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log("[Social Service] Banco de dados conectado com sucesso!");
-    app.listen(PORT, () => {
-      console.log(`[Social Service] Servidor rodando na porta ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error("[Social Service] Erro ao conectar ao banco de dados:", error);
-    process.exit(1);
-  });
 
 app.use("/favoritos", FavoriteRoutes);
 app.use("/comentarios", CommentRoutes);
@@ -82,5 +73,18 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use(errorHandler);
+
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log("[Social Service] Banco de dados conectado com sucesso!");
+    app.listen(PORT, () => {
+      console.log(`[Social Service] Servidor rodando na porta ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("[Social Service] Erro ao conectar ao banco de dados:", error);
+    process.exit(1);
+  });
 
 export default app;

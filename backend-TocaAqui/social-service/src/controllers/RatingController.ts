@@ -64,7 +64,7 @@ export const updateRating = asyncHandler(async (req: AuthRequest, res: Response)
 
   if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
 
-  const avaliacao = await RatingModel.findByPk(id);
+  const avaliacao = await RatingModel.findByPk(id as string);
   if (!avaliacao) throw new AppError("Avaliação não encontrada", 404);
 
   if (avaliacao.usuario_id !== usuario_id) {
@@ -151,7 +151,7 @@ export const deleteRating = asyncHandler(async (req: AuthRequest, res: Response)
 
   if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
 
-  const avaliacao = await RatingModel.findByPk(id);
+  const avaliacao = await RatingModel.findByPk(id as string);
   if (!avaliacao) throw new AppError("Avaliação não encontrada", 404);
 
   if (avaliacao.usuario_id !== usuario_id) {
