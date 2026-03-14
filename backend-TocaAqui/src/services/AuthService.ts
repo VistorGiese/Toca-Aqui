@@ -31,7 +31,7 @@ export class AuthService {
     const passwordError = validatePasswordFormat(senha);
     if (passwordError) throw new AppError(passwordError, 400);
 
-    const rolesValidas = ['admin', 'establishment_owner', 'artist', 'common_user'];
+    const rolesValidas = ['establishment_owner', 'artist', 'common_user'];
     const role =
       tipo_usuario && rolesValidas.includes(tipo_usuario) ? tipo_usuario : 'common_user';
 
