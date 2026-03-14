@@ -181,7 +181,13 @@ export const updateBand = async (req: Request, res: Response) => {
       uploadService.deleteFile(band.imagem);
     }
 
-    const updateData = { ...req.body };
+    const { nome_banda, nome, descricao, generos_musicais, esta_ativo } = req.body;
+    const updateData: Partial<{ nome_banda: string; descricao: string; generos_musicais: any; esta_ativo: boolean; imagem: string }> = {};
+    const novoNome = nome_banda || nome;
+    if (novoNome !== undefined) updateData.nome_banda = novoNome;
+    if (descricao !== undefined) updateData.descricao = descricao;
+    if (generos_musicais !== undefined) updateData.generos_musicais = generos_musicais;
+    if (esta_ativo !== undefined) updateData.esta_ativo = esta_ativo;
     if (req.file) {
       updateData.imagem = uploadService.getRelativePath(req.file);
     }
