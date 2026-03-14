@@ -36,9 +36,7 @@ export const checkRole = (...allowedRoles: UserRole[]) => {
       if (!allowedRoles.includes(userRole as UserRole)) {
         return res.status(403).json({
           error: "Acesso Negado",
-          message: `Esta ação requer uma das seguintes permissões: ${allowedRoles.join(', ')}`,
-          userRole,
-          requiredRoles: allowedRoles
+          message: `Esta ação requer uma das seguintes permissões: ${allowedRoles.join(', ')}`
         });
       }
 
@@ -85,6 +83,7 @@ export const checkOwnership = (
 
       if (req.user.id !== resourceOwnerId) {
         return res.status(403).json({
+          error: "Acesso Negado",
           message: "Você não tem permissão para acessar este recurso",
         });
       }
@@ -93,6 +92,7 @@ export const checkOwnership = (
     } catch (error) {
       console.error('[RBAC] Erro ao validar ownership:', error);
       return res.status(500).json({
+        error: "Erro de Autorização",
         message: "Erro ao verificar permissões do recurso"
       });
     }
@@ -160,9 +160,7 @@ export const checkRolesOrAdmin = (...allowedRoles: UserRole[]) => {
 
     if (!allowedRoles.includes(user.role as UserRole)) {
       return res.status(403).json({
-        error: 'Você não tem permissão para acessar este recurso',
-        requiredRoles: allowedRoles,
-        yourRole: user.role
+        error: 'Você não tem permissão para acessar este recurso'
       });
     }
 
