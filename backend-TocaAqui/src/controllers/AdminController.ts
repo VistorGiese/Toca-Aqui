@@ -342,7 +342,7 @@ export const getEventsByEstablishment = asyncHandler(async (req: Request, res: R
       },
       {
         model: BandApplicationModel,
-        as: 'BandApplications',
+        as: 'Applications',
         attributes: ['id', 'status', 'banda_id'],
         include: [
           {
