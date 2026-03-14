@@ -34,7 +34,7 @@ export const addFavorite = asyncHandler(async (req: AuthRequest, res: Response) 
     favoritavel_id
   });
 
-  await redisService.invalidate(`favoritos:usuario:${usuario_id}`);
+  await redisService.invalidatePattern(`favoritos:usuario:${usuario_id}*`);
 
   await pubSubService.publishFavoritoAdicionado({
     usuario_id,
@@ -62,7 +62,7 @@ export const removeFavorite = asyncHandler(async (req: AuthRequest, res: Respons
 
   await favorito.destroy();
 
-  await redisService.invalidate(`favoritos:usuario:${usuario_id}`);
+  await redisService.invalidatePattern(`favoritos:usuario:${usuario_id}*`);
 
   await pubSubService.publishFavoritoRemovido({
     usuario_id,
@@ -79,15 +79,15 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
 
   if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
 
-  const cacheKey = `favoritos:usuario:${usuario_id}${tipo ? `:tipo:${tipo}` : ''}`;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const offset = (page - 1) * limit;
 
-  const cached = await redisService.get<any[]>(cacheKey);
+  const cacheKey = `favoritos:usuario:${usuario_id}${tipo ? `:tipo:${tipo}` : ''}:p${page}:l${limit}`;
+
+  const cached = await redisService.get<any>(cacheKey);
   if (cached) {
-    return res.json({
-      message: "Lista de favoritos recuperada com sucesso",
-      total: cached.length,
-      favoritos: cached,
-    });
+    return res.json(cached);
   }
 
   const whereClause: any = { usuario_id };
@@ -95,25 +95,28 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
     whereClause.favoritavel_tipo = tipo;
   }
 
-  const favoritos = await FavoriteModel.findAll({
+  const { count, rows } = await FavoriteModel.findAndCountAll({
     where: whereClause,
-    order: [['created_at', 'DESC']]
+    order: [['created_at', 'DESC']],
+    limit,
+    offset,
   });
 
-  const favoritosSimplificados = favoritos.map(fav => ({
+  const favoritosSimplificados = rows.map(fav => ({
     id: fav.id,
     tipo: fav.favoritavel_tipo,
     item_id: fav.favoritavel_id,
     data_criacao: (fav as any).createdAt || fav.data_criacao
   }));
 
-  await redisService.set(cacheKey, favoritosSimplificados, 600);
-
-  res.json({
+  const resultado = {
     message: "Lista de favoritos recuperada com sucesso",
-    total: favoritosSimplificados.length,
-    favoritos: favoritosSimplificados,
-  });
+    data: favoritosSimplificados,
+    pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) },
+  };
+
+  await redisService.set(cacheKey, resultado, 600);
+  res.json(resultado);
 });
 
 export const checkFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
