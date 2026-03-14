@@ -7,7 +7,7 @@ export interface BandAttributes {
   nome_banda?: string;
   descricao?: string;
   imagem?: string;
-  generos_musicais?: string; 
+  generos_musicais?: string[];
   data_criacao?: Date;
   esta_ativo?: boolean;
   created_at?: Date;
@@ -19,7 +19,7 @@ class BandModel extends Model<BandAttributes> implements BandAttributes {
   public nome_banda?: string;
   public descricao?: string;
   public imagem?: string;
-  public generos_musicais?: string;
+  public generos_musicais?: string[];
   public data_criacao?: Date;
   public esta_ativo!: boolean;
   public readonly created_at!: Date;
