@@ -168,14 +168,14 @@ export const updateEstablishment = async (req: Request, res: Response) => {
     }
 
     await establishment.update({
-      nome_estabelecimento: nome_estabelecimento || establishment.nome_estabelecimento,
-      tipo_estabelecimento: tipo_estabelecimento || establishment.tipo_estabelecimento,
-      descricao: descricao || establishment.descricao,
-      generos_musicais: generos_musicais || establishment.generos_musicais,
-      horario_abertura: horario_abertura || establishment.horario_abertura,
-      horario_fechamento: horario_fechamento || establishment.horario_fechamento,
-      endereco_id: endereco_id || establishment.endereco_id,
-      telefone_contato: telefone_contato || establishment.telefone_contato,
+      nome_estabelecimento: nome_estabelecimento ?? establishment.nome_estabelecimento,
+      tipo_estabelecimento: tipo_estabelecimento ?? establishment.tipo_estabelecimento,
+      descricao: descricao !== undefined ? descricao : establishment.descricao,
+      generos_musicais: generos_musicais ?? establishment.generos_musicais,
+      horario_abertura: horario_abertura ?? establishment.horario_abertura,
+      horario_fechamento: horario_fechamento ?? establishment.horario_fechamento,
+      endereco_id: endereco_id ?? establishment.endereco_id,
+      telefone_contato: telefone_contato ?? establishment.telefone_contato,
       fotos: fotos !== undefined ? fotos : establishment.fotos,
       esta_ativo: esta_ativo !== undefined ? esta_ativo : establishment.esta_ativo,
     });
