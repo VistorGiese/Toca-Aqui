@@ -1,135 +1,112 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { asyncHandler, AppError } from "../middleware/errorHandler";
 import CommentModel from "../models/CommentModel";
 import redisService from "../config/redis";
 import pubSubService from "../services/PubSubService";
 
-export const createComment = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { comentavel_tipo, comentavel_id, texto } = req.body;
+export const createComment = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { comentavel_tipo, comentavel_id, texto } = req.body;
 
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
 
-    if (!comentavel_tipo || !comentavel_id || !texto) {
-      return res.status(400).json({ error: "Todos os campos são obrigatórios" });
-    }
-
-    const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda', 'agendamento'];
-    if (!tiposValidos.includes(comentavel_tipo)) {
-      return res.status(400).json({ error: "Tipo de comentário inválido" });
-    }
-
-    if (texto.trim().length < 3) {
-      return res.status(400).json({ error: "Comentário muito curto (mínimo 3 caracteres)" });
-    }
-
-    if (texto.trim().length > 1000) {
-      return res.status(400).json({ error: "Comentário muito longo (máximo 1000 caracteres)" });
-    }
-
-    const comentario = await CommentModel.create({
-      usuario_id,
-      comentavel_tipo,
-      comentavel_id,
-      texto: texto.trim()
-    });
-
-    await redisService.invalidatePattern(`comentarios:${comentavel_tipo}:${comentavel_id}:*`);
-
-    await pubSubService.publishComentarioCriado({
-      id: comentario.id,
-      usuario_id,
-      comentavel_tipo,
-      comentavel_id
-    });
-
-    res.status(201).json({ 
-      message: "Comentário criado com sucesso",
-      comentario 
-    });
-  } catch (error) {
-    console.error("Erro ao criar comentário:", error);
-    res.status(500).json({ error: "Erro ao criar comentário" });
+  if (!comentavel_tipo || !comentavel_id || !texto) {
+    throw new AppError("Todos os campos são obrigatórios", 400);
   }
-};
 
-export const getComments = async (req: Request, res: Response) => {
-  try {
-    const { comentavel_tipo, comentavel_id } = req.params;
-
-    if (!comentavel_tipo || !comentavel_id) {
-      return res.status(400).json({ error: "Tipo e ID são obrigatórios" });
-    }
-
-    const cacheKey = `comentarios:${comentavel_tipo}:${comentavel_id}`;
-
-    const cached = await redisService.get<any[]>(cacheKey);
-    if (cached) {
-      console.log(`Cache HIT: ${cacheKey}`);
-      return res.json({
-        message: "Comentários recuperados com sucesso",
-        total: cached.length,
-        comentarios: cached,
-        source: "cache"
-      });
-    }
-
-    console.log(`Cache MISS: ${cacheKey}`);
-
-    const comentarios = await CommentModel.findAll({
-      where: { comentavel_tipo, comentavel_id },
-      order: [['created_at', 'DESC']]
-    });
-
-    await redisService.set(cacheKey, comentarios, 300);
-
-    res.json({
-      message: "Comentários recuperados com sucesso",
-      total: comentarios.length,
-      comentarios,
-      source: "database"
-    });
-  } catch (error) {
-    console.error("Erro ao buscar comentários:", error);
-    res.status(500).json({ error: "Erro ao buscar comentários" });
+  const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda', 'agendamento'];
+  if (!tiposValidos.includes(comentavel_tipo)) {
+    throw new AppError("Tipo de comentário inválido", 400);
   }
-};
 
-export const deleteComment = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { id } = req.params;
-
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
-
-    const comentario = await CommentModel.findByPk(id);
-
-    if (!comentario) {
-      return res.status(404).json({ error: "Comentário não encontrado" });
-    }
-
-    if (comentario.usuario_id !== usuario_id) {
-      return res.status(403).json({ error: "Você não tem permissão para deletar este comentário" });
-    }
-
-    await comentario.destroy();
-
-    await redisService.invalidatePattern(`comentarios:${comentario.comentavel_tipo}:${comentario.comentavel_id}:*`);
-
-    await pubSubService.publishComentarioDeletado({
-      id: comentario.id,
-      comentavel_tipo: comentario.comentavel_tipo,
-      comentavel_id: comentario.comentavel_id
-    });
-
-    res.json({ message: "Comentário deletado com sucesso" });
-  } catch (error) {
-    console.error("Erro ao deletar comentário:", error);
-    res.status(500).json({ error: "Erro ao deletar comentário" });
+  if (texto.trim().length < 3) {
+    throw new AppError("Comentário muito curto (mínimo 3 caracteres)", 400);
   }
-};
+
+  if (texto.trim().length > 1000) {
+    throw new AppError("Comentário muito longo (máximo 1000 caracteres)", 400);
+  }
+
+  const comentario = await CommentModel.create({
+    usuario_id,
+    comentavel_tipo,
+    comentavel_id,
+    texto: texto.trim()
+  });
+
+  await redisService.invalidatePattern(`comentarios:${comentavel_tipo}:${comentavel_id}:*`);
+
+  await pubSubService.publishComentarioCriado({
+    id: comentario.id,
+    usuario_id,
+    comentavel_tipo,
+    comentavel_id
+  });
+
+  res.status(201).json({
+    message: "Comentário criado com sucesso",
+    comentario
+  });
+});
+
+export const getComments = asyncHandler(async (req: Request, res: Response) => {
+  const { comentavel_tipo, comentavel_id } = req.params;
+
+  if (!comentavel_tipo || !comentavel_id) {
+    throw new AppError("Tipo e ID são obrigatórios", 400);
+  }
+
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const offset = (page - 1) * limit;
+
+  const cacheKey = `comentarios:${comentavel_tipo}:${comentavel_id}:p${page}:l${limit}`;
+
+  const cached = await redisService.get<any>(cacheKey);
+  if (cached) {
+    return res.json(cached);
+  }
+
+  const { count, rows } = await CommentModel.findAndCountAll({
+    where: { comentavel_tipo, comentavel_id },
+    order: [['created_at', 'DESC']],
+    limit,
+    offset,
+  });
+
+  const resultado = {
+    message: "Comentários recuperados com sucesso",
+    data: rows,
+    pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) },
+  };
+
+  await redisService.set(cacheKey, resultado, 300);
+  res.json(resultado);
+});
+
+export const deleteComment = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { id } = req.params;
+
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
+
+  const comentario = await CommentModel.findByPk(id);
+  if (!comentario) throw new AppError("Comentário não encontrado", 404);
+
+  if (comentario.usuario_id !== usuario_id) {
+    throw new AppError("Você não tem permissão para deletar este comentário", 403);
+  }
+
+  await comentario.destroy();
+
+  await redisService.invalidatePattern(`comentarios:${comentario.comentavel_tipo}:${comentario.comentavel_id}:*`);
+
+  await pubSubService.publishComentarioDeletado({
+    id: comentario.id,
+    comentavel_tipo: comentario.comentavel_tipo,
+    comentavel_id: comentario.comentavel_id
+  });
+
+  res.json({ message: "Comentário deletado com sucesso" });
+});
