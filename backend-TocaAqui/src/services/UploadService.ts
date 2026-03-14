@@ -43,13 +43,20 @@ class UploadService {
     cb: multer.FileFilterCallback
   ): void => {
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const ext = path.extname(file.originalname).toLowerCase();
 
-    if (allowedExtensions.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Tipo de arquivo não permitido: ${ext}. Use: ${allowedExtensions.join(', ')}`));
+    if (!allowedExtensions.includes(ext)) {
+      cb(new Error(`Extensão não permitida: ${ext}. Use: ${allowedExtensions.join(', ')}`));
+      return;
     }
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      cb(new Error(`Tipo MIME não permitido: ${file.mimetype}. Use: ${allowedMimeTypes.join(', ')}`));
+      return;
+    }
+
+    cb(null, true);
   };
 
 
