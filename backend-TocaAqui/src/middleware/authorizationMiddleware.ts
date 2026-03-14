@@ -19,39 +19,35 @@ export const checkRole = (...allowedRoles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): Response | void => {
     try {
       if (!req.user) {
-        console.error('[RBAC] Tentativa de autorização sem autenticação prévia');
-        return res.status(401).json({ 
-          error: "Não Autenticado", 
-          message: "Você precisa estar autenticado para acessar este recurso" 
+        return res.status(401).json({
+          error: "Não Autenticado",
+          message: "Você precisa estar autenticado para acessar este recurso"
         });
       }
 
       const userRole = req.user.role;
       if (!userRole) {
-        console.error(`[RBAC] Usuário ID ${req.user.id} sem role definida`);
-        return res.status(403).json({ 
-          error: "Role Não Definida", 
-          message: "Seu perfil de usuário não possui uma role atribuída" 
+        return res.status(403).json({
+          error: "Role Não Definida",
+          message: "Seu perfil de usuário não possui uma role atribuída"
         });
       }
 
       if (!allowedRoles.includes(userRole as UserRole)) {
-        console.warn(`[RBAC] Acesso negado: Usuário ID ${req.user.id} (role: ${userRole}) tentou acessar rota que requer: ${allowedRoles.join(', ')}`);
-        return res.status(403).json({ 
-          error: "Acesso Negado", 
+        return res.status(403).json({
+          error: "Acesso Negado",
           message: `Esta ação requer uma das seguintes permissões: ${allowedRoles.join(', ')}`,
           userRole,
           requiredRoles: allowedRoles
         });
       }
 
-      console.log(`[RBAC] Autorização concedida: Usuário ID ${req.user.id} (role: ${userRole}) acessando rota que requer: ${allowedRoles.join(', ')}`);
       next();
     } catch (error) {
       console.error('[RBAC] Erro no middleware de autorização:', error);
-      return res.status(500).json({ 
-        error: "Erro de Autorização", 
-        message: "Erro ao verificar permissões do usuário" 
+      return res.status(500).json({
+        error: "Erro de Autorização",
+        message: "Erro ao verificar permissões do usuário"
       });
     }
   };
@@ -74,9 +70,9 @@ export const checkArtist = () => {
 
 export const checkAnyRole = () => {
   return checkRole(
-    UserRole.ADMIN, 
-    UserRole.ESTABLISHMENT_OWNER, 
-    UserRole.ARTIST, 
+    UserRole.ADMIN,
+    UserRole.ESTABLISHMENT_OWNER,
+    UserRole.ARTIST,
     UserRole.COMMON_USER
   );
 };
@@ -88,40 +84,35 @@ export const checkOwnership = (
   return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
     try {
       if (!req.user) {
-        console.error('[RBAC] Tentativa de ownership sem autenticação prévia');
-        return res.status(401).json({ 
-          error: "Não Autenticado", 
+        return res.status(401).json({
+          error: "Não Autenticado",
         });
       }
 
       if (req.user.role === UserRole.ADMIN) {
-        console.log(`[RBAC] Admin bypass: Usuário ID ${req.user.id} (admin) tem acesso total`);
         return next();
       }
 
       const resourceOwnerId = await getResourceOwnerId(req);
 
       if (!resourceOwnerId) {
-        console.warn(`[RBAC] Recurso não encontrado ou não possui dono`);
-        return res.status(404).json({ 
-          error: "Recurso Não Encontrado", 
-          message: "O recurso solicitado não foi encontrado" 
+        return res.status(404).json({
+          error: "Recurso Não Encontrado",
+          message: "O recurso solicitado não foi encontrado"
         });
       }
 
       if (req.user.id !== resourceOwnerId) {
-        console.warn(`[RBAC] Ownership negado: Usuário ID ${req.user.id} tentou acessar recurso de usuário ID ${resourceOwnerId}`);
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: "Você não tem permissão para acessar este recurso",
         });
       }
 
-      console.log(`[RBAC] Ownership validado: Usuário ID ${req.user.id} é dono do recurso`);
       next();
     } catch (error) {
       console.error('[RBAC] Erro ao validar ownership:', error);
-      return res.status(500).json({ 
-        message: "Erro ao verificar permissões do recurso" 
+      return res.status(500).json({
+        message: "Erro ao verificar permissões do recurso"
       });
     }
   };
@@ -151,9 +142,7 @@ export const checkOwnershipOrAdmin = (
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      // ADMIN BYPASS 
       if (user.role === UserRole.ADMIN) {
-        console.log(`[ADMIN BYPASS] Admin ${user.email} acessando ${resourceModel} ${resourceId}`);
         return next();
       }
 
@@ -172,7 +161,6 @@ export const checkOwnershipOrAdmin = (
 
       const ownerId = (resource as any)[ownerField];
       if (ownerId !== user.id) {
-        console.warn(`[OWNERSHIP DENIED] User ${user.id} tentou acessar ${resourceModel} ${resourceId} (owner: ${ownerId})`);
         return res.status(403).json({
           error: 'Você não tem permissão para acessar este recurso'
         });
@@ -195,14 +183,12 @@ export const checkRolesOrAdmin = (...allowedRoles: UserRole[]) => {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
-    // ADMIN BYPASS
     if (user.role === UserRole.ADMIN) {
-      console.log(`[ADMIN BYPASS] Admin ${user.email} acessando rota protegida`);
       return next();
     }
 
     if (!allowedRoles.includes(user.role as UserRole)) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Você não tem permissão para acessar este recurso',
         requiredRoles: allowedRoles,
         yourRole: user.role
