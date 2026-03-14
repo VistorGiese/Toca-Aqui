@@ -50,8 +50,8 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   res.json({ message: 'Email verificado com sucesso. Você já pode fazer login.' });
 });
 
-export const getUserProfile = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
   if (!userId) throw new AppError('Usuário não identificado', 401);
   const user = await authService.getUserProfile(userId);
   res.json({
@@ -65,23 +65,23 @@ export const getUserProfile = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
-export const createEstablishmentProfile = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+export const createEstablishmentProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
   if (!userId) throw new AppError('Usuário não identificado', 401);
   const profile = await authService.createEstablishmentProfile(userId, req.body);
   res.status(201).json({ message: 'Perfil de estabelecimento criado com sucesso', profile });
 });
 
-export const createArtistProfile = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+export const createArtistProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
   if (!userId) throw new AppError('Usuário não identificado', 401);
   const profile = await authService.createArtistProfile(userId, req.body);
   res.status(201).json({ message: 'Perfil de artista criado com sucesso', profile });
 });
 
-export const uploadArtistPhoto = asyncHandler(async (req: Request, res: Response) => {
+export const uploadArtistPhoto = asyncHandler(async (req: AuthRequest, res: Response) => {
   const id = req.params.id as string;
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!req.file) throw new AppError('Nenhuma imagem enviada', 400);
 
@@ -93,7 +93,7 @@ export const uploadArtistPhoto = asyncHandler(async (req: Request, res: Response
     throw new AppError('Perfil de artista não encontrado', 404);
   }
 
-  if (profile.usuario_id !== userId && (req as any).user?.role !== 'admin') {
+  if (profile.usuario_id !== userId && req.user?.role !== 'admin') {
     uploadService.deleteFile(novaFoto);
     throw new AppError('Você não tem permissão para editar este perfil', 403);
   }

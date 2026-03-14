@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/authmiddleware';
 import { asyncHandler } from '../middleware/errorHandler';
 import { AppError } from '../errors/AppError';
 import BandModel from '../models/BandModel';
@@ -6,8 +7,8 @@ import BandMemberModel from '../models/BandMemberModel';
 import ArtistProfileModel from '../models/ArtistProfileModel';
 import UserModel from '../models/UserModel';
 
-export const createBand = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+export const createBand = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
   const { nome_banda, descricao, generos_musicais, perfil_artista_id } = req.body;
 
   if (!userId) throw new AppError('Usuário não identificado', 401);
@@ -55,7 +56,7 @@ export const createBand = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const getBandDetails = asyncHandler(async (req: Request, res: Response) => {
+export const getBandDetails = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   const band = await BandModel.findByPk(id as string, {
@@ -107,8 +108,8 @@ export const getBandDetails = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
-export const inviteMemberToBand = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+export const inviteMemberToBand = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
   const { banda_id, perfil_artista_id, funcao } = req.body;
 
   if (!userId) throw new AppError('Usuário não identificado', 401);
@@ -176,8 +177,8 @@ export const inviteMemberToBand = asyncHandler(async (req: Request, res: Respons
   });
 });
 
-export const respondToBandInvitation = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+export const respondToBandInvitation = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
   const { invitation_id, action } = req.body; // action: 'accept' | 'reject'
 
   if (!userId) throw new AppError('Usuário não identificado', 401);
@@ -225,8 +226,8 @@ export const respondToBandInvitation = asyncHandler(async (req: Request, res: Re
   });
 });
 
-export const getUserBands = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+export const getUserBands = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
 
   if (!userId) throw new AppError('Usuário não identificado', 401);
 

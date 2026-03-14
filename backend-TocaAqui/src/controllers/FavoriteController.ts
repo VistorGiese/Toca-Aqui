@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { Op } from "sequelize";
+import { AuthRequest } from "../middleware/authmiddleware";
 import FavoriteModel from "../models/FavoriteModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
 import ArtistProfileModel from "../models/ArtistProfileModel";
@@ -7,8 +8,8 @@ import BandModel from "../models/BandModel";
 import { asyncHandler } from "../middleware/errorHandler";
 import { AppError, unauthorized, badRequest, notFound } from "../errors/AppError";
 
-export const addFavorite = asyncHandler(async (req: Request, res: Response) => {
-  const usuario_id = (req as any).user?.id;
+export const addFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
   const { favoritavel_tipo, favoritavel_id } = req.body;
 
   if (!usuario_id) {
@@ -61,8 +62,8 @@ export const addFavorite = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const removeFavorite = asyncHandler(async (req: Request, res: Response) => {
-  const usuario_id = (req as any).user?.id;
+export const removeFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
   const { favoritavel_tipo, favoritavel_id } = req.params;
 
   if (!usuario_id) {
@@ -82,8 +83,8 @@ export const removeFavorite = asyncHandler(async (req: Request, res: Response) =
   res.json({ message: "Item removido dos favoritos com sucesso" });
 });
 
-export const getFavorites = asyncHandler(async (req: Request, res: Response) => {
-  const usuario_id = (req as any).user?.id;
+export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
   const { tipo } = req.query;
 
   if (!usuario_id) {
@@ -135,8 +136,8 @@ export const getFavorites = asyncHandler(async (req: Request, res: Response) => 
   });
 });
 
-export const checkFavorite = asyncHandler(async (req: Request, res: Response) => {
-  const usuario_id = (req as any).user?.id;
+export const checkFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
   const { favoritavel_tipo, favoritavel_id } = req.params;
 
   if (!usuario_id) {

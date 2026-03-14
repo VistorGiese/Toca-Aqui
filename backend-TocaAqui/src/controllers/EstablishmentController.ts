@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/authmiddleware';
 import { Op } from 'sequelize';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import AddressModel from '../models/AddressModel';
@@ -110,10 +111,10 @@ export const getEstablishment = asyncHandler(async (req: Request, res: Response)
   res.json(response);
 });
 
-export const updateEstablishment = asyncHandler(async (req: Request, res: Response) => {
+export const updateEstablishment = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const userId = (req as any).user?.id;
-  const userRole = (req as any).user?.role;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
 
   const establishment = await EstablishmentProfileModel.findByPk(id as string);
 
@@ -181,10 +182,10 @@ export const updateEstablishment = asyncHandler(async (req: Request, res: Respon
   });
 });
 
-export const deleteEstablishment = asyncHandler(async (req: Request, res: Response) => {
+export const deleteEstablishment = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const userId = (req as any).user?.id;
-  const userRole = (req as any).user?.role;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
 
   const establishment = await EstablishmentProfileModel.findByPk(id as string);
 
@@ -208,10 +209,10 @@ export const deleteEstablishment = asyncHandler(async (req: Request, res: Respon
   });
 });
 
-export const uploadEstablishmentPhotos = asyncHandler(async (req: Request, res: Response) => {
+export const uploadEstablishmentPhotos = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const userId = (req as any).user?.id;
-  const userRole = (req as any).user?.role;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
 
   const files = req.files as Express.Multer.File[];
   if (!files || files.length === 0) {
@@ -250,11 +251,11 @@ export const uploadEstablishmentPhotos = asyncHandler(async (req: Request, res: 
   });
 });
 
-export const removeEstablishmentPhoto = asyncHandler(async (req: Request, res: Response) => {
+export const removeEstablishmentPhoto = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { filename } = req.body;
-  const userId = (req as any).user?.id;
-  const userRole = (req as any).user?.role;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
 
   if (!filename) {
     throw new AppError('filename é obrigatório', 400);
