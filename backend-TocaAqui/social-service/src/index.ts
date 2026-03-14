@@ -41,12 +41,13 @@ sequelize
   .authenticate()
   .then(() => {
     console.log("[Social Service] Banco de dados conectado com sucesso!");
-    sequelize.sync().then(() => {
-      console.log("[Social Service] Sincronização do banco concluída!");
+    app.listen(PORT, () => {
+      console.log(`[Social Service] Servidor rodando na porta ${PORT}`);
     });
   })
   .catch((error) => {
     console.error("[Social Service] Erro ao conectar ao banco de dados:", error);
+    process.exit(1);
   });
 
 app.use("/favoritos", FavoriteRoutes);
@@ -81,9 +82,5 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use(errorHandler);
-
-app.listen(PORT, () => {
-  console.log(`[Social Service] Servidor rodando na porta ${PORT}`);
-});
 
 export default app;
