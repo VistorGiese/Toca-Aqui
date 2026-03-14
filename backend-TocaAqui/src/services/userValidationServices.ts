@@ -11,10 +11,8 @@ export const validateEmailFormat = (email: string): string | null => {
 };
 
 export const validatePasswordFormat = (password: string): string | null => {
-  const senhaRegex =
-    /^(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
-  if (!password || !senhaRegex.test(password)) {
-    return "A senha deve ter no mínimo 8 caracteres e pelo menos 1 caractere especial";
+  if (!password || password.length < 8) {
+    return "A senha deve ter no mínimo 8 caracteres";
   }
   return null;
 };
