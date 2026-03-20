@@ -11,7 +11,7 @@ export const validate =
         campo: e.path.join('.'),
         mensagem: e.message,
       }));
-      return res.status(400).json({ error: 'Dados inválidos', details: errors });
+      return res.status(400).json({ error: 'Dados inválidos', detalhes: errors });
     }
 
     req.body = result.data;
