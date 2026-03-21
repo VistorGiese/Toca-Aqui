@@ -17,6 +17,8 @@ import AdminRoutes from "./routes/AdminRoutes";
 import EstablishmentRoutes from "./routes/EstablishmentRoutes";
 import NotificationRoutes from "./routes/NotificationRoutes";
 import ContractRoutes from "./routes/ContractRoutes";
+import PaymentRoutes from "./routes/PaymentRoutes";
+import WebhookRoutes from "./routes/WebhookRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 import './models/associations';
@@ -49,6 +51,9 @@ app.use(helmet({
     },
   },
 }));
+// Stripe webhook precisa do body raw ANTES do express.json()
+app.use('/webhooks', express.raw({ type: 'application/json' }), WebhookRoutes);
+
 app.use(express.json());
 app.use(generalLimiter);
 
@@ -72,6 +77,7 @@ app.use("/admin", AdminRoutes);
 app.use("/estabelecimentos", EstablishmentRoutes);
 app.use("/notificacoes", NotificationRoutes);
 app.use("/contratos", ContractRoutes);
+app.use("/pagamentos", PaymentRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "API funcionando!" });
