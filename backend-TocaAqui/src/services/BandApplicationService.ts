@@ -8,6 +8,7 @@ import ArtistProfileModel from '../models/ArtistProfileModel';
 import { createNotification } from './NotificationService';
 import { NotificationType } from '../models/NotificationModel';
 import { AppError } from '../errors/AppError';
+import { contractService } from './ContractService';
 
 export class BandApplicationService {
   async apply(banda_id: number, evento_id: number) {
@@ -92,6 +93,28 @@ export class BandApplicationService {
       { where: { evento_id: aplicacao.evento_id, id: { [Op.ne]: aplicacao.id }, status: 'pendente' } }
     );
 
+    // Gerar contrato automaticamente
+    let contrato;
+    try {
+      contrato = await contractService.generateFromApplication(aplicacao.id);
+    } catch (err) {
+      console.error('[BandApplicationService] Erro ao gerar contrato:', err);
+    }
+
+    // Notificar estabelecimento sobre o contrato gerado
+    if (contrato) {
+      const estabelecimento = await EstablishmentProfileModel.findByPk(evento.perfil_estabelecimento_id);
+      if (estabelecimento) {
+        await createNotification(
+          estabelecimento.usuario_id,
+          NotificationType.CONTRATO_GERADO,
+          `Um contrato foi gerado para o evento "${evento.titulo_evento}" com a banda "${banda.nome_banda}". Revise e aceite os termos.`,
+          'contrato',
+          contrato.id
+        );
+      }
+    }
+
     // Notificar líder da banda aceita
     const liderMembro = await BandMemberModel.findOne({
       where: { banda_id: aplicacao.banda_id, e_lider: true },
@@ -106,6 +129,17 @@ export class BandApplicationService {
           'aplicacao',
           aplicacao.id
         );
+
+        // Notificar sobre contrato gerado
+        if (contrato) {
+          await createNotification(
+            artistaLider.usuario_id,
+            NotificationType.CONTRATO_GERADO,
+            `Um contrato foi gerado para o evento "${evento.titulo_evento}". Revise e aceite os termos.`,
+            'contrato',
+            contrato.id
+          );
+        }
       }
     }
 

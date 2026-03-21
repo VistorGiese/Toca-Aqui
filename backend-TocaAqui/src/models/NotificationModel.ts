@@ -2,11 +2,17 @@ import { DataTypes, Model } from 'sequelize';
 import sequelize from '../config/database';
 
 export enum NotificationType {
-  APLICACAO_RECEBIDA = 'aplicacao_recebida',
-  APLICACAO_ACEITA   = 'aplicacao_aceita',
-  APLICACAO_REJEITADA = 'aplicacao_rejeitada',
-  CONVITE_BANDA      = 'convite_banda',
-  SISTEMA            = 'sistema',
+  APLICACAO_RECEBIDA   = 'aplicacao_recebida',
+  APLICACAO_ACEITA     = 'aplicacao_aceita',
+  APLICACAO_REJEITADA  = 'aplicacao_rejeitada',
+  CONVITE_BANDA        = 'convite_banda',
+  SISTEMA              = 'sistema',
+  CONTRATO_GERADO      = 'contrato_gerado',
+  CONTRATO_ATUALIZADO  = 'contrato_atualizado',
+  CONTRATO_ACEITO      = 'contrato_aceito',
+  CONTRATO_CANCELADO   = 'contrato_cancelado',
+  PAGAMENTO_PENDENTE   = 'pagamento_pendente',
+  PAGAMENTO_RECEBIDO   = 'pagamento_recebido',
 }
 
 export interface NotificationAttributes {
