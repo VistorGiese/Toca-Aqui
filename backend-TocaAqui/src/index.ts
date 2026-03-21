@@ -16,6 +16,7 @@ import BandManagementRoutes from "./routes/BandManagementRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
 import EstablishmentRoutes from "./routes/EstablishmentRoutes";
 import NotificationRoutes from "./routes/NotificationRoutes";
+import ContractRoutes from "./routes/ContractRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 import './models/associations';
@@ -70,6 +71,7 @@ app.use("/gerenciamento-bandas", BandManagementRoutes);
 app.use("/admin", AdminRoutes);
 app.use("/estabelecimentos", EstablishmentRoutes);
 app.use("/notificacoes", NotificationRoutes);
+app.use("/contratos", ContractRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "API funcionando!" });
