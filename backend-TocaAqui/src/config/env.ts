@@ -33,6 +33,10 @@ const envSchema = z.object({
 
   // Frontend
   FRONTEND_URL: z.string().url('FRONTEND_URL deve ser uma URL válida').default('http://localhost:5173'),
+
+  // Stripe
+  STRIPE_SECRET_KEY: z.string().default(''),
+  STRIPE_WEBHOOK_SECRET: z.string().default(''),
 });
 
 const result = envSchema.safeParse(process.env);
