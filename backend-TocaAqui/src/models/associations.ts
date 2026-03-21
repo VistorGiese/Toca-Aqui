@@ -9,6 +9,7 @@ import BookingModel from './BookingModel';
 import BandApplicationModel from './BandApplicationModel';
 import FavoriteModel from './FavoriteModel';
 import NotificationModel from './NotificationModel';
+import ContractModel from './ContractModel';
 
 // Associações do novo sistema de usuários
 UserModel.hasMany(EstablishmentProfileModel, {
@@ -94,6 +95,47 @@ BandMemberModel.belongsTo(ArtistProfileModel, {
 });
 
 
+// Associações de Contratos
+ContractModel.belongsTo(BandApplicationModel, {
+  foreignKey: 'aplicacao_id',
+  as: 'Application',
+});
+
+ContractModel.belongsTo(BookingModel, {
+  foreignKey: 'evento_id',
+  as: 'Event',
+});
+
+ContractModel.belongsTo(BandModel, {
+  foreignKey: 'banda_id',
+  as: 'Band',
+});
+
+ContractModel.belongsTo(EstablishmentProfileModel, {
+  foreignKey: 'perfil_estabelecimento_id',
+  as: 'EstablishmentProfile',
+});
+
+BandApplicationModel.hasOne(ContractModel, {
+  foreignKey: 'aplicacao_id',
+  as: 'Contract',
+});
+
+BookingModel.hasOne(ContractModel, {
+  foreignKey: 'evento_id',
+  as: 'Contract',
+});
+
+BandModel.hasMany(ContractModel, {
+  foreignKey: 'banda_id',
+  as: 'Contracts',
+});
+
+EstablishmentProfileModel.hasMany(ContractModel, {
+  foreignKey: 'perfil_estabelecimento_id',
+  as: 'Contracts',
+});
+
 UserModel.hasMany(FavoriteModel, {
   foreignKey: 'usuario_id',
   as: 'Favorites',
@@ -125,4 +167,5 @@ export {
   BandApplicationModel,
   FavoriteModel,
   NotificationModel,
+  ContractModel,
 };
