@@ -1,6 +1,12 @@
 import cron from 'node-cron';
 import { Op } from 'sequelize';
 import BookingModel, { BookingStatus } from '../models/BookingModel';
+import ContractModel, { ContractStatus } from '../models/ContractModel';
+import PaymentModel, { PaymentStatus } from '../models/PaymentModel';
+import { createNotification } from './NotificationService';
+import { NotificationType } from '../models/NotificationModel';
+import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
+import BandMemberModel from '../models/BandMemberModel';
 import redisService from '../config/redis';
 
 const markPastEventsAsRealizado = async () => {
@@ -26,9 +32,103 @@ const markPastEventsAsRealizado = async () => {
   }
 };
 
+/**
+ * Marca contratos como concluídos quando:
+ * - O evento já passou
+ * - O contrato está aceito
+ * - Todos os pagamentos estão pagos
+ */
+const completeFinishedContracts = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const contratosAceitos = await ContractModel.findAll({
+      where: {
+        status: ContractStatus.ACEITO,
+        data_evento: { [Op.lt]: today },
+      },
+      include: [{
+        association: 'Payments',
+        required: false,
+      }],
+    });
+
+    for (const contrato of contratosAceitos) {
+      const payments = (contrato as any).Payments as PaymentModel[];
+
+      // Verificar se todos os pagamentos estão pagos (ou não há pagamentos)
+      const allPaid = !payments.length || payments.every(p => p.status === PaymentStatus.PAGO);
+
+      if (allPaid) {
+        await contrato.update({ status: ContractStatus.CONCLUIDO });
+        console.log(`[CronService] Contrato ${contrato.id} concluído.`);
+      }
+    }
+
+    await redisService.invalidatePattern('contratos:*');
+  } catch (error) {
+    console.error('[CronService] Erro ao concluir contratos:', error);
+  }
+};
+
+/**
+ * Envia lembretes de pagamento para vencimentos próximos (3 dias).
+ */
+const sendPaymentReminders = async () => {
+  try {
+    const today = new Date();
+    const threeDaysFromNow = new Date(today);
+    threeDaysFromNow.setDate(today.getDate() + 3);
+
+    const todayStr = today.toISOString().split('T')[0];
+    const futureStr = threeDaysFromNow.toISOString().split('T')[0];
+
+    const pendingPayments = await PaymentModel.findAll({
+      where: {
+        status: PaymentStatus.PENDENTE,
+        data_vencimento: {
+          [Op.between]: [todayStr, futureStr],
+        },
+      },
+      include: [{ association: 'Contract' }],
+    });
+
+    for (const payment of pendingPayments) {
+      const contrato = (payment as any).Contract as ContractModel;
+      if (!contrato) continue;
+
+      const msg = `Lembrete: pagamento de R$ ${Number(payment.valor).toFixed(2)} (${payment.tipo}) vence em ${payment.data_vencimento}.`;
+
+      // Notificar estabelecimento
+      const estab = await EstablishmentProfileModel.findByPk(contrato.perfil_estabelecimento_id);
+      if (estab) {
+        await createNotification(
+          estab.usuario_id,
+          NotificationType.PAGAMENTO_PENDENTE,
+          msg,
+          'pagamento',
+          payment.id!
+        );
+      }
+    }
+  } catch (error) {
+    console.error('[CronService] Erro ao enviar lembretes de pagamento:', error);
+  }
+};
+
 export const initCronJobs = () => {
-  // Roda todo dia às 00:05
+  // Roda todo dia às 00:05 — marca eventos passados como realizados
   cron.schedule('5 0 * * *', markPastEventsAsRealizado, {
+    timezone: 'America/Sao_Paulo',
+  });
+
+  // Roda todo dia às 01:00 — conclui contratos finalizados
+  cron.schedule('0 1 * * *', completeFinishedContracts, {
+    timezone: 'America/Sao_Paulo',
+  });
+
+  // Roda todo dia às 09:00 — envia lembretes de pagamento
+  cron.schedule('0 9 * * *', sendPaymentReminders, {
     timezone: 'America/Sao_Paulo',
   });
 
@@ -36,4 +136,5 @@ export const initCronJobs = () => {
 
   // Executa imediatamente na inicialização para cobrir eventos perdidos
   markPastEventsAsRealizado();
+  completeFinishedContracts();
 };
