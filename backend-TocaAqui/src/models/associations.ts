@@ -10,6 +10,8 @@ import BandApplicationModel from './BandApplicationModel';
 import FavoriteModel from './FavoriteModel';
 import NotificationModel from './NotificationModel';
 import ContractModel from './ContractModel';
+import PaymentModel from './PaymentModel';
+import ContractHistoryModel from './ContractHistoryModel';
 
 // Associações do novo sistema de usuários
 UserModel.hasMany(EstablishmentProfileModel, {
@@ -136,6 +138,33 @@ EstablishmentProfileModel.hasMany(ContractModel, {
   as: 'Contracts',
 });
 
+// Associações de Pagamentos
+ContractModel.hasMany(PaymentModel, {
+  foreignKey: 'contrato_id',
+  as: 'Payments',
+});
+
+PaymentModel.belongsTo(ContractModel, {
+  foreignKey: 'contrato_id',
+  as: 'Contract',
+});
+
+// Associações de Histórico de Contratos
+ContractModel.hasMany(ContractHistoryModel, {
+  foreignKey: 'contrato_id',
+  as: 'History',
+});
+
+ContractHistoryModel.belongsTo(ContractModel, {
+  foreignKey: 'contrato_id',
+  as: 'Contract',
+});
+
+ContractHistoryModel.belongsTo(UserModel, {
+  foreignKey: 'usuario_id',
+  as: 'User',
+});
+
 UserModel.hasMany(FavoriteModel, {
   foreignKey: 'usuario_id',
   as: 'Favorites',
@@ -168,4 +197,6 @@ export {
   FavoriteModel,
   NotificationModel,
   ContractModel,
+  PaymentModel,
+  ContractHistoryModel,
 };

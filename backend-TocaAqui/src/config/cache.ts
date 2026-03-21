@@ -24,4 +24,8 @@ export const CACHE_KEYS = {
   estabelecimentos: (params = 'all') => `estabelecimentos:list:${params}`,
   agendamento: (id: string | number) => `agendamento:${id}`,
   agendamentos: (params = 'all') => `agendamentos:list:${params}`,
+  contrato: (id: string | number) => `contrato:${id}`,
+  contratos: (params = 'all') => `contratos:list:${params}`,
+  pagamento: (id: string | number) => `pagamento:${id}`,
+  pagamentos: (params = 'all') => `pagamentos:list:${params}`,
 } as const;
