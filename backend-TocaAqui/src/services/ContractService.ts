@@ -1,4 +1,5 @@
-import ContractModel, { ContractStatus } from '../models/ContractModel';
+import { Op } from 'sequelize';
+import ContractModel, { ContractStatus, PaymentMethod } from '../models/ContractModel';
 import ContractHistoryModel from '../models/ContractHistoryModel';
 import BandApplicationModel from '../models/BandApplicationModel';
 import BookingModel from '../models/BookingModel';
@@ -108,6 +109,7 @@ export class ContractService {
       // Aceite
       aceite_contratante: false,
       aceite_contratado: false,
+      metodo_pagamento: PaymentMethod.STRIPE,
       versao: 1,
     });
 
@@ -159,7 +161,6 @@ export class ContractService {
     const bandaIds = membros.map(m => m.banda_id);
 
     // Buscar contratos de ambos os lados
-    const { Op } = require('sequelize');
     return ContractModel.findAll({
       where: {
         [Op.or]: [
@@ -228,8 +229,8 @@ export class ContractService {
       ...validChanges,
       aceite_contratante: false,
       aceite_contratado: false,
-      data_aceite_contratante: null,
-      data_aceite_contratado: null,
+      data_aceite_contratante: undefined,
+      data_aceite_contratado: undefined,
       ultima_edicao_por: role,
       versao: contrato.versao + 1,
       status: ContractStatus.RASCUNHO,

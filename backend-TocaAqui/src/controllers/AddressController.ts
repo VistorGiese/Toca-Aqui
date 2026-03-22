@@ -48,7 +48,8 @@ export const getAddressById = asyncHandler(async (req: Request, res: Response) =
 export const updateAddress = asyncHandler(async (req: Request, res: Response) => {
   const address = await AddressModel.findByPk(req.params.id as string);
   if (!address) throw new AppError("Endereço não encontrado", 404);
-  await address.update(req.body);
+  const { rua, numero, bairro, cidade, estado, cep } = req.body;
+  await address.update({ rua, numero, bairro, cidade, estado, cep });
   res.json(address);
 });
 

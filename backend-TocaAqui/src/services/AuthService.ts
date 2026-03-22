@@ -74,7 +74,11 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     const user = await UserModel.findOne({ where: { email } });
-    if (!user) return; // resposta genérica — não revelar se email existe
+    if (!user) {
+      // Delay para evitar timing side-channel que permite enumeração de emails
+      await new Promise(r => setTimeout(r, 200 + Math.random() * 100));
+      return;
+    }
 
     const token = crypto.randomBytes(32).toString('hex');
     await redisService.getClient().setex(`reset:${token}`, 60 * 60, String(user.id));

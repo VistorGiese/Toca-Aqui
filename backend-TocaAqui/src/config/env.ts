@@ -17,7 +17,7 @@ const envSchema = z.object({
 
   // JWT
   JWT_SECRET: z.string().min(16, 'JWT_SECRET deve ter ao menos 16 caracteres'),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+  JWT_EXPIRES_IN: z.string().default('1d'),
 
   // Redis
   REDIS_HOST: z.string().default('localhost'),
@@ -51,3 +51,16 @@ if (!result.success) {
 }
 
 export const env = result.data;
+
+// Validação extra em produção
+if (env.NODE_ENV === 'production') {
+  const missing: string[] = [];
+  if (!env.STRIPE_SECRET_KEY) missing.push('STRIPE_SECRET_KEY');
+  if (!env.STRIPE_WEBHOOK_SECRET) missing.push('STRIPE_WEBHOOK_SECRET');
+  if (!env.SMTP_USER) missing.push('SMTP_USER');
+  if (!env.SMTP_PASS) missing.push('SMTP_PASS');
+  if (missing.length > 0) {
+    console.error(`\n[FATAL] Variáveis obrigatórias em produção não configuradas: ${missing.join(', ')}\n`);
+    process.exit(1);
+  }
+}

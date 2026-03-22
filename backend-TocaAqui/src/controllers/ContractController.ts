@@ -13,7 +13,7 @@ import { CACHE_KEYS } from '../config/cache';
 export const getContract = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const contractId = parseInt(req.params.id);
+  const contractId = parseInt(req.params.id as string);
   const role = await contractService.getUserRole(contractId, req.user.id);
   if (!role) throw new AppError('Você não tem acesso a este contrato', 403);
 
@@ -24,7 +24,7 @@ export const getContract = asyncHandler(async (req: AuthRequest, res: Response) 
 export const getContractByEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const eventoId = parseInt(req.params.evento_id);
+  const eventoId = parseInt(req.params.evento_id as string);
   const contrato = await contractService.getByEvent(eventoId);
   if (!contrato) throw new AppError('Nenhum contrato encontrado para este evento', 404);
 
@@ -44,7 +44,7 @@ export const getMyContracts = asyncHandler(async (req: AuthRequest, res: Respons
 export const editContract = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const contractId = parseInt(req.params.id);
+  const contractId = parseInt(req.params.id as string);
   const role = await contractService.getUserRole(contractId, req.user.id);
   if (!role) throw new AppError('Você não tem acesso a este contrato', 403);
 
@@ -70,7 +70,7 @@ export const editContract = asyncHandler(async (req: AuthRequest, res: Response)
 export const acceptContract = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const contractId = parseInt(req.params.id);
+  const contractId = parseInt(req.params.id as string);
   const role = await contractService.getUserRole(contractId, req.user.id);
   if (!role) throw new AppError('Você não tem acesso a este contrato', 403);
 
@@ -110,7 +110,7 @@ export const acceptContract = asyncHandler(async (req: AuthRequest, res: Respons
 export const cancelContract = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const contractId = parseInt(req.params.id);
+  const contractId = parseInt(req.params.id as string);
   const role = await contractService.getUserRole(contractId, req.user.id);
   if (!role) throw new AppError('Você não tem acesso a este contrato', 403);
 
@@ -138,7 +138,7 @@ export const cancelContract = asyncHandler(async (req: AuthRequest, res: Respons
 export const getContractHistory = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const contractId = parseInt(req.params.id);
+  const contractId = parseInt(req.params.id as string);
   const role = await contractService.getUserRole(contractId, req.user.id);
   if (!role) throw new AppError('Você não tem acesso a este contrato', 403);
 

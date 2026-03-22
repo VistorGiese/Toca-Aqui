@@ -30,6 +30,16 @@ export const adminLimiter = rateLimit({
   },
 });
 
+export const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Muitas solicitações de redefinição. Tente novamente em 1 hora.',
+  },
+});
+
 export const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,

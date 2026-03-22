@@ -1,7 +1,13 @@
 import { Request, Response } from 'express';
 import { stripeService } from '../services/StripeService';
+import { env } from '../config/env';
 
 export const handleStripeWebhook = async (req: Request, res: Response): Promise<void> => {
+  if (!env.STRIPE_WEBHOOK_SECRET) {
+    res.status(503).json({ error: 'Pagamentos não configurados' });
+    return;
+  }
+
   const signature = req.headers['stripe-signature'] as string;
 
   if (!signature) {

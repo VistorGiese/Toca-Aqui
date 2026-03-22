@@ -31,7 +31,6 @@ class UploadService {
       const ext = path.extname(file.originalname).toLowerCase();
       const filename = `${uniqueId}-${timestamp}${ext}`;
       
-      console.log(`Upload: ${file.originalname} → ${filename}`);
       cb(null, filename);
     }
   });
@@ -87,7 +86,7 @@ class UploadService {
 
       if (fs.existsSync(absolutePath)) {
         fs.unlinkSync(absolutePath);
-        console.log(`Arquivo deletado: ${filepath}`);
+        // arquivo deletado com sucesso
         return true;
       } else {
         console.warn(`Arquivo não encontrado para deletar: ${filepath}`);

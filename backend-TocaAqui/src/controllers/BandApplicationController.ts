@@ -8,7 +8,7 @@ export const applyBandToEvent = asyncHandler(async (req: AuthRequest, res: Respo
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
   const { banda_id, evento_id } = req.body;
-  const aplicacao = await bandApplicationService.apply(banda_id, evento_id);
+  const aplicacao = await bandApplicationService.apply(banda_id, evento_id, req.user.id);
   res.status(201).json({ message: 'Banda aplicou ao evento com sucesso', aplicacao });
 });
 

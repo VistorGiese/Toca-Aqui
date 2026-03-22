@@ -9,7 +9,7 @@ import { AuthRequest } from '../middleware/authmiddleware';
 export const getPaymentsForContract = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const contratoId = parseInt(req.params.contrato_id);
+  const contratoId = parseInt(req.params.contrato_id as string);
   const role = await contractService.getUserRole(contratoId, req.user.id);
   if (!role) throw new AppError('Você não tem acesso a este contrato', 403);
 
@@ -20,7 +20,7 @@ export const getPaymentsForContract = asyncHandler(async (req: AuthRequest, res:
 export const getPayment = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const payment = await paymentService.getById(parseInt(req.params.id));
+  const payment = await paymentService.getById(parseInt(req.params.id as string));
 
   const role = await contractService.getUserRole(payment.contrato_id, req.user.id);
   if (!role) throw new AppError('Você não tem acesso a este pagamento', 403);
@@ -31,7 +31,7 @@ export const getPayment = asyncHandler(async (req: AuthRequest, res: Response) =
 export const initiatePayment = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const payment = await paymentService.getById(parseInt(req.params.id));
+  const payment = await paymentService.getById(parseInt(req.params.id as string));
 
   // Apenas o contratante (estabelecimento) pode iniciar pagamento
   const role = await contractService.getUserRole(payment.contrato_id, req.user.id);
@@ -47,7 +47,7 @@ export const initiatePayment = asyncHandler(async (req: AuthRequest, res: Respon
 export const createSignalPayment = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const contratoId = parseInt(req.params.contrato_id);
+  const contratoId = parseInt(req.params.contrato_id as string);
   const role = await contractService.getUserRole(contratoId, req.user.id);
   if (role !== 'contratante') {
     throw new AppError('Apenas o contratante pode criar pagamentos', 403);

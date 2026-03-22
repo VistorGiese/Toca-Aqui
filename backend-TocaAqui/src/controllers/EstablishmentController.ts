@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import path from 'path';
 import { AuthRequest } from '../middleware/authmiddleware';
 import { Op } from 'sequelize';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
@@ -33,10 +34,8 @@ export const listEstablishments = asyncHandler(async (req: Request, res: Respons
 
   const cachedData = await redisService.get<any>(cacheKey);
   if (cachedData) {
-    console.log(`[CACHE HIT] ${cacheKey}`);
     return res.json(cachedData);
   }
-  console.log(`[CACHE MISS] ${cacheKey}`);
 
   const { count, rows } = await EstablishmentProfileModel.findAndCountAll({
     where,
@@ -76,10 +75,8 @@ export const getEstablishment = asyncHandler(async (req: Request, res: Response)
 
   const cachedData = await redisService.get<any>(cacheKey);
   if (cachedData) {
-    console.log(`[CACHE HIT] ${cacheKey}`);
     return res.json(cachedData);
   }
-  console.log(`[CACHE MISS] ${cacheKey}`);
 
   const establishment = await EstablishmentProfileModel.findByPk(id as string, {
     include: [
@@ -276,12 +273,14 @@ export const removeEstablishmentPhoto = asyncHandler(async (req: AuthRequest, re
       ? JSON.parse(establishment.fotos as unknown as string)
       : [];
 
-  const fotoParaRemover = fotosAtuais.find((f) => f.includes(filename));
+  // Sanitizar filename: usar apenas o basename para evitar path traversal
+  const safeFilename = path.basename(filename);
+  const fotoParaRemover = fotosAtuais.find((f) => path.basename(f) === safeFilename);
   if (!fotoParaRemover) {
     throw new AppError('Foto não encontrada no perfil do estabelecimento', 404);
   }
 
-  const fotosAtualizadas = fotosAtuais.filter((f) => !f.includes(filename));
+  const fotosAtualizadas = fotosAtuais.filter((f) => f !== fotoParaRemover);
   await establishment.update({ fotos: JSON.stringify(fotosAtualizadas) });
 
   uploadService.deleteFile(fotoParaRemover);

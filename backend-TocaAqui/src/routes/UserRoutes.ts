@@ -12,7 +12,7 @@ import {
   uploadArtistPhoto,
 } from '../controllers/UserController';
 import { authMiddleware } from '../middleware/authmiddleware';
-import { authLimiter, uploadLimiter } from '../middleware/rateLimiter';
+import { authLimiter, passwordResetLimiter, uploadLimiter } from '../middleware/rateLimiter';
 import { validate } from '../middleware/validate';
 import {
   registroSchema,
@@ -29,7 +29,7 @@ const router = Router();
 router.post('/registro', authLimiter, validate(registroSchema), registerUser);
 router.post('/login', authLimiter, validate(loginSchema), loginUser);
 router.post('/logout', authMiddleware, logoutUser);
-router.post('/esqueci-senha', authLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post('/esqueci-senha', passwordResetLimiter, validate(forgotPasswordSchema), forgotPassword);
 router.post('/redefinir-senha', validate(resetPasswordSchema), resetPassword);
 router.get('/verificar-email', verifyEmail);
 router.get('/perfil', authMiddleware, getUserProfile);

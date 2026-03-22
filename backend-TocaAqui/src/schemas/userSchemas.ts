@@ -4,7 +4,10 @@ import { UserRole } from '../types/roles';
 export const registroSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter ao menos 2 caracteres').trim(),
   email: z.string().email('Formato de email inválido').toLowerCase().trim(),
-  senha: z.string().min(8, 'Senha deve ter ao menos 8 caracteres'),
+  senha: z.string()
+    .min(8, 'Senha deve ter ao menos 8 caracteres')
+    .regex(/[A-Z]/, 'Senha deve conter ao menos uma letra maiúscula')
+    .regex(/[0-9]/, 'Senha deve conter ao menos um número'),
   tipo_usuario: z.enum([UserRole.ESTABLISHMENT_OWNER, UserRole.ARTIST, UserRole.COMMON_USER]).optional(),
 });
 
@@ -30,7 +33,9 @@ export const createArtistProfileSchema = z.object({
   instrumentos: z.array(z.string()).optional().default([]),
   generos: z.array(z.string()).optional().default([]),
   anos_experiencia: z.number().int().min(0).optional().default(0),
-  url_portfolio: z.string().url('URL do portfólio inválida').optional().or(z.literal('')),
+  url_portfolio: z.string().url('URL do portfólio inválida')
+    .refine(url => url.startsWith('https://'), { message: 'URL do portfólio deve usar HTTPS' })
+    .optional().or(z.literal('')),
   foto_perfil: z.string().optional(),
 });
 

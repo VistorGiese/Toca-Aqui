@@ -11,11 +11,26 @@ import { AppError } from '../errors/AppError';
 import { contractService } from './ContractService';
 
 export class BandApplicationService {
-  async apply(banda_id: number, evento_id: number) {
+  async apply(banda_id: number, evento_id: number, requestingUserId?: number) {
     const banda = await BandModel.findByPk(banda_id);
     if (!banda) throw new AppError('Banda não encontrada', 404);
     if (!banda.esta_ativo)
       throw new AppError('Banda não está ativa e não pode aplicar para eventos', 400);
+
+    // Verificar se o usuário é membro ativo da banda
+    if (requestingUserId) {
+      const membership = await BandMemberModel.findOne({
+        where: { banda_id, status: 'approved' },
+        include: [{
+          association: 'ArtistProfile',
+          where: { usuario_id: requestingUserId },
+          attributes: [],
+        }],
+      });
+      if (!membership) {
+        throw new AppError('Você não é membro ativo desta banda', 403);
+      }
+    }
 
     const evento = await BookingModel.findByPk(evento_id);
     if (!evento) throw new AppError('Evento não encontrado', 404);

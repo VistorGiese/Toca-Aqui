@@ -37,15 +37,27 @@ if (env.NODE_ENV === 'production') {
 
 app.disable('x-powered-by');
 
+// CORS — origens restritas em todos os ambientes
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
 app.use(cors({
-  origin: env.NODE_ENV === 'production' ? env.FRONTEND_URL : '*',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origem não permitida pelo CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
     },
@@ -57,14 +69,20 @@ app.use('/webhooks', express.raw({ type: 'application/json' }), WebhookRoutes);
 app.use(express.json());
 app.use(generalLimiter);
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Toca Aqui API Docs',
-}));
+// Swagger UI — apenas em desenvolvimento
+if (env.NODE_ENV !== 'production') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Toca Aqui API Docs',
+  }));
+}
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-console.log(`Pasta uploads disponível em: /uploads`);
+// Uploads estáticos com headers de segurança
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', 'inline');
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
 
 app.use("/enderecos", AddressRoutes);
 app.use("/bandas", BandRoutes);
