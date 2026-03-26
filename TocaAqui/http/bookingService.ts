@@ -27,7 +27,7 @@ interface CreateBookingData {
   titulo_evento: string;
   descricao_evento?: string;
   data_show: string;
-  estabelecimento_id: number;
+  perfil_estabelecimento_id: number;
   horario_inicio: string;
   horario_fim: string;
 }
