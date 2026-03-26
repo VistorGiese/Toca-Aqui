@@ -47,7 +47,7 @@ export const listEstablishments = asyncHandler(async (req: Request, res: Respons
         required: !!cidade,
         attributes: ['id', 'rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'],
       },
-      { model: UserModel, as: 'User', attributes: ['id', 'nome', 'email'] },
+      { model: UserModel, as: 'User', attributes: ['id', 'nome_completo', 'email'] },
     ],
     order: [['created_at', 'DESC']],
     limit,
@@ -88,7 +88,7 @@ export const getEstablishment = asyncHandler(async (req: Request, res: Response)
       {
         model: UserModel,
         as: 'User',
-        attributes: ['id', 'nome', 'email'],
+        attributes: ['id', 'nome_completo', 'email'],
       },
     ],
   });

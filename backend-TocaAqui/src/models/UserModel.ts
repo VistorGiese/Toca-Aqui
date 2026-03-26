@@ -7,9 +7,10 @@ export interface UserAttributes {
   id?: number;
   email: string;
   senha: string;
-  nome: string;
+  nome_completo: string;
   role?: UserRole;
   email_verificado?: boolean;
+  foto_perfil?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -18,9 +19,10 @@ class UserModel extends Model<UserAttributes> implements UserAttributes {
   public id!: number;
   public email!: string;
   public senha!: string;
-  public nome!: string;
+  public nome_completo!: string;
   public role!: UserRole;
   public email_verificado!: boolean;
+  public foto_perfil?: string;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -41,7 +43,7 @@ UserModel.init(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    nome: {
+    nome_completo: {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
@@ -55,6 +57,10 @@ UserModel.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    foto_perfil: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
     },
   },
   {

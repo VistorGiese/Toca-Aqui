@@ -6,75 +6,68 @@ import { Controller, useForm } from "react-hook-form";
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
   StyleSheet,
   Text,
   TextInput,
   View,
-  Alert,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import Button from "../components/Allcomponents/Button";
 import Fund from "../components/Allcomponents/Fund";
 import Input from "../components/Allcomponents/Input";
 import ToBack from "../components/Allcomponents/ToBack";
-import { AccountProps } from "../contexts/AccountFromContexto";
-import { loginEstabelecimento } from "../http/RegisterService";
+import { useAuth } from "../contexts/AuthContext";
+import { userService } from "../http/userService";
 import { RootStackParamList } from "../navigation/Navigate";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface LoginFormData {
+  email: string;
+  senha: string;
+}
 
 const { width, height } = Dimensions.get("window");
 
 export default function Login() {
   const navigation = useNavigation<NavigationProp>();
+  const { signInWithToken } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     control,
     handleSubmit,
     setError,
-    formState: { errors },
-  } = useForm<AccountProps>({
+  } = useForm<LoginFormData>({
     mode: "onTouched",
   });
 
-  const passwordRef = useRef<TextInput>(null);
+  const senhaRef = useRef<TextInput>(null);
 
-  async function onSubmit(data: AccountProps) {
+  async function onSubmit(data: LoginFormData) {
     setIsSubmitting(true);
     try {
-      const response = await loginEstabelecimento({
-        email_responsavel: data.email_responsavel,
-        senha: data.password,
-      });
+      const response = await userService.login(data.email.trim(), data.senha);
+      await signInWithToken(response.token, { ...response.user });
 
-      if (response && response.token) {
-        console.log("Login realizado e sessão salva pelo Service.");
-        navigation.navigate("HomePage");
+      const role = response.user.role;
+      if (role === "artist") {
+        navigation.reset({ index: 0, routes: [{ name: "ArtistNavigator" }] });
+      } else if (role === "establishment") {
+        navigation.reset({ index: 0, routes: [{ name: "HomePage" }] });
       } else {
-        throw new Error("Resposta inválida do servidor.");
+        // common_user ou sem perfil: feed do usuário
+        navigation.reset({ index: 0, routes: [{ name: "UserNavigator" }] });
       }
     } catch (error: any) {
-      console.error("Erro na tela de login:", error);
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "E-mail ou senha inválidos.";
 
-      let errorMessage = "E-mail ou senha inválidos.";
-
-
-      if (error.response && error.response.data) {
-        errorMessage = error.response.data.message || error.response.data.error || errorMessage;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      setError("email_responsavel", {
-        type: "manual",
-        message: errorMessage,
-      });
-      setError("password", {
-        type: "manual",
-        message: " ",
-      });
+      setError("email", { type: "manual", message });
+      setError("senha", { type: "manual", message: " " });
     } finally {
       setIsSubmitting(false);
     }
@@ -84,15 +77,21 @@ export default function Login() {
     <View style={styles.container}>
       <Fund />
       <ToBack />
-      <Image
-        source={require("../assets/images/Login/AccessYourAccount.png")}
-        style={styles.centerImage}
-      />
+
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <View style={styles.logoIcon}>
+          <MaterialCommunityIcons name="waveform" size={38} color="#A78BFA" />
+        </View>
+        <Text style={styles.logoTitle}>TOCA AQUI</Text>
+        <Text style={styles.logoSubtitle}>BACKSTAGE PASS</Text>
+      </View>
+
       <View style={styles.registerContainer}>
         <Text style={styles.registerText}>Não tem uma conta? </Text>
         <Text
           style={styles.registerLink}
-          onPress={() => navigation.navigate("RegisterLocationName")}
+          onPress={() => navigation.navigate("Register")}
         >
           Cadastre-se
         </Text>
@@ -100,7 +99,7 @@ export default function Login() {
 
       <Controller
         control={control}
-        name="email_responsavel"
+        name="email"
         rules={{
           required: "E-mail é obrigatório",
           pattern: {
@@ -114,9 +113,9 @@ export default function Login() {
         }) => (
           <Input
             inputRef={ref}
-            label="Email"
+            label="E-MAIL"
             iconName="email-outline"
-            placeholder="Seu e-mail"
+            placeholder="seu@email.com"
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
@@ -124,14 +123,14 @@ export default function Login() {
             autoCapitalize="none"
             keyboardType="email-address"
             returnKeyType="next"
-            onSubmitEditing={() => passwordRef.current?.focus()}
+            onSubmitEditing={() => senhaRef.current?.focus()}
           />
         )}
       />
 
       <Controller
         control={control}
-        name="password"
+        name="senha"
         rules={{
           required: "Senha é obrigatória",
           minLength: {
@@ -146,9 +145,9 @@ export default function Login() {
           <Input
             inputRef={(element) => {
               ref(element);
-              passwordRef.current = element;
+              senhaRef.current = element;
             }}
-            label="Senha"
+            label="SENHA"
             iconName="lock-outline"
             placeholder="Sua senha"
             onBlur={onBlur}
@@ -196,12 +195,32 @@ const styles = StyleSheet.create({
     width: width,
     height: height,
   },
-  centerImage: {
-    width: 350,
-    height: 350,
-    resizeMode: "contain",
-    alignSelf: "center",
-    marginTop: -50,
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 32,
+    marginTop: -20,
+  },
+  logoIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  logoTitle: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontFamily: "AkiraExpanded-Superbold",
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  logoSubtitle: {
+    color: "#A78BFA",
+    fontSize: 11,
+    fontFamily: "Montserrat-Regular",
+    letterSpacing: 3,
   },
   registerContainer: {
     flexDirection: "row",
@@ -215,21 +234,20 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Regular",
   },
   registerLink: {
-    color: "#00c96fff",
-    fontFamily: "Montserrat-Regular",
+    color: "#A78BFA",
+    fontFamily: "Montserrat-Bold",
     textDecorationLine: "underline",
     fontSize: 16,
   },
   forgotPasswordContainer: {
     width: "95%",
-    alignItems: "center",
+    alignItems: "flex-end",
     marginBottom: 30,
-    marginTop: 220,
+    marginTop: 8,
   },
   forgotPassword: {
-    color: "#ffffffff",
-    fontSize: 16,
-    textDecorationLine: "underline",
+    color: "#A78BFA",
+    fontSize: 14,
     fontFamily: "Montserrat-Regular",
   },
   buttonPosition: {
@@ -237,8 +255,9 @@ const styles = StyleSheet.create({
     height: 60,
   },
   textButton: {
-    fontFamily: "Montserrat-Regular",
-    fontSize: 22,
+    fontFamily: "Montserrat-Bold",
+    fontSize: 18,
     color: colors.purpleDark,
+    letterSpacing: 1,
   },
 });

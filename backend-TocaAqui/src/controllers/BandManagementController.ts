@@ -82,7 +82,7 @@ export const getBandDetails = asyncHandler(async (req: AuthRequest, res: Respons
               {
                 model: UserModel,
                 as: 'User',
-                attributes: ['nome'],
+                attributes: ['nome_completo'],
               },
             ],
           },
@@ -107,7 +107,7 @@ export const getBandDetails = asyncHandler(async (req: AuthRequest, res: Respons
       artist: {
         id: member.ArtistProfile.id,
         nome_artistico: member.ArtistProfile.nome_artistico,
-        nome_usuario: member.ArtistProfile.User.nome,
+        nome_usuario: member.ArtistProfile.User.nome_completo,
       },
     })) || [],
   });

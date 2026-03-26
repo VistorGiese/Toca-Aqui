@@ -6,6 +6,10 @@ import { uploadService } from '../services/UploadService';
 import { AppError } from '../errors/AppError';
 import { verifyToken } from '../utils/jwt';
 import ArtistProfileModel from '../models/ArtistProfileModel';
+import PreferenciaUsuarioModel from '../models/PreferenciaUsuarioModel';
+import UserModel from '../models/UserModel';
+import bcrypt from 'bcryptjs';
+import { unauthorized } from '../errors/AppError';
 
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await authService.register(req.body);
@@ -58,8 +62,9 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
   res.json({
     user: {
       id: user.id,
-      nome: user.nome,
+      nome_completo: user.nome_completo,
       email: user.email,
+      foto_perfil: user.foto_perfil || null,
       establishment_profiles: (user as any).EstablishmentProfiles || [],
       artist_profiles: (user as any).ArtistProfiles || [],
     },
@@ -103,4 +108,104 @@ export const uploadArtistPhoto = asyncHandler(async (req: AuthRequest, res: Resp
   await profile.update({ foto_perfil: novaFoto });
 
   res.json({ message: 'Foto de perfil atualizada com sucesso', foto_perfil: novaFoto });
+});
+
+export const uploadUserPhoto = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) throw unauthorized('Usuário não identificado');
+
+  if (!req.file) throw new AppError('Nenhuma imagem enviada', 400);
+
+  const novaFoto = uploadService.getRelativePath(req.file);
+
+  const user = await UserModel.findByPk(userId);
+  if (!user) {
+    uploadService.deleteFile(novaFoto);
+    throw new AppError('Usuário não encontrado', 404);
+  }
+
+  if (user.foto_perfil) uploadService.deleteFile(user.foto_perfil);
+  await user.update({ foto_perfil: novaFoto });
+
+  res.json({ message: 'Foto de perfil atualizada com sucesso', foto_perfil: novaFoto });
+});
+
+export const savePreferencias = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw unauthorized('Usuário não identificado');
+
+  const {
+    generos_favoritos,
+    cidade,
+    raio_busca_km,
+    tipos_local,
+    notif_novos_shows,
+    notif_lembretes,
+  } = req.body;
+
+  const [preferencias, created] = await PreferenciaUsuarioModel.upsert({
+    usuario_id,
+    generos_favoritos,
+    cidade,
+    raio_busca_km,
+    tipos_local,
+    notif_novos_shows,
+    notif_lembretes,
+  });
+
+  res.status(created ? 201 : 200).json({
+    message: created ? 'Preferências criadas com sucesso' : 'Preferências atualizadas com sucesso',
+    preferencias,
+  });
+});
+
+export const getPreferencias = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw unauthorized('Usuário não identificado');
+
+  const preferencias = await PreferenciaUsuarioModel.findOne({ where: { usuario_id } });
+
+  res.json({
+    message: 'Preferências recuperadas com sucesso',
+    preferencias,
+  });
+});
+
+export const alterarEmail = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw unauthorized('Usuário não identificado');
+
+  const { novo_email, senha } = req.body;
+  if (!novo_email || !senha) throw new AppError('novo_email e senha são obrigatórios', 400);
+
+  const user = await UserModel.findByPk(usuario_id);
+  if (!user) throw new AppError('Usuário não encontrado', 404);
+
+  const senhaValida = await bcrypt.compare(senha, user.senha);
+  if (!senhaValida) throw new AppError('Senha incorreta', 401);
+
+  const emailEmUso = await UserModel.findOne({ where: { email: novo_email } });
+  if (emailEmUso) throw new AppError('Este email já está em uso', 400);
+
+  await user.update({ email: novo_email });
+
+  res.json({ message: 'Email alterado com sucesso' });
+});
+
+export const excluirConta = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw unauthorized('Usuário não identificado');
+
+  const { senha } = req.body;
+  if (!senha) throw new AppError('Senha é obrigatória', 400);
+
+  const user = await UserModel.findByPk(usuario_id);
+  if (!user) throw new AppError('Usuário não encontrado', 404);
+
+  const senhaValida = await bcrypt.compare(senha, user.senha);
+  if (!senhaValida) throw new AppError('Senha incorreta', 401);
+
+  await user.destroy();
+
+  res.json({ message: 'Conta excluída com sucesso' });
 });

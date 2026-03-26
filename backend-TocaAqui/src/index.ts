@@ -19,6 +19,11 @@ import NotificationRoutes from "./routes/NotificationRoutes";
 import ContractRoutes from "./routes/ContractRoutes";
 import PaymentRoutes from "./routes/PaymentRoutes";
 import WebhookRoutes from "./routes/WebhookRoutes";
+import ShowRoutes from "./routes/ShowRoutes";
+import IngressoRoutes from "./routes/IngressoRoutes";
+import AvaliacaoShowRoutes from "./routes/AvaliacaoShowRoutes";
+import ComentarioShowRoutes from "./routes/ComentarioShowRoutes";
+import ArtistaPublicoRoutes from "./routes/ArtistaPublicoRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 import './models/associations';
@@ -37,20 +42,9 @@ if (env.NODE_ENV === 'production') {
 
 app.disable('x-powered-by');
 
-// CORS — origens restritas em todos os ambientes
-const allowedOrigins = [
-  env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:3000',
-];
+// CORS — em desenvolvimento libera todas as origens (mobile app não envia origin)
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Origem não permitida pelo CORS'));
-    }
-  },
+  origin: true,
   credentials: true,
 }));
 app.use(helmet({
@@ -96,6 +90,11 @@ app.use("/estabelecimentos", EstablishmentRoutes);
 app.use("/notificacoes", NotificationRoutes);
 app.use("/contratos", ContractRoutes);
 app.use("/pagamentos", PaymentRoutes);
+app.use("/shows", ShowRoutes);
+app.use("/ingressos", IngressoRoutes);
+app.use("/avaliacoes", AvaliacaoShowRoutes);
+app.use("/comentarios", ComentarioShowRoutes);
+app.use("/artistas", ArtistaPublicoRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "API funcionando!" });

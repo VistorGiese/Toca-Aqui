@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { UserRole } from '../types/roles';
 
 export const registroSchema = z.object({
-  nome: z.string().min(2, 'Nome deve ter ao menos 2 caracteres').trim(),
+  nome_completo: z.string().min(2, 'Nome completo deve ter ao menos 2 caracteres').trim(),
   email: z.string().email('Formato de email inválido').toLowerCase().trim(),
   senha: z.string()
     .min(8, 'Senha deve ter ao menos 8 caracteres')

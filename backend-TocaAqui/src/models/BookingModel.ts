@@ -15,10 +15,18 @@ class BookingModel extends Model {
   titulo_evento!: string;
   descricao_evento?: string;
   data_show!: Date;
-  perfil_estabelecimento_id!: number; 
+  perfil_estabelecimento_id!: number;
   horario_inicio!: string;
   horario_fim!: string;
   status!: BookingStatus;
+  preco_ingresso_inteira?: number;
+  preco_ingresso_meia?: number;
+  capacidade_maxima?: number;
+  ingressos_vendidos!: number;
+  classificacao_etaria?: string;
+  imagem_capa?: string;
+  esta_publico!: boolean;
+  genero_musical?: string;
   readonly createdAt!: Date;
   readonly updatedAt!: Date;
 }
@@ -63,6 +71,40 @@ BookingModel.init(
       type: DataTypes.ENUM(...Object.values(BookingStatus)),
       allowNull: false,
       defaultValue: BookingStatus.PENDENTE,
+    },
+    preco_ingresso_inteira: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    preco_ingresso_meia: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    capacidade_maxima: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    ingressos_vendidos: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    classificacao_etaria: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    imagem_capa: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    esta_publico: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    genero_musical: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
     },
   },
   {

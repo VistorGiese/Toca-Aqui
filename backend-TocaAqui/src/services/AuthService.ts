@@ -10,7 +10,7 @@ import { sendPasswordResetEmail, sendVerificationEmail } from './EmailService';
 import { AppError } from '../errors/AppError';
 
 export interface RegisterParams {
-  nome: string;
+  nome_completo: string;
   email: string;
   senha: string;
   tipo_usuario?: string;
@@ -18,12 +18,12 @@ export interface RegisterParams {
 
 export interface LoginResult {
   token: string;
-  user: { id: number; nome: string; email: string; role: string };
+  user: { id: number; nome_completo: string; email: string; role: string };
 }
 
 export class AuthService {
   async register(params: RegisterParams) {
-    const { nome, email, senha, tipo_usuario } = params;
+    const { nome_completo, email, senha, tipo_usuario } = params;
 
     const emailError = validateEmailFormat(email);
     if (emailError) throw new AppError(emailError, 400);
@@ -39,15 +39,9 @@ export class AuthService {
     if (existingUser) throw new AppError('Email já está em uso', 400);
 
     const hashedPassword = await bcrypt.hash(senha, 10);
-    const user = await UserModel.create({ nome, email, senha: hashedPassword, role: role as any, email_verificado: false });
+    const user = await UserModel.create({ nome_completo, email, senha: hashedPassword, role: role as any, email_verificado: true });
 
-    const verifyToken = crypto.randomBytes(32).toString('hex');
-    await redisService.getClient().setex(`verify:${verifyToken}`, 60 * 60 * 24, String(user.id));
-    sendVerificationEmail(email, verifyToken).catch((err) =>
-      console.error('Falha ao enviar email de verificação:', err)
-    );
-
-    return { id: user.id, nome: user.nome, email: user.email, role: user.role, email_verificado: false };
+    return { id: user.id, nome_completo: user.nome_completo, email: user.email, role: user.role, email_verificado: true };
   }
 
   async login(email: string, senha: string): Promise<LoginResult> {
@@ -57,12 +51,8 @@ export class AuthService {
     const isValid = await bcrypt.compare(senha, user.senha);
     if (!isValid) throw new AppError('Credenciais inválidas', 401);
 
-    if (!user.email_verificado) {
-      throw new AppError('Email não verificado. Verifique sua caixa de entrada.', 403);
-    }
-
     const token = generateToken({ id: user.id, email: user.email, role: user.role });
-    return { token, user: { id: user.id!, nome: user.nome, email: user.email, role: user.role } };
+    return { token, user: { id: user.id!, nome_completo: user.nome_completo, email: user.email, role: user.role } };
   }
 
   async logout(token: string, exp: number) {

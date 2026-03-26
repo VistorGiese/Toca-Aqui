@@ -50,7 +50,7 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   // Buscar com paginação
   const { count, rows: users } = await UserModel.findAndCountAll({
     where: whereClause,
-    attributes: ['id', 'nome', 'email', 'role', 'createdAt', 'updatedAt'],
+    attributes: ['id', 'nome_completo', 'email', 'role', 'createdAt', 'updatedAt'],
     include: [
       {
         model: ArtistProfileModel,
@@ -225,7 +225,7 @@ export const getDashboardMetrics = asyncHandler(async (req: Request, res: Respon
     BandApplicationModel.count({ where: { status: 'pendente' } }),
     // 5 usuários mais recentes
     UserModel.findAll({
-      attributes: ['id', 'nome', 'email', 'role', 'createdAt'],
+      attributes: ['id', 'nome_completo', 'email', 'role', 'createdAt'],
       order: [['createdAt', 'DESC']],
       limit: 5,
     }),

@@ -5,6 +5,7 @@ import FavoriteModel from "../models/FavoriteModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
 import ArtistProfileModel from "../models/ArtistProfileModel";
 import BandModel from "../models/BandModel";
+import BookingModel from "../models/BookingModel";
 import { asyncHandler } from "../middleware/errorHandler";
 import { AppError, unauthorized, badRequest, notFound } from "../errors/AppError";
 
@@ -20,7 +21,7 @@ export const addFavorite = asyncHandler(async (req: AuthRequest, res: Response) 
     throw badRequest("Tipo e ID do favorito são obrigatórios");
   }
 
-  const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda'];
+  const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda', 'agendamento'];
   if (!tiposValidos.includes(favoritavel_tipo)) {
     throw badRequest("Tipo de favorito inválido");
   }
@@ -35,6 +36,9 @@ export const addFavorite = asyncHandler(async (req: AuthRequest, res: Response) 
       break;
     case 'banda':
       itemExiste = await BandModel.findByPk(favoritavel_id);
+      break;
+    case 'agendamento':
+      itemExiste = await BookingModel.findByPk(favoritavel_id);
       break;
   }
 
@@ -92,7 +96,7 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
   }
 
   const whereClause: any = { usuario_id };
-  if (tipo && ['perfil_estabelecimento', 'perfil_artista', 'banda'].includes(tipo as string)) {
+  if (tipo && ['perfil_estabelecimento', 'perfil_artista', 'banda', 'agendamento'].includes(tipo as string)) {
     whereClause.favoritavel_tipo = tipo;
   }
 
@@ -104,8 +108,9 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
   const estabelecimentoIds = favoritos.filter(f => f.favoritavel_tipo === 'perfil_estabelecimento').map(f => f.favoritavel_id);
   const artistaIds = favoritos.filter(f => f.favoritavel_tipo === 'perfil_artista').map(f => f.favoritavel_id);
   const bandaIds = favoritos.filter(f => f.favoritavel_tipo === 'banda').map(f => f.favoritavel_id);
+  const agendamentoIds = favoritos.filter(f => f.favoritavel_tipo === 'agendamento').map(f => f.favoritavel_id);
 
-  const [estabelecimentos, artistas, bandas] = await Promise.all([
+  const [estabelecimentos, artistas, bandas, agendamentos] = await Promise.all([
     estabelecimentoIds.length > 0
       ? EstablishmentProfileModel.findAll({ where: { id: { [Op.in]: estabelecimentoIds } } })
       : [],
@@ -115,12 +120,16 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
     bandaIds.length > 0
       ? BandModel.findAll({ where: { id: { [Op.in]: bandaIds } } })
       : [],
+    agendamentoIds.length > 0
+      ? BookingModel.findAll({ where: { id: { [Op.in]: agendamentoIds } } })
+      : [],
   ]);
 
   const detalhesMap = new Map<string, any>();
   (estabelecimentos as any[]).forEach(e => detalhesMap.set(`perfil_estabelecimento:${e.id}`, e));
   (artistas as any[]).forEach(a => detalhesMap.set(`perfil_artista:${a.id}`, a));
   (bandas as any[]).forEach(b => detalhesMap.set(`banda:${b.id}`, b));
+  (agendamentos as any[]).forEach(a => detalhesMap.set(`agendamento:${a.id}`, a));
 
   const favoritosComDetalhes = favoritos.map(favorito => ({
     id: favorito.id,

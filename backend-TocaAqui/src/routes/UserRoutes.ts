@@ -10,6 +10,11 @@ import {
   resetPassword,
   verifyEmail,
   uploadArtistPhoto,
+  uploadUserPhoto,
+  savePreferencias,
+  getPreferencias,
+  alterarEmail,
+  excluirConta,
 } from '../controllers/UserController';
 import { authMiddleware } from '../middleware/authmiddleware';
 import { authLimiter, passwordResetLimiter, uploadLimiter } from '../middleware/rateLimiter';
@@ -36,5 +41,10 @@ router.get('/perfil', authMiddleware, getUserProfile);
 router.post('/perfil-estabelecimento', authMiddleware, validate(createEstablishmentProfileSchema), createEstablishmentProfile);
 router.post('/perfil-artista', authMiddleware, validate(createArtistProfileSchema), createArtistProfile);
 router.patch('/perfil-artista/:id/foto', authMiddleware, uploadLimiter, uploadService.uploadSingle, uploadArtistPhoto);
+router.patch('/foto', authMiddleware, uploadLimiter, uploadService.uploadSingle, uploadUserPhoto);
+router.post('/preferencias', authMiddleware, savePreferencias);
+router.get('/preferencias', authMiddleware, getPreferencias);
+router.put('/email', authMiddleware, alterarEmail);
+router.delete('/conta', authMiddleware, excluirConta);
 
 export default router;

@@ -357,7 +357,7 @@ export class ContractService {
 
     return ContractHistoryModel.findAll({
       where: { contrato_id: contractId },
-      include: [{ association: 'User', attributes: ['id', 'nome', 'email'] }],
+      include: [{ association: 'User', attributes: ['id', 'nome_completo', 'email'] }],
       order: [['created_at', 'DESC']],
     });
   }

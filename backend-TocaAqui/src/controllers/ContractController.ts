@@ -9,6 +9,8 @@ import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import BandMemberModel from '../models/BandMemberModel';
 import redisService from '../config/redis';
 import { CACHE_KEYS } from '../config/cache';
+import ContractModel from '../models/ContractModel';
+import AvaliacaoShowModel from '../models/AvaliacaoShowModel';
 
 export const getContract = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
@@ -162,3 +164,44 @@ async function getOtherPartyUserId(
     return (lider as any)?.ArtistProfile?.usuario_id ?? null;
   }
 }
+
+export const avaliarEstabelecimento = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw new AppError('Usuário não identificado', 401);
+
+  const contrato_id = parseInt(req.params.id as string);
+  const { nota, comentario, tags } = req.body;
+
+  if (!nota || nota < 1 || nota > 5) {
+    throw new AppError('Nota deve ser entre 1 e 5', 400);
+  }
+
+  const contract = await ContractModel.findByPk(contrato_id);
+  if (!contract) throw new AppError('Contrato não encontrado', 404);
+  if (contract.status !== 'concluido') throw new AppError('Só é possível avaliar contratos concluídos', 400);
+
+  // Verifica se o usuário é membro da banda do contrato
+  const lider = await BandMemberModel.findOne({
+    where: { banda_id: contract.banda_id, e_lider: true },
+    include: [{ association: 'ArtistProfile', attributes: ['usuario_id'] }],
+  });
+  const liderUserId = (lider as any)?.ArtistProfile?.usuario_id;
+  if (liderUserId !== usuario_id) throw new AppError('Acesso negado', 403);
+
+  const existing = await AvaliacaoShowModel.findOne({
+    where: { usuario_id, agendamento_id: contract.evento_id },
+  });
+  if (existing) throw new AppError('Você já avaliou este contrato', 400);
+
+  const avaliacao = await AvaliacaoShowModel.create({
+    usuario_id,
+    agendamento_id: contract.evento_id,
+    nota_artista: nota,
+    nota_local: nota,
+    comentario: comentario || null,
+    tags_local: tags || [],
+    tags_artista: [],
+  });
+
+  res.status(201).json({ message: 'Avaliação registrada com sucesso', avaliacao });
+});

@@ -12,6 +12,12 @@ import NotificationModel from './NotificationModel';
 import ContractModel from './ContractModel';
 import PaymentModel from './PaymentModel';
 import ContractHistoryModel from './ContractHistoryModel';
+import IngressoModel from './IngressoModel';
+import AvaliacaoShowModel from './AvaliacaoShowModel';
+import ComentarioShowModel from './ComentarioShowModel';
+import CurtidaComentarioModel from './CurtidaComentarioModel';
+import SeguidorArtistaModel from './SeguidorArtistaModel';
+import PreferenciaUsuarioModel from './PreferenciaUsuarioModel';
 
 // Associações do novo sistema de usuários
 UserModel.hasMany(EstablishmentProfileModel, {
@@ -185,6 +191,37 @@ NotificationModel.belongsTo(UserModel, {
   as: 'User',
 });
 
+// Ingressos
+BookingModel.hasMany(IngressoModel, { foreignKey: 'agendamento_id', as: 'Ingressos' });
+IngressoModel.belongsTo(BookingModel, { foreignKey: 'agendamento_id', as: 'Show' });
+IngressoModel.belongsTo(UserModel, { foreignKey: 'usuario_id', as: 'Usuario' });
+UserModel.hasMany(IngressoModel, { foreignKey: 'usuario_id', as: 'Ingressos' });
+
+// Avaliações
+BookingModel.hasMany(AvaliacaoShowModel, { foreignKey: 'agendamento_id', as: 'Avaliacoes' });
+AvaliacaoShowModel.belongsTo(BookingModel, { foreignKey: 'agendamento_id', as: 'Show' });
+AvaliacaoShowModel.belongsTo(UserModel, { foreignKey: 'usuario_id', as: 'Usuario' });
+UserModel.hasMany(AvaliacaoShowModel, { foreignKey: 'usuario_id', as: 'Avaliacoes' });
+
+// Comentários
+BookingModel.hasMany(ComentarioShowModel, { foreignKey: 'agendamento_id', as: 'Comentarios' });
+ComentarioShowModel.belongsTo(BookingModel, { foreignKey: 'agendamento_id', as: 'Show' });
+ComentarioShowModel.belongsTo(UserModel, { foreignKey: 'usuario_id', as: 'Usuario' });
+ComentarioShowModel.hasMany(ComentarioShowModel, { foreignKey: 'parent_id', as: 'Respostas' });
+ComentarioShowModel.hasMany(CurtidaComentarioModel, { foreignKey: 'comentario_id', as: 'Curtidas' });
+CurtidaComentarioModel.belongsTo(ComentarioShowModel, { foreignKey: 'comentario_id', as: 'Comentario' });
+CurtidaComentarioModel.belongsTo(UserModel, { foreignKey: 'usuario_id', as: 'Usuario' });
+
+// Seguidores
+ArtistProfileModel.hasMany(SeguidorArtistaModel, { foreignKey: 'perfil_artista_id', as: 'Seguidores' });
+SeguidorArtistaModel.belongsTo(ArtistProfileModel, { foreignKey: 'perfil_artista_id', as: 'ArtistProfile' });
+SeguidorArtistaModel.belongsTo(UserModel, { foreignKey: 'usuario_id', as: 'Usuario' });
+UserModel.hasMany(SeguidorArtistaModel, { foreignKey: 'usuario_id', as: 'Seguindo' });
+
+// Preferências
+UserModel.hasOne(PreferenciaUsuarioModel, { foreignKey: 'usuario_id', as: 'Preferencias' });
+PreferenciaUsuarioModel.belongsTo(UserModel, { foreignKey: 'usuario_id', as: 'Usuario' });
+
 export {
   UserModel,
   EstablishmentProfileModel,
@@ -199,4 +236,10 @@ export {
   ContractModel,
   PaymentModel,
   ContractHistoryModel,
+  IngressoModel,
+  AvaliacaoShowModel,
+  ComentarioShowModel,
+  CurtidaComentarioModel,
+  SeguidorArtistaModel,
+  PreferenciaUsuarioModel,
 };

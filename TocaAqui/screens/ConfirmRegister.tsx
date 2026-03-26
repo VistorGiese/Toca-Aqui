@@ -14,29 +14,19 @@ import { AccontFormContext } from "../contexts/AccountFromContexto";
 import {
     createEndereco,
     createEstabelecimento,
-    registerUser,
-    loginEstabelecimento,
 } from "../http/RegisterService";
-import { router } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/Navigate";
 
 export default function ConfirmRegister() {
     const { accountFormData } = useContext(AccontFormContext);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     const handleFinalSubmit = async () => {
         setIsSubmitting(true);
         try {
-            await registerUser(accountFormData);
-
-            const loginResponse = await loginEstabelecimento({
-                email_responsavel: accountFormData.email_responsavel,
-                senha: accountFormData.password,
-            });
-
-            if (!loginResponse.token) {
-                throw new Error("Erro ao autenticar após cadastro.");
-            }
-
             const enderecoPayload = {
                 rua: accountFormData.rua,
                 numero: accountFormData.numero,
@@ -71,7 +61,7 @@ export default function ConfirmRegister() {
             await createEstabelecimento(estabelecimentoPayload);
 
             Alert.alert("Sucesso!", "Cadastro realizado com sucesso!", [
-                { text: "OK", onPress: () => router.push("/login" as any) },
+                { text: "OK", onPress: () => navigation.reset({ index: 0, routes: [{ name: "HomePage" }] }) },
             ]);
         } catch (error: any) {
             console.error(error);

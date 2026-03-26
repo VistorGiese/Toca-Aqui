@@ -10,7 +10,7 @@ export function getStripe(): Stripe {
 
   if (!stripeInstance) {
     stripeInstance = new Stripe(env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-04-30.basil',
+      apiVersion: '2026-02-25.clover',
     });
   }
 

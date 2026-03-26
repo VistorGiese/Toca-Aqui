@@ -75,7 +75,7 @@ export const registerUser = async (
 ): Promise<RegisterUserResponse> => {
   try {
     const payload = {
-      nome: userData.nome_dono,
+      nome_completo: userData.nome_dono,
       email: userData.email_responsavel,
       senha: userData.password,
       tipo_usuario: "establishment_owner",
@@ -286,7 +286,7 @@ export const getEstabelecimentoProfile = async (): Promise<ProfileResponse> => {
       estabelecimento: {
         id: estab.id,
         nome_estabelecimento: estab.nome_estabelecimento,
-        nome_dono: user.nome,
+        nome_dono: user.nome_completo,
         email_responsavel: user.email,
         celular_responsavel: estab.telefone_contato,
         generos_musicais: estab.generos_musicais,
