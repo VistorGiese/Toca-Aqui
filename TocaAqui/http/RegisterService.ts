@@ -222,32 +222,22 @@ export const cadastrarEstabelecimentoCompleto = async (
 ): Promise<void> => {
   try {
     console.log("1. Iniciando registro do usuário...");
-
     const userResponse = await registerUser(fullData);
 
-    let token = await AsyncStorage.getItem("token");
+    console.log("2. userResponse recebido:", JSON.stringify(userResponse, null, 2));
+    console.log("3. Token recebido:", userResponse?.token ? "SIM" : "NÃO");
 
-    if (!token) {
-      console.log(
-        "Token não detectado automaticamente. Realizando login manual..."
-      );
-      await loginEstabelecimento({
-        email: fullData.email_responsavel,
-        senha: fullData.password,
-      });
-      token = await AsyncStorage.getItem("token");
+    if (!userResponse?.token) {
+      throw new Error("registerUser não retornou token!");
     }
 
-    if (!token) {
-      throw new Error(
-        "Falha fatal: Não foi possível obter o token de autenticação após o registro."
-      );
-    }
+    api.defaults.headers.common["Authorization"] = `Bearer ${userResponse.token}`;
+    console.log("4. Header setado:", api.defaults.headers.common["Authorization"]);
 
-    console.log("2. Criando endereço (autenticado)...");
+    console.log("5. Criando endereço...");
     const enderecoResponse = await createEndereco(fullData);
 
-    console.log("3. Criando perfil do estabelecimento...");
+    console.log("6. Criando perfil do estabelecimento...");
     await createEstabelecimento({
       ...fullData,
       endereco_id: enderecoResponse.id,
