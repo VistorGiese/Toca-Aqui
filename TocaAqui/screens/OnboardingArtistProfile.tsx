@@ -9,11 +9,13 @@ import {
   Switch,
   Dimensions,
   Alert,
+  Image,
 } from "react-native";
-import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/Navigate";
+import * as ImagePicker from "expo-image-picker";
 
 const { width } = Dimensions.get("window");
 
@@ -47,22 +49,56 @@ const GENEROS: { label: string; color: string }[] = [
   { label: "INDIE", color: "#A29BFE" },
 ];
 
+const EQUIPAMENTOS = [
+  "P.A. / Caixas",
+  "Microfones",
+  "Mesa de Som",
+  "Retornos",
+  "Iluminação",
+  "Cabos / DI",
+];
+
 type NavProp = NativeStackNavigationProp<RootStackParamList, "OnboardingArtistProfile">;
 
 export default function OnboardingArtistProfile() {
   const navigation = useNavigation<NavProp>();
 
+  const [fotoUri, setFotoUri] = useState<string | null>(null);
   const [nomeArtistico, setNomeArtistico] = useState("");
   const [tipoSelecionado, setTipoSelecionado] = useState<TipoAtuacao | null>(null);
   const [generosSelecionados, setGenerosSelecionados] = useState<string[]>([]);
   const [cacheMin, setCacheMin] = useState("");
   const [cacheMax, setCacheMax] = useState("");
-  const [estruturaSom, setEstruturaSom] = useState(false);
+  const [temEstrutura, setTemEstrutura] = useState(false);
+  const [estrutura, setEstrutura] = useState<string[]>([]);
 
   const toggleGenero = (label: string) => {
     setGenerosSelecionados((prev) =>
       prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]
     );
+  };
+
+  const toggleEquipamento = (item: string) => {
+    setEstrutura((prev) =>
+      prev.includes(item) ? prev.filter((e) => e !== item) : [...prev, item]
+    );
+  };
+
+  const handleSelecionarFoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão necessária", "Precisamos de acesso à galeria para adicionar sua foto.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      setFotoUri(result.assets[0].uri);
+    }
   };
 
   const handleContinuar = () => {
@@ -85,7 +121,9 @@ export default function OnboardingArtistProfile() {
       generos: generosSelecionados,
       cacheMin,
       cacheMax,
-      estruturaSom,
+      temEstrutura,
+      estrutura,
+      fotoUri: fotoUri || undefined,
     });
   };
 
@@ -99,6 +137,7 @@ export default function OnboardingArtistProfile() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
         <Text style={styles.headerLabel}>ARTIST ONBOARDING</Text>
@@ -106,10 +145,21 @@ export default function OnboardingArtistProfile() {
         <Text style={styles.stepLabel}>01 / 04</Text>
 
         {/* Foto */}
-        <TouchableOpacity style={styles.avatarArea} activeOpacity={0.7}>
-          <FontAwesome5 name="camera" size={28} color={DS.accent} />
-          <Text style={styles.avatarLabel}>ADICIONAR FOTO</Text>
+        <TouchableOpacity style={styles.avatarArea} activeOpacity={0.7} onPress={handleSelecionarFoto}>
+          {fotoUri ? (
+            <Image source={{ uri: fotoUri }} style={styles.avatarImage} />
+          ) : (
+            <>
+              <FontAwesome5 name="camera" size={28} color={DS.accent} />
+              <Text style={styles.avatarLabel}>ADICIONAR FOTO</Text>
+            </>
+          )}
         </TouchableOpacity>
+        {fotoUri && (
+          <TouchableOpacity style={styles.trocarFotoBtn} onPress={handleSelecionarFoto} activeOpacity={0.7}>
+            <Text style={styles.trocarFotoText}>Trocar foto</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Nome Artístico */}
         <Text style={styles.fieldLabel}>NOME ARTÍSTICO</Text>
@@ -196,20 +246,45 @@ export default function OnboardingArtistProfile() {
           </View>
         </View>
 
-        {/* Toggle Estrutura de Som */}
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleInfo}>
-            <Text style={styles.toggleTitle}>Estrutura de Som</Text>
-            <Text style={styles.toggleSub}>
-              Eu possuo P.A. e equipamentos próprios
-            </Text>
+        {/* Estrutura de Som */}
+        <View style={styles.estruturaCard}>
+          <View style={styles.estruturaHeader}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.estruturaTitulo}>Estrutura de Som</Text>
+              <Text style={styles.estruturaSub}>
+                Eu possuo P.A. e equipamentos próprios
+              </Text>
+            </View>
+            <Switch
+              value={temEstrutura}
+              onValueChange={(v) => { setTemEstrutura(v); if (!v) setEstrutura([]); }}
+              trackColor={{ false: DS.textDis, true: DS.accent }}
+              thumbColor={DS.white}
+            />
           </View>
-          <Switch
-            value={estruturaSom}
-            onValueChange={setEstruturaSom}
-            trackColor={{ false: DS.textDis, true: DS.accent }}
-            thumbColor={DS.white}
-          />
+          {temEstrutura && (
+            <View style={styles.equipamentosContainer}>
+              <Text style={styles.equipamentosLabel}>EQUIPAMENTOS DISPONÍVEIS</Text>
+              <View style={styles.checkGrid}>
+                {EQUIPAMENTOS.map((item) => {
+                  const checked = estrutura.includes(item);
+                  return (
+                    <TouchableOpacity
+                      key={item}
+                      style={styles.checkItem}
+                      onPress={() => toggleEquipamento(item)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.checkbox, checked && styles.checkboxOn]}>
+                        {checked && <FontAwesome5 name="check" size={9} color={DS.white} />}
+                      </View>
+                      <Text style={styles.checkLabel}>{item}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Botão Continuar */}
@@ -284,8 +359,14 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: 8,
     backgroundColor: DS.bgCard,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
   },
   avatarLabel: {
     fontFamily: "Montserrat-SemiBold",
@@ -293,6 +374,15 @@ const styles = StyleSheet.create({
     color: DS.accent,
     marginTop: 6,
     letterSpacing: 1.5,
+  },
+  trocarFotoBtn: {
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  trocarFotoText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 12,
+    color: DS.accentLight,
   },
   fieldLabel: {
     fontFamily: "Montserrat-SemiBold",
@@ -381,29 +471,74 @@ const styles = StyleSheet.create({
   cacheHalf: {
     flex: 1,
   },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  estruturaCard: {
     backgroundColor: DS.bgCard,
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
+    borderWidth: 1,
+    borderColor: DS.bgSurface,
   },
-  toggleInfo: {
-    flex: 1,
-    marginRight: 12,
+  estruturaHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  toggleTitle: {
+  estruturaTitulo: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: 14,
     color: DS.white,
   },
-  toggleSub: {
+  estruturaSub: {
     fontFamily: "Montserrat-Regular",
     fontSize: 12,
     color: DS.textSec,
     marginTop: 2,
+  },
+  equipamentosContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: DS.bgSurface,
+  },
+  equipamentosLabel: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 11,
+    color: DS.textSec,
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  checkGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  checkItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    width: "46%",
+    paddingVertical: 6,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: DS.textDis,
+    backgroundColor: DS.bgInput,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxOn: {
+    borderColor: DS.accent,
+    backgroundColor: DS.accent,
+  },
+  checkLabel: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 13,
+    color: DS.white,
+    flexShrink: 1,
   },
   btnPrimary: {
     backgroundColor: DS.accent,

@@ -67,6 +67,10 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
       foto_perfil: user.foto_perfil || null,
       establishment_profiles: (user as any).EstablishmentProfiles || [],
       artist_profiles: (user as any).ArtistProfiles || [],
+      establishment_memberships: ((user as any).EstablishmentMemberships || []).map((m: any) => ({
+        role: m.role,
+        estabelecimento: m.EstablishmentProfile,
+      })),
     },
   });
 });

@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { FontAwesome5 } from "@expo/vector-icons";
+import { FontAwesome5, FontAwesome } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bookingService, Booking } from "@/http/bookingService";
@@ -28,6 +28,7 @@ const DS = {
   danger: "#E53E3E",
   success: "#10B981",
   amber: "#F59E0B",
+  gold: "#F6C90E",
   bgSurface: "#1A1040",
 };
 
@@ -232,12 +233,11 @@ export default function EventDetailArtist() {
                     <Text style={styles.reviewName}>{r.Usuario?.nome_completo || "Artista"}</Text>
                     <View style={styles.starsRow}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <FontAwesome5
+                        <FontAwesome
                           key={i}
-                          name="star"
+                          name={i < r.nota_local ? "star" : "star-o"}
                           size={12}
                           color={i < r.nota_local ? DS.gold : DS.textDis}
-                          solid={i < r.nota_local}
                         />
                       ))}
                     </View>

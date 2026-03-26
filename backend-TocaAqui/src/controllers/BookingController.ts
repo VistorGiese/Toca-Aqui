@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import BookingModel, { BookingStatus } from "../models/BookingModel";
 import BandApplicationModel from "../models/BandApplicationModel";
+import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
 import redisService from "../config/redis";
 import { CACHE_TTL, CACHE_KEYS } from "../config/cache";
 import { asyncHandler } from "../middleware/errorHandler";
@@ -11,7 +12,15 @@ import { AuthRequest } from '../middleware/authmiddleware';
 export const createBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const { titulo_evento, descricao_evento, data_show, perfil_estabelecimento_id, horario_inicio, horario_fim } = req.body;
+  const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, cache_minimo, generos_musicais } = req.body;
+
+  let perfil_estabelecimento_id: number = req.body.perfil_estabelecimento_id;
+  if (!perfil_estabelecimento_id) {
+    const perfil = await EstablishmentProfileModel.findOne({ where: { usuario_id: req.user.id } });
+    if (!perfil) throw new AppError('Perfil de estabelecimento não encontrado para este usuário', 403);
+    perfil_estabelecimento_id = perfil.id;
+  }
+
   const conflito = await BookingModel.findOne({
     where: {
       perfil_estabelecimento_id,
@@ -35,6 +44,8 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
     horario_inicio,
     horario_fim,
     status: BookingStatus.PENDENTE,
+    preco_ingresso_inteira: cache_minimo ?? undefined,
+    genero_musical: generos_musicais ?? undefined,
   });
 
   await redisService.invalidatePattern('agendamentos:*');

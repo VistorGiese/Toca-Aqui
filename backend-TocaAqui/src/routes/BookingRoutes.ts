@@ -7,8 +7,7 @@ import {
   deleteBooking,
 } from "../controllers/BookingController";
 import { authMiddleware } from "../middleware/authmiddleware";
-import { checkOwnership, checkRolesOrAdmin } from "../middleware/authorizationMiddleware";
-import { UserRole } from "../models/UserModel";
+import { checkOwnership } from "../middleware/authorizationMiddleware";
 import { validate } from "../middleware/validate";
 import { createBookingSchema, updateBookingSchema } from "../schemas/bookingSchemas";
 import BookingModel from "../models/BookingModel";
@@ -23,7 +22,7 @@ const resolveBookingOwner = async (req: any): Promise<number | undefined> => {
 
 const router = Router();
 
-router.post("/", authMiddleware, checkRolesOrAdmin(UserRole.ESTABLISHMENT_OWNER), validate(createBookingSchema), createBooking);
+router.post("/", authMiddleware, validate(createBookingSchema), createBooking);
 
 router.get("/", authMiddleware, getBookings);
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,16 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Modal,
+  FlatList,
+  Image,
 } from "react-native";
 import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/Navigate";
 import api from "@/http/api";
+import * as ImagePicker from "expo-image-picker";
 
 const DS = {
   bg: "#09090F",
@@ -33,11 +37,9 @@ const DS = {
   pink: "#E91E8C",
 };
 
-const UFS = [
-  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS",
-  "MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC",
-  "SP","SE","TO",
-];
+interface Estado { sigla: string; nome: string; }
+interface Cidade { id: number; nome: string; }
+type PickerMode = "estado" | "cidade" | null;
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "OnboardingArtistBio">;
 type RouteType = RouteProp<RootStackParamList, "OnboardingArtistBio">;
@@ -47,16 +49,65 @@ export default function OnboardingArtistBio() {
   const route = useRoute<RouteType>();
   const params = route.params;
 
-  const [cidade, setCidade] = useState("");
-  const [estado, setEstado] = useState("SP");
-  const [showUfPicker, setShowUfPicker] = useState(false);
+  // Localização via IBGE
+  const [estado, setEstado] = useState<Estado | null>(null);
+  const [cidade, setCidade] = useState<Cidade | null>(null);
+  const [estados, setEstados] = useState<Estado[]>([]);
+  const [cidades, setCidades] = useState<Cidade[]>([]);
+  const [loadingEstados, setLoadingEstados] = useState(false);
+  const [loadingCidades, setLoadingCidades] = useState(false);
+  const [pickerMode, setPickerMode] = useState<PickerMode>(null);
+  const [searchText, setSearchText] = useState("");
+
+  // Bio e links
   const [bio, setBio] = useState("");
   const [links, setLinks] = useState<string[]>([]);
   const [novoLink, setNovoLink] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
+
+  // Press kit (fotos)
+  const [pressKit, setPressKit] = useState<string[]>([]);
+
   const [loading, setLoading] = useState(false);
 
-  const bioChars = bio.length;
+  useEffect(() => {
+    setLoadingEstados(true);
+    fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
+      .then((r) => r.json())
+      .then((data: Array<{ sigla: string; nome: string }>) => {
+        setEstados(data.map((e) => ({ sigla: e.sigla, nome: e.nome })));
+      })
+      .catch(() => Alert.alert("Erro", "Não foi possível carregar os estados."))
+      .finally(() => setLoadingEstados(false));
+  }, []);
+
+  useEffect(() => {
+    if (!estado) { setCidades([]); setCidade(null); return; }
+    setLoadingCidades(true);
+    setCidade(null);
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estado.sigla}/municipios?orderBy=nome`)
+      .then((r) => r.json())
+      .then((data: Array<{ id: number; nome: string }>) => {
+        setCidades(data.map((c) => ({ id: c.id, nome: c.nome })));
+      })
+      .catch(() => Alert.alert("Erro", "Não foi possível carregar as cidades."))
+      .finally(() => setLoadingCidades(false));
+  }, [estado]);
+
+  const openPicker = (mode: PickerMode) => {
+    setSearchText("");
+    setPickerMode(mode);
+  };
+
+  const filteredEstados = estados.filter(
+    (e) =>
+      e.nome.toLowerCase().includes(searchText.toLowerCase()) ||
+      e.sigla.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const filteredCidades = cidades.filter((c) =>
+    c.nome.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   const addLink = () => {
     if (novoLink.trim()) {
@@ -66,30 +117,70 @@ export default function OnboardingArtistBio() {
     }
   };
 
+  const handleAddPressKit = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão necessária", "Precisamos de acesso à galeria para adicionar fotos.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 5 - pressKit.length,
+    });
+    if (!result.canceled) {
+      const novas = result.assets.map((a) => a.uri);
+      setPressKit((prev) => [...prev, ...novas].slice(0, 5));
+    }
+  };
+
   const handleConcluir = async () => {
-    if (!cidade.trim()) {
-      Alert.alert("Atenção", "Informe sua cidade.");
+    if (!estado) {
+      Alert.alert("Atenção", "Selecione o estado.");
+      return;
+    }
+    if (!cidade) {
+      Alert.alert("Atenção", "Selecione a cidade.");
       return;
     }
 
     setLoading(true);
     try {
-      await api.post("/usuarios/perfil-artista", {
+      const response = await api.post("/usuarios/perfil-artista", {
         nome_artistico: params.nome,
         tipo_atuacao: params.tipo,
         generos: params.generos,
-        cache_minimo: params.cacheMin ? parseFloat(params.cacheMin) : undefined,
-        cache_maximo: params.cacheMax ? parseFloat(params.cacheMax) : undefined,
-        estrutura_som_propria: params.estruturaSom,
-        cidade,
-        estado,
-        bio,
+        cache_minimo: params.cacheMin ? parseFloat(params.cacheMin.replace(",", ".")) : undefined,
+        cache_maximo: params.cacheMax ? parseFloat(params.cacheMax.replace(",", ".")) : undefined,
+        tem_estrutura_som: params.temEstrutura,
+        estrutura_som: params.estrutura,
+        cidade: cidade.nome,
+        estado: estado.sigla,
+        biografia: bio,
         links_sociais: links,
       });
 
+      const profileId = response.data?.profile?.id;
+
+      // Upload foto de perfil se selecionada no passo 1
+      if (params.fotoUri && profileId) {
+        const filename = params.fotoUri.split("/").pop() || "photo.jpg";
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
+        const formData = new FormData();
+        formData.append("imagem", { uri: params.fotoUri, name: filename, type } as any);
+        await api.patch(`/usuarios/perfil-artista/${profileId}/foto`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
       navigation.reset({ index: 0, routes: [{ name: "ArtistNavigator" }] });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Não foi possível salvar o perfil.";
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.[0]?.message ||
+        "Não foi possível salvar o perfil.";
       Alert.alert("Erro", msg);
     } finally {
       setLoading(false);
@@ -115,62 +206,60 @@ export default function OnboardingArtistBio() {
           Informe sua cidade base para aparecer nos resultados de busca da sua região.
         </Text>
 
-        <Text style={styles.fieldLabel}>CIDADE</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ex: São Paulo"
-          placeholderTextColor={DS.textDis}
-          value={cidade}
-          onChangeText={setCidade}
-        />
-
+        {/* Estado */}
         <Text style={styles.fieldLabel}>ESTADO</Text>
         <TouchableOpacity
-          style={[styles.input, styles.selectRow]}
-          onPress={() => setShowUfPicker(!showUfPicker)}
-          activeOpacity={0.8}
+          style={[styles.selector, !estado && styles.selectorEmpty]}
+          onPress={() => openPicker("estado")}
+          activeOpacity={0.75}
         >
-          <Text style={styles.selectText}>{estado}</Text>
-          <FontAwesome5
-            name={showUfPicker ? "chevron-up" : "chevron-down"}
-            size={12}
-            color={DS.textSec}
-          />
+          <Text style={estado ? styles.selectorText : styles.selectorPlaceholder}>
+            {estado ? `${estado.nome} (${estado.sigla})` : "Selecione o estado"}
+          </Text>
+          {loadingEstados ? (
+            <ActivityIndicator size="small" color={DS.accent} />
+          ) : (
+            <FontAwesome5 name="chevron-down" size={12} color={DS.textSec} />
+          )}
         </TouchableOpacity>
-        {showUfPicker && (
-          <View style={styles.ufList}>
-            <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-              {UFS.map((uf) => (
-                <TouchableOpacity
-                  key={uf}
-                  style={[styles.ufItem, estado === uf && styles.ufItemActive]}
-                  onPress={() => {
-                    setEstado(uf);
-                    setShowUfPicker(false);
-                  }}
-                >
-                  <Text style={[styles.ufText, estado === uf && { color: DS.accent }]}>
-                    {uf}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+
+        {/* Cidade */}
+        <Text style={[styles.fieldLabel, { marginTop: 12 }]}>CIDADE</Text>
+        <TouchableOpacity
+          style={[
+            styles.selector,
+            (!estado || !cidade) && styles.selectorEmpty,
+            !estado && styles.selectorDisabled,
+          ]}
+          onPress={() => estado && openPicker("cidade")}
+          activeOpacity={estado ? 0.75 : 1}
+        >
+          <Text style={cidade ? styles.selectorText : styles.selectorPlaceholder}>
+            {!estado
+              ? "Selecione o estado primeiro"
+              : cidade
+              ? cidade.nome
+              : "Selecione a cidade"}
+          </Text>
+          {loadingCidades ? (
+            <ActivityIndicator size="small" color={DS.accent} />
+          ) : (
+            <FontAwesome5 name="chevron-down" size={12} color={DS.textSec} />
+          )}
+        </TouchableOpacity>
 
         {/* Card Mapa visual */}
         <View style={styles.mapCard}>
           <MaterialCommunityIcons name="map-marker" size={32} color={DS.accent} />
-          <Text style={styles.mapLabel}>VISUALIZAÇÃO DO MAPA</Text>
+          <Text style={styles.mapLabel}>LOCALIZAÇÃO BASE</Text>
           <Text style={styles.mapSub}>
-            {cidade ? `${cidade}, ${estado}` : "Preencha a cidade acima"}
+            {cidade && estado ? `${cidade.nome}, ${estado.sigla}` : "Preencha os campos acima"}
           </Text>
         </View>
 
         <View style={styles.separator} />
 
         {/* -------- ETAPA 4 -------- */}
-        {/* Atualiza progress para 100% visualmente neste bloco */}
         <View style={styles.progressBgInline}>
           <View style={[styles.progressFill, { width: "100%" }]} />
         </View>
@@ -182,7 +271,7 @@ export default function OnboardingArtistBio() {
 
         <View style={styles.rowBetween}>
           <Text style={styles.fieldLabel}>SOBRE MIM / NÓS</Text>
-          <Text style={styles.charCount}>{bioChars} / 1000</Text>
+          <Text style={styles.charCount}>{bio.length} / 1000</Text>
         </View>
         <TextInput
           style={[styles.input, styles.textarea]}
@@ -234,20 +323,36 @@ export default function OnboardingArtistBio() {
           <Text style={styles.btnOutlineText}>ADD SOCIAL LINK</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnOutline} activeOpacity={0.8}>
-          <FontAwesome5 name="play-circle" size={13} color={DS.accentLight} />
-          <Text style={styles.btnOutlineText}>ADICIONAR VÍDEO</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.uploadArea} activeOpacity={0.8}>
-          <FontAwesome5 name="cloud-upload-alt" size={24} color={DS.textSec} />
-          <Text style={styles.uploadLabel}>ARRASTE SEU PRESS KIT OU FOTOS</Text>
-          <Text style={styles.uploadSub}>PNG, JPG, PDF — máx 10MB</Text>
-        </TouchableOpacity>
+        {/* Press Kit — fotos */}
+        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>PRESS KIT / FOTOS</Text>
+        {pressKit.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+            {pressKit.map((uri, i) => (
+              <View key={i} style={styles.pressKitThumb}>
+                <Image source={{ uri }} style={styles.pressKitImage} />
+                <TouchableOpacity
+                  style={styles.pressKitRemove}
+                  onPress={() => setPressKit((prev) => prev.filter((_, idx) => idx !== i))}
+                >
+                  <FontAwesome5 name="times" size={10} color={DS.white} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+        {pressKit.length < 5 && (
+          <TouchableOpacity style={styles.uploadArea} activeOpacity={0.8} onPress={handleAddPressKit}>
+            <FontAwesome5 name="cloud-upload-alt" size={24} color={DS.textSec} />
+            <Text style={styles.uploadLabel}>
+              {pressKit.length === 0 ? "ADICIONAR FOTOS" : "ADICIONAR MAIS FOTOS"}
+            </Text>
+            <Text style={styles.uploadSub}>PNG, JPG — máx 5 fotos ({pressKit.length}/5)</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Botão Concluir */}
         <TouchableOpacity
-          style={styles.btnPrimary}
+          style={[styles.btnPrimary, loading && { opacity: 0.7 }]}
           onPress={handleConcluir}
           activeOpacity={0.85}
           disabled={loading}
@@ -268,6 +373,95 @@ export default function OnboardingArtistBio() {
           <Text style={styles.btnBackText}>VOLTAR</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal picker de estado/cidade */}
+      <Modal
+        visible={pickerMode !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setPickerMode(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {pickerMode === "estado" ? "Selecione o Estado" : "Selecione a Cidade"}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setPickerMode(null)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <FontAwesome5 name="times" size={18} color={DS.textSec} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchBox}>
+              <FontAwesome5 name="search" size={13} color={DS.textSec} style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={pickerMode === "estado" ? "Buscar estado..." : "Buscar cidade..."}
+                placeholderTextColor={DS.textSec}
+                value={searchText}
+                onChangeText={setSearchText}
+                autoFocus
+              />
+            </View>
+
+            {pickerMode === "estado" ? (
+              <FlatList
+                data={filteredEstados}
+                keyExtractor={(item) => item.sigla}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.pickerItem,
+                      estado?.sigla === item.sigla && styles.pickerItemActive,
+                    ]}
+                    onPress={() => { setEstado(item); setPickerMode(null); }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.pickerItemSigla}>{item.sigla}</Text>
+                    <Text
+                      style={[
+                        styles.pickerItemNome,
+                        estado?.sigla === item.sigla && { color: DS.accent },
+                      ]}
+                    >
+                      {item.nome}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                keyboardShouldPersistTaps="handled"
+              />
+            ) : (
+              <FlatList
+                data={filteredCidades}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.pickerItem,
+                      cidade?.id === item.id && styles.pickerItemActive,
+                    ]}
+                    onPress={() => { setCidade(item); setPickerMode(null); }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.pickerItemNome,
+                        cidade?.id === item.id && { color: DS.accent },
+                      ]}
+                    >
+                      {item.nome}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                keyboardShouldPersistTaps="handled"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -338,43 +532,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: DS.bgSurface,
   },
-  selectRow: {
+  // Seletores IBGE
+  selector: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-  },
-  selectText: {
-    fontFamily: "Montserrat-Regular",
-    fontSize: 14,
-    color: DS.white,
-  },
-  ufList: {
-    backgroundColor: DS.bgCard,
+    justifyContent: "space-between",
+    backgroundColor: DS.bgInput,
     borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: DS.bgSurface,
-    marginTop: 4,
   },
-  ufItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: DS.bgSurface,
+  selectorEmpty: {
+    borderColor: DS.bgSurface,
   },
-  ufItemActive: {
-    backgroundColor: DS.accent + "22",
+  selectorDisabled: {
+    opacity: 0.5,
   },
-  ufText: {
+  selectorText: {
     fontFamily: "Montserrat-Regular",
     fontSize: 14,
     color: DS.white,
+    flex: 1,
+  },
+  selectorPlaceholder: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: DS.textSec,
+    flex: 1,
   },
   mapCard: {
     backgroundColor: DS.bgCard,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    height: 120,
+    height: 110,
     marginTop: 16,
     borderWidth: 1,
     borderColor: DS.bgSurface,
@@ -462,6 +655,30 @@ const styles = StyleSheet.create({
     color: DS.accentLight,
     letterSpacing: 1,
   },
+  // Press kit
+  pressKitThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+    position: "relative",
+  },
+  pressKitImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  pressKitRemove: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: DS.danger,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   uploadArea: {
     borderWidth: 1,
     borderColor: DS.bgSurface,
@@ -470,7 +687,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 28,
-    marginTop: 10,
+    marginTop: 4,
     gap: 8,
     backgroundColor: DS.bgCard,
   },
@@ -510,5 +727,73 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-SemiBold",
     fontSize: 13,
     color: DS.textSec,
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "flex-end",
+  },
+  modalContainer: {
+    backgroundColor: DS.bgInput,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "80%",
+    paddingBottom: 32,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: DS.bgSurface,
+  },
+  modalTitle: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 16,
+    color: DS.white,
+  },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: DS.bgCard,
+    borderRadius: 10,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: DS.bgSurface,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: DS.white,
+  },
+  pickerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: DS.bgSurface,
+    gap: 12,
+  },
+  pickerItemActive: {
+    backgroundColor: DS.accent + "22",
+  },
+  pickerItemSigla: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 12,
+    color: DS.accent,
+    width: 30,
+  },
+  pickerItemNome: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: DS.white,
+    flex: 1,
   },
 });

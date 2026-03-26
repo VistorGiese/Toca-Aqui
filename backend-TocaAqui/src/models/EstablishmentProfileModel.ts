@@ -10,7 +10,7 @@ export interface EstablishmentProfileAttributes {
   generos_musicais: string;
   horario_abertura: string;
   horario_fechamento: string;
-  endereco_id: number;
+  endereco_id?: number;
   telefone_contato: string;
   fotos?: string; 
   esta_ativo?: boolean;
@@ -27,7 +27,7 @@ class EstablishmentProfileModel extends Model<EstablishmentProfileAttributes> im
   public generos_musicais!: string;
   public horario_abertura!: string;
   public horario_fechamento!: string;
-  public endereco_id!: number;
+  public endereco_id?: number;
   public telefone_contato!: string;
   public fotos?: string;
   public esta_ativo!: boolean;
@@ -77,7 +77,7 @@ EstablishmentProfileModel.init(
     },
     endereco_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'enderecos',
         key: 'id',

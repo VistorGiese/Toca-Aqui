@@ -18,6 +18,7 @@ import ComentarioShowModel from './ComentarioShowModel';
 import CurtidaComentarioModel from './CurtidaComentarioModel';
 import SeguidorArtistaModel from './SeguidorArtistaModel';
 import PreferenciaUsuarioModel from './PreferenciaUsuarioModel';
+import EstablishmentMemberModel from './EstablishmentMemberModel';
 
 // Associações do novo sistema de usuários
 UserModel.hasMany(EstablishmentProfileModel, {
@@ -222,6 +223,24 @@ UserModel.hasMany(SeguidorArtistaModel, { foreignKey: 'usuario_id', as: 'Seguind
 UserModel.hasOne(PreferenciaUsuarioModel, { foreignKey: 'usuario_id', as: 'Preferencias' });
 PreferenciaUsuarioModel.belongsTo(UserModel, { foreignKey: 'usuario_id', as: 'Usuario' });
 
+// Membros/gerenciadores de estabelecimento
+EstablishmentProfileModel.hasMany(EstablishmentMemberModel, {
+  foreignKey: 'estabelecimento_id',
+  as: 'Members',
+});
+EstablishmentMemberModel.belongsTo(EstablishmentProfileModel, {
+  foreignKey: 'estabelecimento_id',
+  as: 'EstablishmentProfile',
+});
+UserModel.hasMany(EstablishmentMemberModel, {
+  foreignKey: 'usuario_id',
+  as: 'EstablishmentMemberships',
+});
+EstablishmentMemberModel.belongsTo(UserModel, {
+  foreignKey: 'usuario_id',
+  as: 'User',
+});
+
 export {
   UserModel,
   EstablishmentProfileModel,
@@ -242,4 +261,5 @@ export {
   CurtidaComentarioModel,
   SeguidorArtistaModel,
   PreferenciaUsuarioModel,
+  EstablishmentMemberModel,
 };

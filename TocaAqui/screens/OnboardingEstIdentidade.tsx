@@ -26,15 +26,16 @@ export default function OnboardingEstIdentidade() {
   const navigation = useNavigation<NavProp>();
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState("");
+  const [telefone, setTelefone] = useState("");
 
   const handleProximo = () => {
     if (!nome.trim()) { Alert.alert("Atenção", "Informe o nome do estabelecimento."); return; }
     if (!tipo) { Alert.alert("Atenção", "Selecione o tipo do estabelecimento."); return; }
-    navigation.navigate("OnboardingEstFuncionamento", { nome, tipo });
+    navigation.navigate("OnboardingEstFuncionamento", { nome, tipo, telefone });
   };
 
   const handlePular = () => {
-    navigation.navigate("OnboardingEstFuncionamento", { nome: nome || "Meu Espaço", tipo: tipo || "bar" });
+    navigation.navigate("OnboardingEstFuncionamento", { nome: nome || "Meu Espaço", tipo: tipo || "bar", telefone });
   };
 
   return (
@@ -46,6 +47,9 @@ export default function OnboardingEstIdentidade() {
       </View>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={s.headerRow}>
+          <TouchableOpacity onPress={() => navigation.navigate("Login")} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <FontAwesome5 name="arrow-left" size={16} color={DS.textSecondary} />
+          </TouchableOpacity>
           <Text style={s.stepLabel}>PASSO 1 DE 4</Text>
           <Text style={s.stepName}>Identidade</Text>
         </View>
@@ -62,6 +66,13 @@ export default function OnboardingEstIdentidade() {
         <TextInput
           style={s.input} placeholder="Ex: The Sonic Lounge"
           placeholderTextColor={DS.border} value={nome} onChangeText={setNome}
+        />
+
+        <Text style={[s.fieldLabel, { marginTop: 20 }]}>CELULAR DO RESPONSÁVEL</Text>
+        <TextInput
+          style={s.input} placeholder="Ex: (11) 99999-9999"
+          placeholderTextColor={DS.border} value={telefone} onChangeText={setTelefone}
+          keyboardType="phone-pad"
         />
 
         <Text style={[s.fieldLabel, { marginTop: 20 }]}>TIPO DO LOCAL</Text>
@@ -97,7 +108,7 @@ const s = StyleSheet.create({
   segOn: { backgroundColor: DS.cyan },
   segOff: { backgroundColor: DS.border },
   scroll: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 48 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 28 },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 28 },
   stepLabel: { fontFamily: "Montserrat-SemiBold", fontSize: 11, color: DS.textSecondary, letterSpacing: 2 },
   stepName: { fontFamily: "Montserrat-SemiBold", fontSize: 11, color: DS.accent, letterSpacing: 2 },
   title: { fontFamily: "Montserrat-Bold", fontSize: 26, color: DS.textPrimary, lineHeight: 34, marginBottom: 10 },

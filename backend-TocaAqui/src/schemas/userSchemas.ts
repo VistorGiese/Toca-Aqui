@@ -23,7 +23,7 @@ export const createEstablishmentProfileSchema = z.object({
   generos_musicais: z.string().min(1, 'Gêneros musicais são obrigatórios').trim(),
   horario_abertura: z.string().min(1, 'Horário de abertura é obrigatório'),
   horario_fechamento: z.string().min(1, 'Horário de fechamento é obrigatório'),
-  endereco_id: z.number({ error: 'endereco_id deve ser um número válido' }).int().positive('endereco_id deve ser positivo'),
+  endereco_id: z.number().int().positive().optional(),
   telefone_contato: z.string().min(8, 'Telefone deve ter ao menos 8 caracteres').trim(),
 });
 
@@ -37,6 +37,14 @@ export const createArtistProfileSchema = z.object({
     .refine(url => url.startsWith('https://'), { message: 'URL do portfólio deve usar HTTPS' })
     .optional().or(z.literal('')),
   foto_perfil: z.string().optional(),
+  tipo_atuacao: z.string().optional(),
+  cache_minimo: z.number().min(0).optional(),
+  cache_maximo: z.number().min(0).optional(),
+  tem_estrutura_som: z.boolean().optional().default(false),
+  estrutura_som: z.array(z.string()).optional().default([]),
+  cidade: z.string().optional(),
+  estado: z.string().max(2).optional(),
+  links_sociais: z.array(z.string()).optional().default([]),
 });
 
 export const forgotPasswordSchema = z.object({

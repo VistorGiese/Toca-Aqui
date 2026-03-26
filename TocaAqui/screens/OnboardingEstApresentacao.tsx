@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert,
+  ActivityIndicator, Image,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import { FontAwesome5 } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "@/navigation/Navigate";
 import api from "@/http/api";
 
@@ -31,33 +34,95 @@ export default function OnboardingEstApresentacao() {
   const [fotos, setFotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const handleAdicionarFotos = async () => {
+    if (fotos.length >= 5) {
+      Alert.alert("Limite", "Você pode adicionar no máximo 5 fotos.");
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão necessária", "Permita o acesso à galeria para adicionar fotos.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 5 - fotos.length,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const novasUris = result.assets.map(a => a.uri);
+      setFotos(prev => [...prev, ...novasUris].slice(0, 5));
+    }
+  };
+
+  const handleRemoverFoto = (uri: string) => {
+    setFotos(prev => prev.filter(f => f !== uri));
+  };
+
   const handleConcluir = async () => {
     if (!bio.trim()) { Alert.alert("Atenção", "Escreva uma descrição do seu espaço."); return; }
 
     setLoading(true);
     try {
-      const enderecoRes = await api.post("/enderecos", {
-        rua: params.endereco || "Endereço não informado",
-        numero: "", bairro: "", cidade: params.cidade || "São Paulo",
-        estado: params.estado || "SP", cep: "",
-      });
-      const enderecoId = enderecoRes.data?.id;
+      let enderecoId: number | undefined;
+      try {
+        const enderecoRes = await api.post("/enderecos", {
+          rua: params.endereco || "Endereço não informado",
+          numero: params.numero || "",
+          bairro: "",
+          cidade: params.cidade || "São Paulo",
+          estado: params.estado || "SP",
+          cep: "",
+        });
+        enderecoId = enderecoRes.data?.id;
+      } catch (_) {
+        // endereco_id é opcional no backend
+      }
 
       const diasParsed = JSON.parse(params.diasHorarios || "{}") as Record<string, { ativo: boolean; inicio: string; fim: string }>;
       const ativos = Object.values(diasParsed).filter(d => d.ativo);
       const horarioAbertura = ativos.length > 0 ? ativos[0].inicio : "18:00";
       const horarioFechamento = ativos.length > 0 ? ativos[ativos.length - 1].fim : "02:00";
 
-      await api.post("/usuarios/perfil-estabelecimento", {
+      const generosParsed: string[] = JSON.parse(params.generos || "[]");
+
+      const payload: any = {
         nome_estabelecimento: params.nome,
         tipo_estabelecimento: mapTipo(params.tipo),
         descricao: bio,
-        generos_musicais: JSON.parse(params.generos || "[]").join(", ") || "Diversos",
+        generos_musicais: generosParsed.join(", ") || "Diversos",
         horario_abertura: horarioAbertura,
         horario_fechamento: horarioFechamento,
-        endereco_id: enderecoId,
-        telefone_contato: "00000000000",
-      });
+        telefone_contato: params.telefone || "00000000000",
+      };
+      if (enderecoId) payload.endereco_id = enderecoId;
+
+      const result = await api.post("/usuarios/perfil-estabelecimento", payload);
+      const estId = result.data?.profile?.id;
+      if (estId) {
+        await AsyncStorage.setItem("estabelecimentoId", String(estId));
+
+        // Upload das fotos se houver
+        if (fotos.length > 0) {
+          try {
+            const formData = new FormData();
+            fotos.forEach((uri, idx) => {
+              const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+              const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+              formData.append("imagens", { uri, name: `foto_${idx}.${ext}`, type: mime } as any);
+            });
+            await api.patch(`/estabelecimentos/${estId}/fotos`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+          } catch (_) {
+            // Fotos são opcionais — não bloqueia o fluxo
+          }
+        }
+      }
 
       navigation.reset({ index: 0, routes: [{ name: "EstablishmentNavigator" }] });
     } catch (err: any) {
@@ -98,16 +163,24 @@ export default function OnboardingEstApresentacao() {
         </View>
 
         <Text style={[s.sectionLabel, { marginTop: 20 }]}>GALERIA DE FOTOS</Text>
-        <Text style={s.galeriaNote}>Mínimo de 3 fotos para melhor visibilidade dos artistas</Text>
+        <Text style={s.galeriaNote}>
+          {fotos.length > 0
+            ? `${fotos.length} foto${fotos.length > 1 ? "s" : ""} selecionada${fotos.length > 1 ? "s" : ""} (máx. 5)`
+            : "Mínimo de 3 fotos para melhor visibilidade dos artistas"}
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.galeriaScroll} contentContainerStyle={s.galeriaContent}>
-          <TouchableOpacity style={s.fotoAdd} onPress={() => setFotos(prev => [...prev, `foto_${Date.now()}`])} activeOpacity={0.75}>
-            <FontAwesome5 name="plus" size={20} color={DS.accent} />
-            <Text style={s.fotoAddLabel}>ADICIONAR{"\n"}FOTOS</Text>
-          </TouchableOpacity>
-          {fotos.map((uri, idx) => (
+          {fotos.length < 5 && (
+            <TouchableOpacity style={s.fotoAdd} onPress={handleAdicionarFotos} activeOpacity={0.75}>
+              <FontAwesome5 name="plus" size={20} color={DS.accent} />
+              <Text style={s.fotoAddLabel}>ADICIONAR{"\n"}FOTOS</Text>
+            </TouchableOpacity>
+          )}
+          {fotos.map((uri) => (
             <View key={uri} style={s.fotoThumb}>
-              <MaterialCommunityIcons name="image" size={28} color={DS.textSecondary} />
-              <Text style={s.fotoIdx}>{idx + 1}</Text>
+              <Image source={{ uri }} style={s.fotoImage} resizeMode="cover" />
+              <TouchableOpacity style={s.fotoRemove} onPress={() => handleRemoverFoto(uri)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                <FontAwesome5 name="times-circle" size={18} color={DS.textPrimary} />
+              </TouchableOpacity>
             </View>
           ))}
         </ScrollView>
@@ -148,8 +221,9 @@ const s = StyleSheet.create({
     borderStyle: "dashed", backgroundColor: DS.accentLight, justifyContent: "center", alignItems: "center", gap: 6,
   },
   fotoAddLabel: { fontFamily: "Montserrat-SemiBold", fontSize: 9, color: DS.accent, letterSpacing: 1, textAlign: "center" },
-  fotoThumb: { width: 90, height: 90, borderRadius: 12, backgroundColor: DS.card, borderWidth: 1, borderColor: DS.border, justifyContent: "center", alignItems: "center", gap: 4 },
-  fotoIdx: { fontFamily: "Montserrat-SemiBold", fontSize: 11, color: DS.textSecondary },
+  fotoThumb: { width: 90, height: 90, borderRadius: 12, overflow: "hidden", position: "relative" },
+  fotoImage: { width: 90, height: 90 },
+  fotoRemove: { position: "absolute", top: 4, right: 4, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 10 },
   btnPrimary: { backgroundColor: DS.accent, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginBottom: 12 },
   btnPrimaryText: { fontFamily: "AkiraExpanded-Superbold", fontSize: 12, color: DS.textPrimary, letterSpacing: 1.5 },
   btnRevisar: { paddingVertical: 14, alignItems: "center" },

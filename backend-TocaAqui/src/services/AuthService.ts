@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import UserModel from '../models/UserModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
+import EstablishmentMemberModel from '../models/EstablishmentMemberModel';
 import ArtistProfileModel from '../models/ArtistProfileModel';
 import { generateToken } from '../utils/jwt';
 import { validateEmailFormat, validatePasswordFormat } from './userValidationServices';
@@ -110,6 +111,17 @@ export class AuthService {
           include: [{ association: 'Address', attributes: ['rua', 'cidade', 'estado'] }],
         },
         { model: ArtistProfileModel, as: 'ArtistProfiles' },
+        {
+          model: EstablishmentMemberModel,
+          as: 'EstablishmentMemberships',
+          include: [
+            {
+              model: EstablishmentProfileModel,
+              as: 'EstablishmentProfile',
+              attributes: ['id', 'nome_estabelecimento', 'tipo_estabelecimento'],
+            },
+          ],
+        },
       ],
     });
     if (!user) throw new AppError('Usuário não encontrado', 404);
@@ -123,24 +135,28 @@ export class AuthService {
     generos_musicais: string;
     horario_abertura: string;
     horario_fechamento: string;
-    endereco_id: number;
+    endereco_id?: number;
     telefone_contato: string;
   }) {
-    const existing = await EstablishmentProfileModel.findOne({
-      where: { endereco_id: data.endereco_id, esta_ativo: true },
-    });
-    if (existing) {
-      throw new AppError(
-        'Este endereço já está sendo utilizado por outro estabelecimento ativo',
-        400,
-        { estabelecimento_existente: { id: existing.id, nome: existing.nome_estabelecimento } }
-      );
+    if (data.endereco_id) {
+      const existing = await EstablishmentProfileModel.findOne({
+        where: { endereco_id: data.endereco_id, esta_ativo: true },
+      });
+      if (existing) {
+        throw new AppError(
+          'Este endereço já está sendo utilizado por outro estabelecimento ativo',
+          400,
+          { estabelecimento_existente: { id: existing.id, nome: existing.nome_estabelecimento } }
+        );
+      }
     }
 
+    const { endereco_id, ...rest } = data;
     return EstablishmentProfileModel.create({
       usuario_id: userId,
-      ...data,
+      ...rest,
       tipo_estabelecimento: (data.tipo_estabelecimento as any) || 'bar',
+      ...(endereco_id ? { endereco_id } : {}),
     });
   }
 
@@ -152,6 +168,14 @@ export class AuthService {
     anos_experiencia?: number;
     url_portfolio?: string;
     foto_perfil?: string;
+    tipo_atuacao?: string;
+    cache_minimo?: number;
+    cache_maximo?: number;
+    tem_estrutura_som?: boolean;
+    estrutura_som?: string[];
+    cidade?: string;
+    estado?: string;
+    links_sociais?: string[];
   }) {
     return ArtistProfileModel.create({
       usuario_id: userId,
@@ -162,6 +186,14 @@ export class AuthService {
       anos_experiencia: data.anos_experiencia || 0,
       url_portfolio: data.url_portfolio,
       foto_perfil: data.foto_perfil,
+      tipo_atuacao: data.tipo_atuacao,
+      cache_minimo: data.cache_minimo,
+      cache_maximo: data.cache_maximo,
+      tem_estrutura_som: data.tem_estrutura_som || false,
+      estrutura_som: JSON.stringify(data.estrutura_som || []),
+      cidade: data.cidade,
+      estado: data.estado,
+      links_sociais: JSON.stringify(data.links_sociais || []),
     });
   }
 }

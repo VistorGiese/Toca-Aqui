@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService, Gig } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
@@ -27,13 +28,15 @@ export default function EstGigs() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await establishmentService.getMyGigs();
+      const estIdStr = await AsyncStorage.getItem("estabelecimentoId");
+      const estId = estIdStr ? Number(estIdStr) : undefined;
+      const data = await establishmentService.getMyGigs(estId);
       setGigs(data);
     } catch { Alert.alert("Erro", "Não foi possível carregar as vagas."); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const filtered = gigs.filter(g => {
     if (tab === "abertas") return g.status === "aberta" || g.status === "pendente";
@@ -52,7 +55,8 @@ export default function EstGigs() {
   };
 
   const renderGig = ({ item }: { item: Gig }) => {
-    const genero = item.generos_musicais?.split(",")[0]?.trim().toUpperCase() ?? "SHOW";
+    const generoRaw = item.generos_musicais ?? item.genero_musical ?? "";
+    const genero = generoRaw.split(",")[0]?.trim().toUpperCase() || "SHOW";
     const color = getGenreColor(genero);
     return (
       <TouchableOpacity style={s.card} onPress={() => navigation.navigate("EstGigApplications", { gigId: item.id, gigTitle: item.titulo_evento })} activeOpacity={0.8}>
@@ -73,7 +77,7 @@ export default function EstGigs() {
         </View>
         <View style={s.cardMeta}>
           <FontAwesome5 name="dollar-sign" size={11} color={DS.cyan} />
-          <Text style={[s.cardMetaText,{color:DS.cyan}]}>{formatBRL(item.cache_minimo)}{item.cache_maximo ? ` - ${formatBRL(item.cache_maximo)}` : ""}</Text>
+          <Text style={[s.cardMetaText,{color:DS.cyan}]}>{formatBRL(item.cache_minimo ?? item.preco_ingresso_inteira)}{item.cache_maximo ? ` - ${formatBRL(item.cache_maximo)}` : ""}</Text>
         </View>
         {(item.candidaturas_count ?? 0) > 0 && (
           <View style={s.badge}><FontAwesome5 name="users" size={10} color={DS.textSecondary} style={{marginRight:6}} /><Text style={s.badgeText}>{item.candidaturas_count} candidaturas</Text></View>

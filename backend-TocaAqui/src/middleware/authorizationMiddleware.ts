@@ -6,6 +6,7 @@ import AddressModel from "../models/AddressModel";
 import BandModel from "../models/BandModel";
 import BookingModel from "../models/BookingModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
+import EstablishmentMemberModel from "../models/EstablishmentMemberModel";
 
 const modelRegistry: Record<string, ModelStatic<Model>> = {
   Address: AddressModel,
@@ -145,6 +146,94 @@ export const checkOwnershipOrAdmin = (
   };
 };
 
+
+/**
+ * Verifica se o usuário tem acesso gerencial ao estabelecimento.
+ * Permite: admin global, owner (usuario_id) ou membro com role 'admin' na tabela estabelecimento_membros.
+ * O parâmetro da rota deve ser :id (id do estabelecimento).
+ */
+export const checkEstablishmentAccess = () => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+    try {
+      const user = req.user;
+      const estabelecimentoId = Number(req.params.id);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      // Admin global tem acesso irrestrito
+      if (user.role === UserRole.ADMIN) {
+        return next();
+      }
+
+      const estabelecimento = await EstablishmentProfileModel.findByPk(estabelecimentoId);
+      if (!estabelecimento) {
+        return res.status(404).json({ error: 'Estabelecimento não encontrado' });
+      }
+
+      // Owner do estabelecimento
+      if (estabelecimento.usuario_id === user.id) {
+        return next();
+      }
+
+      // Membro com role admin concedido pelo owner
+      const membro = await EstablishmentMemberModel.findOne({
+        where: { estabelecimento_id: estabelecimento.id, usuario_id: user.id },
+      });
+
+      if (membro) {
+        return next();
+      }
+
+      return res.status(403).json({
+        error: 'Acesso negado',
+        message: 'Você não tem permissão para gerenciar este estabelecimento',
+      });
+    } catch (error) {
+      console.error('Erro no middleware checkEstablishmentAccess:', error);
+      return res.status(500).json({ error: 'Erro interno ao verificar permissões' });
+    }
+  };
+};
+
+/**
+ * Verifica se o usuário é o dono (owner) do estabelecimento.
+ * Membros admin não passam por esta verificação — apenas o owner pode, por exemplo, gerenciar membros.
+ */
+export const checkEstablishmentOwnerOnly = () => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+    try {
+      const user = req.user;
+      const estabelecimentoId = Number(req.params.id);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      if (user.role === UserRole.ADMIN) {
+        return next();
+      }
+
+      const estabelecimento = await EstablishmentProfileModel.findByPk(estabelecimentoId);
+      if (!estabelecimento) {
+        return res.status(404).json({ error: 'Estabelecimento não encontrado' });
+      }
+
+      if (estabelecimento.usuario_id !== user.id) {
+        return res.status(403).json({
+          error: 'Acesso negado',
+          message: 'Apenas o dono do estabelecimento pode realizar esta ação',
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Erro no middleware checkEstablishmentOwnerOnly:', error);
+      return res.status(500).json({ error: 'Erro interno ao verificar permissões' });
+    }
+  };
+};
 
 export const checkRolesOrAdmin = (...allowedRoles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): Response | void => {

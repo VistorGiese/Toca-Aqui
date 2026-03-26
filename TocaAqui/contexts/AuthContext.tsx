@@ -68,6 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               "estabelecimentoId",
               String(u.establishment_profiles[0].id)
             );
+          } else if (u.establishment_memberships && u.establishment_memberships.length > 0) {
+            // Usuário é gerenciador de um estabelecimento (não owner)
+            await AsyncStorage.setItem(
+              "estabelecimentoId",
+              String(u.establishment_memberships[0].estabelecimento.id)
+            );
           }
         } catch {
           await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
@@ -110,6 +116,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await AsyncStorage.setItem(
           "estabelecimentoId",
           String(profile.user.establishment_profiles[0].id)
+        );
+      } else if (
+        profile.user.establishment_memberships &&
+        profile.user.establishment_memberships.length > 0
+      ) {
+        await AsyncStorage.setItem(
+          "estabelecimentoId",
+          String(profile.user.establishment_memberships[0].estabelecimento.id)
         );
       }
     } catch {

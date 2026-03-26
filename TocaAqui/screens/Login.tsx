@@ -1,22 +1,23 @@
-import { colors } from "@/utils/colors";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
 import {
   ActivityIndicator,
-  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-
-import Button from "../components/Allcomponents/Button";
-import Fund from "../components/Allcomponents/Fund";
-import Input from "../components/Allcomponents/Input";
-import ToBack from "../components/Allcomponents/ToBack";
+import { Controller, useForm } from "react-hook-form";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../contexts/AuthContext";
 import { userService } from "../http/userService";
 import { RootStackParamList } from "../navigation/Navigate";
@@ -28,22 +29,16 @@ interface LoginFormData {
   senha: string;
 }
 
-const { width, height } = Dimensions.get("window");
-
 export default function Login() {
   const navigation = useNavigation<NavigationProp>();
   const { signInWithToken } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [senhaVisivel, setSenhaVisivel] = useState(false);
+  const senhaRef = useRef<TextInput>(null);
 
-  const {
-    control,
-    handleSubmit,
-    setError,
-  } = useForm<LoginFormData>({
+  const { control, handleSubmit, setError } = useForm<LoginFormData>({
     mode: "onTouched",
   });
-
-  const senhaRef = useRef<TextInput>(null);
 
   async function onSubmit(data: LoginFormData) {
     setIsSubmitting(true);
@@ -52,12 +47,32 @@ export default function Login() {
       await signInWithToken(response.token, { ...response.user });
 
       const role = response.user.role;
+
       if (role === "artist") {
         navigation.reset({ index: 0, routes: [{ name: "ArtistNavigator" }] });
-      } else if (role === "establishment") {
-        navigation.reset({ index: 0, routes: [{ name: "HomePage" }] });
+      } else if (role === "establishment_owner") {
+        // Busca o perfil real para verificar se o estabelecimento já existe no banco
+        try {
+          const profile = await userService.getProfile();
+          const estProfiles = profile.user.establishment_profiles ?? [];
+          const memberships = profile.user.establishment_memberships ?? [];
+
+          if (estProfiles.length > 0) {
+            await AsyncStorage.setItem("estabelecimentoId", String(estProfiles[0].id));
+            navigation.reset({ index: 0, routes: [{ name: "EstablishmentNavigator" }] });
+          } else if (memberships.length > 0) {
+            await AsyncStorage.setItem("estabelecimentoId", String(memberships[0].estabelecimento.id));
+            navigation.reset({ index: 0, routes: [{ name: "EstablishmentNavigator" }] });
+          } else {
+            await AsyncStorage.removeItem("estabelecimentoId");
+            navigation.reset({ index: 0, routes: [{ name: "OnboardingEstIdentidade" }] });
+          }
+        } catch {
+          // Fallback: usa o AsyncStorage caso a chamada de perfil falhe
+          const estId = await AsyncStorage.getItem("estabelecimentoId");
+          navigation.reset({ index: 0, routes: [{ name: estId ? "EstablishmentNavigator" : "OnboardingEstIdentidade" }] });
+        }
       } else {
-        // common_user ou sem perfil: feed do usuário
         navigation.reset({ index: 0, routes: [{ name: "UserNavigator" }] });
       }
     } catch (error: any) {
@@ -65,7 +80,6 @@ export default function Login() {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         "E-mail ou senha inválidos.";
-
       setError("email", { type: "manual", message });
       setError("senha", { type: "manual", message: " " });
     } finally {
@@ -74,190 +88,318 @@ export default function Login() {
   }
 
   return (
-    <View style={styles.container}>
-      <Fund />
-      <ToBack />
+    <View style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#09090F" />
 
-      {/* Logo */}
-      <View style={styles.logoContainer}>
-        <View style={styles.logoIcon}>
-          <MaterialCommunityIcons name="waveform" size={38} color="#A78BFA" />
-        </View>
-        <Text style={styles.logoTitle}>TOCA AQUI</Text>
-        <Text style={styles.logoSubtitle}>BACKSTAGE PASS</Text>
-      </View>
-
-      <View style={styles.registerContainer}>
-        <Text style={styles.registerText}>Não tem uma conta? </Text>
-        <Text
-          style={styles.registerLink}
-          onPress={() => navigation.navigate("Register")}
-        >
-          Cadastre-se
-        </Text>
-      </View>
-
-      <Controller
-        control={control}
-        name="email"
-        rules={{
-          required: "E-mail é obrigatório",
-          pattern: {
-            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-            message: "E-mail inválido",
-          },
-        }}
-        render={({
-          field: { onChange, onBlur, value, ref },
-          fieldState: { error },
-        }) => (
-          <Input
-            inputRef={ref}
-            label="E-MAIL"
-            iconName="email-outline"
-            placeholder="seu@email.com"
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={error?.message}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            returnKeyType="next"
-            onSubmitEditing={() => senhaRef.current?.focus()}
-          />
-        )}
+      {/* Textura de estrelas */}
+      <Image
+        source={require("../assets/images/Login/gridStarts.png")}
+        style={s.bgTexture}
+        resizeMode="cover"
       />
 
-      <Controller
-        control={control}
-        name="senha"
-        rules={{
-          required: "Senha é obrigatória",
-          minLength: {
-            value: 8,
-            message: "A senha deve ter no mínimo 8 caracteres",
-          },
-        }}
-        render={({
-          field: { onChange, onBlur, value, ref },
-          fieldState: { error },
-        }) => (
-          <Input
-            inputRef={(element) => {
-              ref(element);
-              senhaRef.current = element;
-            }}
-            label="SENHA"
-            iconName="lock-outline"
-            placeholder="Sua senha"
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={error?.message}
-            secureTextEntry
-            returnKeyType="done"
-            onSubmitEditing={handleSubmit(onSubmit)}
-          />
-        )}
-      />
+      {/* Glow roxo atrás do logo */}
+      <View style={s.glow} pointerEvents="none" />
 
-      <View style={styles.forgotPasswordContainer}>
-        <Text
-          style={styles.forgotPassword}
-          onPress={() => navigation.navigate("ForgotPassword")}
-        >
-          Esqueci minha senha
-        </Text>
-      </View>
-
-      <Button
-        style={styles.buttonPosition}
-        onPress={handleSubmit(onSubmit)}
-        disabled={isSubmitting}
+      <KeyboardAvoidingView
+        style={s.kav}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {isSubmitting ? (
-          <ActivityIndicator color={colors.purpleDark} />
-        ) : (
-          <Text style={styles.textButton}>Entrar</Text>
-        )}
-      </Button>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Logo ── */}
+          <View style={s.logoWrap}>
+            <View style={s.logoIcon}>
+              <MaterialCommunityIcons name="waveform" size={32} color="#A78BFA" />
+            </View>
+            <Text style={s.logoTitle}>TOCA AQUI</Text>
+            <Text style={s.logoSub}>BACKSTAGE PASS</Text>
+          </View>
+
+          {/* ── Heading ── */}
+          <View style={s.headingWrap}>
+            <Text style={s.heading}>Bem-vindo de volta</Text>
+            <Text style={s.headingSub}>Acesse o seu backstage digital</Text>
+          </View>
+
+          {/* ── Campo E-MAIL ── */}
+          <Controller
+            control={control}
+            name="email"
+            rules={{
+              required: "E-mail é obrigatório",
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "E-mail inválido",
+              },
+            }}
+            render={({ field: { onChange, onBlur, value, ref }, fieldState: { error } }) => (
+              <View style={s.fieldWrap}>
+                <Text style={s.label}>E-MAIL</Text>
+                <View style={[s.inputRow, error && s.inputError]}>
+                  <Ionicons name="mail-outline" size={18} color="#6B7280" style={s.inputIcon} />
+                  <TextInput
+                    ref={ref}
+                    style={s.input}
+                    placeholder="nome@exemplo.com"
+                    placeholderTextColor="#3D3D5C"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    returnKeyType="next"
+                    onSubmitEditing={() => senhaRef.current?.focus()}
+                  />
+                </View>
+                {error?.message && error.message !== " " && (
+                  <Text style={s.errorText}>{error.message}</Text>
+                )}
+              </View>
+            )}
+          />
+
+          {/* ── Campo SENHA ── */}
+          <Controller
+            control={control}
+            name="senha"
+            rules={{
+              required: "Senha é obrigatória",
+              minLength: { value: 8, message: "Mínimo 8 caracteres" },
+            }}
+            render={({ field: { onChange, onBlur, value, ref }, fieldState: { error } }) => (
+              <View style={s.fieldWrap}>
+                <Text style={s.label}>SENHA</Text>
+                <View style={[s.inputRow, error && s.inputError]}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#6B7280" style={s.inputIcon} />
+                  <TextInput
+                    ref={(el) => {
+                      ref(el);
+                      senhaRef.current = el;
+                    }}
+                    style={s.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#3D3D5C"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry={!senhaVisivel}
+                    returnKeyType="done"
+                    onSubmitEditing={handleSubmit(onSubmit)}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setSenhaVisivel((v) => !v)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={senhaVisivel ? "eye-outline" : "eye-off-outline"}
+                      size={18}
+                      color="#6B7280"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {error?.message && error.message !== " " && (
+                  <Text style={s.errorText}>{error.message}</Text>
+                )}
+              </View>
+            )}
+          />
+
+          {/* ── Esqueci senha ── */}
+          <TouchableOpacity
+            style={s.forgotWrap}
+            onPress={() => navigation.navigate("ForgotPassword")}
+          >
+            <Text style={s.forgotText}>Esqueci minha senha</Text>
+          </TouchableOpacity>
+
+          {/* ── Botão ENTRAR ── */}
+          <TouchableOpacity
+            style={[s.btn, isSubmitting && s.btnDisabled]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={isSubmitting}
+            activeOpacity={0.85}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Text style={s.btnText}>ENTRAR</Text>
+                <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* ── Cadastre-se ── */}
+          <Pressable
+            style={s.registerRow}
+            onPress={() => navigation.navigate("Register")}
+          >
+            <Text style={s.registerText}>Não tem conta? </Text>
+            <Text style={s.registerLink}>Cadastre-se</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#09090F" },
+
+  // Background
+  bgTexture: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.06,
+  },
+  glow: {
+    position: "absolute",
+    top: -120,
+    alignSelf: "center",
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: "#7B61FF",
+    opacity: 0.18,
+  },
+
+  // Layout
+  kav: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 80,
+    paddingBottom: 40,
     justifyContent: "center",
-    paddingHorizontal: 20,
-    backgroundColor: "#1c0a37",
-    width: width,
-    height: height,
   },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 32,
-    marginTop: -20,
-  },
+
+  // Logo
+  logoWrap: { alignItems: "center", marginBottom: 40 },
   logoIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
-    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(123,97,255,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(123,97,255,0.35)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 14,
   },
   logoTitle: {
+    fontFamily: "AkiraExpanded-SuperBold",
+    fontSize: 20,
     color: "#FFFFFF",
-    fontSize: 22,
-    fontFamily: "AkiraExpanded-Superbold",
     letterSpacing: 2,
-    marginBottom: 4,
+    marginBottom: 5,
   },
-  logoSubtitle: {
-    color: "#A78BFA",
-    fontSize: 11,
+  logoSub: {
     fontFamily: "Montserrat-Regular",
+    fontSize: 11,
+    color: "#A78BFA",
     letterSpacing: 3,
   },
-  registerContainer: {
+
+  // Heading
+  headingWrap: { marginBottom: 32 },
+  heading: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 28,
+    color: "#FFFFFF",
+    marginBottom: 6,
+  },
+  headingSub: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: "#8888AA",
+  },
+
+  // Fields
+  fieldWrap: { marginBottom: 16 },
+  label: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 11,
+    color: "#8888AA",
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  inputRow: {
     flexDirection: "row",
-    marginBottom: 20,
     alignItems: "center",
-    zIndex: 10,
+    backgroundColor: "#0F0B1E",
+    borderWidth: 1,
+    borderColor: "#1E1A30",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  inputIcon: { marginRight: 2 },
+  input: {
+    flex: 1,
+    fontFamily: "Montserrat-Regular",
+    fontSize: 15,
+    color: "#FFFFFF",
+    padding: 0,
+  },
+  inputError: {
+    borderColor: "#EF4444",
+  },
+  errorText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 12,
+    color: "#EF4444",
+    marginTop: 6,
+    marginLeft: 4,
+  },
+
+  // Esqueci senha
+  forgotWrap: { alignItems: "flex-end", marginBottom: 28, marginTop: 4 },
+  forgotText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 13,
+    color: "#A78BFA",
+  },
+
+  // Botão
+  btn: {
+    backgroundColor: "#7B61FF",
+    borderRadius: 14,
+    paddingVertical: 17,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  btnDisabled: { opacity: 0.6 },
+  btnText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 15,
+    color: "#FFFFFF",
+    letterSpacing: 1.5,
+  },
+
+  // Cadastre-se
+  registerRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   registerText: {
-    color: "#fff",
-    fontSize: 16,
     fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: "#8888AA",
   },
   registerLink: {
-    color: "#A78BFA",
     fontFamily: "Montserrat-Bold",
-    textDecorationLine: "underline",
-    fontSize: 16,
-  },
-  forgotPasswordContainer: {
-    width: "95%",
-    alignItems: "flex-end",
-    marginBottom: 30,
-    marginTop: 8,
-  },
-  forgotPassword: {
-    color: "#A78BFA",
     fontSize: 14,
-    fontFamily: "Montserrat-Regular",
-  },
-  buttonPosition: {
-    width: "95%",
-    height: 60,
-  },
-  textButton: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 18,
-    color: colors.purpleDark,
-    letterSpacing: 1,
+    color: "#A78BFA",
   },
 });

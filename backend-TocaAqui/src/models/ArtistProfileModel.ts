@@ -6,12 +6,20 @@ export interface ArtistProfileAttributes {
   usuario_id: number;
   nome_artistico: string;
   biografia?: string;
-  instrumentos: string; 
-  generos: string; 
+  instrumentos: string;
+  generos: string;
   anos_experiencia?: number;
   url_portfolio?: string;
   foto_perfil?: string;
   esta_disponivel?: boolean;
+  tipo_atuacao?: string;
+  cache_minimo?: number;
+  cache_maximo?: number;
+  tem_estrutura_som?: boolean;
+  estrutura_som?: string;
+  cidade?: string;
+  estado?: string;
+  links_sociais?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -27,6 +35,14 @@ class ArtistProfileModel extends Model<ArtistProfileAttributes> implements Artis
   public url_portfolio?: string;
   public foto_perfil?: string;
   public esta_disponivel!: boolean;
+  public tipo_atuacao?: string;
+  public cache_minimo?: number;
+  public cache_maximo?: number;
+  public tem_estrutura_som!: boolean;
+  public estrutura_som?: string;
+  public cidade?: string;
+  public estado?: string;
+  public links_sociais?: string;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -80,6 +96,41 @@ ArtistProfileModel.init(
     esta_disponivel: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+    },
+    tipo_atuacao: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    cache_minimo: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    cache_maximo: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    tem_estrutura_som: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    estrutura_som: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: '[]',
+    },
+    cidade: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    estado: {
+      type: DataTypes.STRING(2),
+      allowNull: true,
+    },
+    links_sociais: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: '[]',
     },
   },
   {

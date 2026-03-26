@@ -2,22 +2,16 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 
 import { Booking } from "@/http/bookingService";
-import AdditionalInformation from "../screens/AdditionalInformation";
 import Register from "../screens/Register";
 import ArtistProfile from "../screens/ArtistProfile";
-import ConfirmRegister from "../screens/ConfirmRegister";
 import CreateEvent from "../screens/CreateEvent";
 import EventDetail from "../screens/EventDetail";
 import ForgotPassword from "../screens/ForgotPassword";
 import HomePage from "../screens/HomePage";
 import InfoEvent from "../screens/InfoEvent";
-import InformationPersonResponsible from "../screens/InformationPersonResponsible";
 import Initial from "../screens/Initial";
 import Login from "../screens/Login";
 import Profile from "../screens/Profile";
-import RegisterLocationAndress from "../screens/RegisterLocationAndress";
-import RegisterLocationName from "../screens/RegisterLocationName";
-import RegisterPassword from "../screens/RegisterPassword";
 import RoleSelection from "../screens/RoleSelection";
 import Schedulling from "../screens/Schedulling";
 import SearchArtists from "../screens/SearchArtists";
@@ -37,6 +31,15 @@ import UserNavigator from "./UserNavigator";
 import UserOnboardingGenres from "../screens/user/UserOnboardingGenres";
 import UserOnboardingLocation from "../screens/user/UserOnboardingLocation";
 
+// Estabelecimento — onboarding
+import OnboardingEstIdentidade from "../screens/OnboardingEstIdentidade";
+import OnboardingEstFuncionamento from "../screens/OnboardingEstFuncionamento";
+import OnboardingEstPerfil from "../screens/OnboardingEstPerfil";
+import OnboardingEstApresentacao from "../screens/OnboardingEstApresentacao";
+
+// Estabelecimento — navigator (bottom tabs + detail stack)
+import EstablishmentNavigator from "./EstablishmentNavigator";
+
 export type RootStackParamList = {
   // Antes do login
   Initial: undefined;
@@ -45,13 +48,14 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   RoleSelection: undefined;
 
-  // Registro de estabelecimento
-  RegisterLocationName: undefined;
-  RegisterLocationAndress: undefined;
-  RegisterPassword: undefined;
-  InformationPersonResponsible: undefined;
-  AdditionalInformation: undefined;
-  ConfirmRegister: undefined;
+  // Estabelecimento — onboarding
+  OnboardingEstIdentidade: undefined;
+  OnboardingEstFuncionamento: { nome: string; tipo: string; telefone: string };
+  OnboardingEstPerfil: { nome: string; tipo: string; telefone: string; endereco: string; numero: string; cidade: string; estado: string; diasHorarios: string };
+  OnboardingEstApresentacao: { nome: string; tipo: string; telefone: string; endereco: string; numero: string; cidade: string; estado: string; diasHorarios: string; generos: string; temEstrutura: boolean; estrutura: string; capacidade: string };
+
+  // Estabelecimento — app principal
+  EstablishmentNavigator: undefined;
 
   // Artista — registro e onboarding
   RegisterArtist: undefined;
@@ -62,7 +66,9 @@ export type RootStackParamList = {
     generos: string[];
     cacheMin: string;
     cacheMax: string;
-    estruturaSom: boolean;
+    temEstrutura: boolean;
+    estrutura: string[];
+    fotoUri?: string;
   };
 
   // Artista — app principal (bottom tabs + detail stack encapsulados)
@@ -124,15 +130,14 @@ export default function Navigate() {
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="RoleSelection" component={RoleSelection} />
 
-      {/* Registro de estabelecimento */}
-      <Stack.Group>
-        <Stack.Screen name="RegisterLocationName" component={RegisterLocationName} />
-        <Stack.Screen name="RegisterLocationAndress" component={RegisterLocationAndress} />
-        <Stack.Screen name="RegisterPassword" component={RegisterPassword} />
-        <Stack.Screen name="InformationPersonResponsible" component={InformationPersonResponsible} />
-        <Stack.Screen name="AdditionalInformation" component={AdditionalInformation} />
-        <Stack.Screen name="ConfirmRegister" component={ConfirmRegister} />
-      </Stack.Group>
+      {/* Estabelecimento — onboarding */}
+      <Stack.Screen name="OnboardingEstIdentidade" component={OnboardingEstIdentidade} />
+      <Stack.Screen name="OnboardingEstFuncionamento" component={OnboardingEstFuncionamento} />
+      <Stack.Screen name="OnboardingEstPerfil" component={OnboardingEstPerfil} />
+      <Stack.Screen name="OnboardingEstApresentacao" component={OnboardingEstApresentacao} />
+
+      {/* Estabelecimento — app principal */}
+      <Stack.Screen name="EstablishmentNavigator" component={EstablishmentNavigator} />
 
       {/* Artista — registro e onboarding */}
       <Stack.Screen name="RegisterArtist" component={RegisterArtist} />

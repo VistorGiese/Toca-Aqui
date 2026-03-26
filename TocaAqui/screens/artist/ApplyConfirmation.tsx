@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { FontAwesome5 } from "@expo/vector-icons";
+import { FontAwesome5, FontAwesome } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bandApplicationService } from "@/http/bandApplicationService";
@@ -145,19 +145,19 @@ export default function ApplyConfirmation() {
               <Text style={styles.previewName}>{user?.nome_completo || "Artista"}</Text>
               <View style={styles.starsRow}>
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <FontAwesome5
+                  <FontAwesome
                     key={i}
-                    name="star"
+                    name={i < 4 ? "star" : "star-o"}
                     size={12}
                     color={i < 4 ? DS.gold : DS.textDis}
-                    solid={i < 4}
                   />
                 ))}
                 <Text style={styles.reviewsCount}>(4.0)</Text>
               </View>
-              <Text style={styles.previewLocation}>
-                <FontAwesome5 name="map-marker-alt" size={10} color={DS.textDis} /> Brasil
-              </Text>
+              <View style={styles.locationRow}>
+                <FontAwesome5 name="map-marker-alt" size={10} color={DS.textDis} />
+                <Text style={styles.previewLocation}> Brasil</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -314,6 +314,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: DS.textSec,
     marginLeft: 4,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   previewLocation: {
     fontFamily: "Montserrat-Regular",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Modal from "react-native-modal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
@@ -31,6 +32,13 @@ export default function UserSettings({ navigation }: Props) {
   const [notifyShows, setNotifyShows] = useState(true);
   const [notifyReminders, setNotifyReminders] = useState(true);
   const [radius, setRadius] = useState(25);
+  const [hasEstablishment, setHasEstablishment] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem("estabelecimentoId").then(id => {
+      setHasEstablishment(!!id);
+    });
+  }, []);
 
   // Alterar email
   const [emailModal, setEmailModal] = useState(false);
@@ -122,7 +130,7 @@ export default function UserSettings({ navigation }: Props) {
   }
 
   function goToVenueRegister() {
-    (navigation as any).getParent()?.navigate("RegisterLocationName");
+    (navigation as any).getParent()?.navigate("OnboardingEstIdentidade");
   }
 
   return (
@@ -315,22 +323,41 @@ export default function UserSettings({ navigation }: Props) {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity
-            style={styles.profileActionCard}
-            onPress={goToVenueRegister}
-            activeOpacity={0.85}
-          >
-            <View style={styles.profileActionIcon}>
-              <FontAwesome5 name="building" size={18} color="#A78BFA" />
-            </View>
-            <View style={styles.profileActionInfo}>
-              <Text style={styles.profileActionTitle}>Criar Perfil de Estabelecimento</Text>
-              <Text style={styles.profileActionSubtitle}>
-                Cadastre seu espaço e organize eventos
-              </Text>
-            </View>
-            <FontAwesome5 name="chevron-right" size={12} color="#555577" />
-          </TouchableOpacity>
+          {hasEstablishment ? (
+            <TouchableOpacity
+              style={styles.profileActionCard}
+              onPress={() => (navigation as any).getParent()?.navigate("EstablishmentNavigator")}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.profileActionIcon, { backgroundColor: "rgba(0,206,201,0.12)" }]}>
+                <FontAwesome5 name="building" size={18} color="#00CEC9" />
+              </View>
+              <View style={styles.profileActionInfo}>
+                <Text style={styles.profileActionTitle}>Acessar Estabelecimento</Text>
+                <Text style={styles.profileActionSubtitle}>
+                  Gerencie vagas, contratos e agenda
+                </Text>
+              </View>
+              <FontAwesome5 name="chevron-right" size={12} color="#555577" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.profileActionCard}
+              onPress={goToVenueRegister}
+              activeOpacity={0.85}
+            >
+              <View style={styles.profileActionIcon}>
+                <FontAwesome5 name="building" size={18} color="#A78BFA" />
+              </View>
+              <View style={styles.profileActionInfo}>
+                <Text style={styles.profileActionTitle}>Criar Perfil de Estabelecimento</Text>
+                <Text style={styles.profileActionSubtitle}>
+                  Cadastre seu espaço e organize eventos
+                </Text>
+              </View>
+              <FontAwesome5 name="chevron-right" size={12} color="#555577" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Sign Out */}

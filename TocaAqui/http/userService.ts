@@ -21,6 +21,10 @@ interface ProfileResponse {
     foto_perfil: string | null;
     establishment_profiles: any[];
     artist_profiles: any[];
+    establishment_memberships: Array<{
+      role: string;
+      estabelecimento: { id: number; nome_estabelecimento: string; tipo_estabelecimento: string };
+    }>;
   };
 }
 
@@ -92,14 +96,25 @@ export const userService = {
   },
 
   async uploadFoto(uri: string): Promise<{ foto_perfil: string }> {
-    const formData = new FormData();
+    const token = await AsyncStorage.getItem("token");
     const filename = uri.split("/").pop() ?? "photo.jpg";
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : "image/jpeg";
-    formData.append("foto", { uri, name: filename, type } as any);
-    const response = await api.patch<{ foto_perfil: string }>("/usuarios/foto", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const ext = (/\.(\w+)$/.exec(filename)?.[1] ?? "jpeg").toLowerCase();
+    const type = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+
+    const formData = new FormData();
+    formData.append("imagem", { uri, name: filename, type } as any);
+
+    const response = await fetch(`${api.defaults.baseURL}/usuarios/foto`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
     });
-    return response.data;
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.message ?? "Upload falhou");
+    }
+
+    return response.json();
   },
 };

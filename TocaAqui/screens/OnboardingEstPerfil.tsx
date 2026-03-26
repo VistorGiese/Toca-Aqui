@@ -44,6 +44,7 @@ export default function OnboardingEstPerfil() {
     if (generos.length === 0) { Alert.alert("Atenção", "Selecione pelo menos um gênero."); return; }
     navigation.navigate("OnboardingEstApresentacao", {
       ...params,
+      numero: params.numero,
       generos: JSON.stringify(generos),
       temEstrutura,
       estrutura: JSON.stringify(estrutura),

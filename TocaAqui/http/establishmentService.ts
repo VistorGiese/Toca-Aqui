@@ -9,10 +9,13 @@ export interface Gig {
   horario_fim: string;
   cache_minimo?: number;
   cache_maximo?: number;
+  preco_ingresso_inteira?: number; // campo real do backend (equivale ao cache_minimo)
   generos_musicais?: string;
+  genero_musical?: string;         // campo real do backend (singular)
   status: "aberta" | "encerrada" | "rascunho" | "pendente" | "aceito" | "rejeitado" | "cancelado" | "realizado";
   candidaturas_count?: number;
   estabelecimento_id?: number;
+  perfil_estabelecimento_id?: number;
 }
 
 export interface Candidatura {
@@ -72,8 +75,9 @@ function toArray<T>(data: unknown): T[] {
   return [];
 }
 
-const getMyGigs = async (): Promise<Gig[]> => {
-  const r = await api.get("/agendamentos");
+const getMyGigs = async (estabelecimentoId?: number): Promise<Gig[]> => {
+  const params = estabelecimentoId ? { estabelecimento_id: estabelecimentoId } : undefined;
+  const r = await api.get("/agendamentos", { params });
   return toArray<Gig>(r.data);
 };
 
@@ -176,6 +180,36 @@ const markNotificationsRead = async (): Promise<void> => {
   try { await api.put("/notificacoes/marcar-lidas"); } catch { /* ignore */ }
 };
 
+// --- Gerenciadores/Membros do estabelecimento ---
+
+export interface EstablishmentMember {
+  id: number;
+  nome_completo: string;
+  email: string;
+  foto_perfil: string | null;
+  role: string;
+  membro_id?: number;
+}
+
+export interface EstablishmentMembersResponse {
+  owner: EstablishmentMember | null;
+  members: EstablishmentMember[];
+}
+
+const listMembers = async (estabelecimentoId: number): Promise<EstablishmentMembersResponse> => {
+  const r = await api.get<EstablishmentMembersResponse>(`/estabelecimentos/${estabelecimentoId}/membros`);
+  return r.data;
+};
+
+const addMember = async (estabelecimentoId: number, email: string): Promise<any> => {
+  const r = await api.post(`/estabelecimentos/${estabelecimentoId}/membros`, { email });
+  return r.data;
+};
+
+const removeMember = async (estabelecimentoId: number, usuarioId: number): Promise<void> => {
+  await api.delete(`/estabelecimentos/${estabelecimentoId}/membros/${usuarioId}`);
+};
+
 export const establishmentService = {
   getMyGigs, createGig, getGigById, updateGig, deleteGig,
   getGigApplications, acceptApplication, rejectApplication,
@@ -183,4 +217,5 @@ export const establishmentService = {
   getMyContracts, getContractById,
   getMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,
+  listMembers, addMember, removeMember,
 };
