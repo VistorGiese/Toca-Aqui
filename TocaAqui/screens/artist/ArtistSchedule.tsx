@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { contractService, Contract } from "@/http/contractService";
+import { userService } from "@/http/userService";
+import api from "@/http/api";
 import { RootStackParamList } from "@/navigation/Navigate";
 
 const DS = {
@@ -51,6 +54,10 @@ export default function ArtistSchedule() {
   const navigation = useNavigation<NavProp>();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [artistProfileId, setArtistProfileId] = useState<number | null>(null);
 
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -58,8 +65,19 @@ export default function ArtistSchedule() {
 
   const fetchContracts = useCallback(async () => {
     try {
-      const data = await contractService.getMyContracts();
-      setContracts(data);
+      const [contractData, profileData] = await Promise.all([
+        contractService.getMyContracts(),
+        userService.getProfile(),
+      ]);
+      setContracts(contractData);
+      const artistProfile = profileData.user.artist_profiles[0];
+      if (artistProfile) {
+        setArtistProfileId(artistProfile.id);
+        const datas: string[] = Array.isArray(artistProfile.datas_indisponiveis)
+          ? artistProfile.datas_indisponiveis
+          : [];
+        setBlockedDates(new Set(datas));
+      }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar a agenda.");
     } finally {
@@ -70,6 +88,19 @@ export default function ArtistSchedule() {
   useEffect(() => {
     fetchContracts();
   }, [fetchContracts]);
+
+  const toggleBlockDate = useCallback(async (dateStr: string) => {
+    if (!artistProfileId) return;
+    setBlockedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(dateStr)) next.delete(dateStr); else next.add(dateStr);
+      const datas = Array.from(next);
+      api.patch(`/usuarios/perfil-artista/${artistProfileId}/indisponibilidades`, { datas_indisponiveis: datas })
+        .catch(() => Alert.alert("Erro", "Não foi possível salvar a indisponibilidade."));
+      return next;
+    });
+    setShowBlockModal(false);
+  }, [artistProfileId]);
 
   const acceptedContracts = contracts.filter(
     (c) => c.status === "aceito" || c.status === "concluido"
@@ -145,7 +176,7 @@ export default function ArtistSchedule() {
             <View style={styles.monthInfo}>
               <Text style={styles.monthText}>{MONTHS[currentMonth]} {currentYear}</Text>
               <Text style={styles.eventsCount}>
-                {acceptedContracts.length} Events Confirmed
+                {acceptedContracts.length} eventos confirmados
               </Text>
             </View>
             <TouchableOpacity onPress={handleNextMonth} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -170,13 +201,20 @@ export default function ArtistSchedule() {
               const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const isToday = dateStr === today;
               const hasEvent = eventDates.has(dateStr);
+              const isBlocked = blockedDates.has(dateStr);
 
               return (
-                <View key={dateStr} style={styles.dayCell}>
+                <TouchableOpacity
+                  key={dateStr}
+                  style={styles.dayCell}
+                  onPress={() => { setSelectedDay(day); setShowBlockModal(true); }}
+                  activeOpacity={0.7}
+                >
                   <View
                     style={[
                       styles.dayInner,
                       hasEvent && styles.dayWithEvent,
+                      isBlocked && styles.dayBlocked,
                       isToday && styles.dayToday,
                     ]}
                   >
@@ -184,21 +222,22 @@ export default function ArtistSchedule() {
                       style={[
                         styles.dayText,
                         hasEvent && styles.dayTextEvent,
+                        isBlocked && styles.dayTextBlocked,
                         isToday && styles.dayTextToday,
                       ]}
                     >
                       {day}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* Upcoming Gigs */}
+        {/* Próximos Shows */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>UPCOMING GIGS</Text>
+          <Text style={styles.sectionTitle}>PRÓXIMOS SHOWS</Text>
         </View>
 
         {upcomingGigs.length === 0 ? (
@@ -219,14 +258,52 @@ export default function ArtistSchedule() {
         )}
 
         {/* Bloquear Data */}
-        <TouchableOpacity style={styles.blockDateBtn}>
+        <TouchableOpacity style={styles.blockDateBtn} onPress={() => { setSelectedDay(null); setShowBlockModal(true); }}>
           <FontAwesome5 name="ban" size={13} color={DS.white} />
           <Text style={styles.blockDateText}>BLOQUEAR DATA</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal bloquear data */}
+      <Modal visible={showBlockModal} transparent animationType="slide" onRequestClose={() => setShowBlockModal(false)}>
+        <TouchableOpacity style={modalSt.overlay} activeOpacity={1} onPress={() => setShowBlockModal(false)}>
+          <View style={modalSt.sheet}>
+            <Text style={modalSt.title}>
+              {selectedDay
+                ? `${String(selectedDay).padStart(2,"0")}/${String(currentMonth+1).padStart(2,"0")}/${currentYear}`
+                : "Selecione um dia no calendário"}
+            </Text>
+            {selectedDay && (() => {
+              const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,"0")}-${String(selectedDay).padStart(2,"0")}`;
+              const isBlocked = blockedDates.has(dateStr);
+              return (
+                <TouchableOpacity
+                  style={[modalSt.btn, { backgroundColor: isBlocked ? DS.success : DS.danger }]}
+                  onPress={() => toggleBlockDate(dateStr)}
+                >
+                  <Text style={modalSt.btnText}>{isBlocked ? "DESBLOQUEAR DATA" : "BLOQUEAR DATA"}</Text>
+                </TouchableOpacity>
+              );
+            })()}
+            <TouchableOpacity style={modalSt.cancel} onPress={() => setShowBlockModal(false)}>
+              <Text style={modalSt.cancelText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
+
+const modalSt = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: DS.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, gap: 14 },
+  title: { fontFamily: "Montserrat-Bold", fontSize: 16, color: DS.white, textAlign: "center" },
+  btn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  btnText: { fontFamily: "Montserrat-Bold", fontSize: 13, color: DS.white, letterSpacing: 1 },
+  cancel: { alignItems: "center", paddingVertical: 10 },
+  cancelText: { fontFamily: "Montserrat-Regular", fontSize: 14, color: DS.textSec },
+});
 
 function GigRow({ contract, onPress }: { contract: Contract; onPress: () => void }) {
   const date = contract.data_show ? new Date(contract.data_show) : null;
@@ -237,7 +314,7 @@ function GigRow({ contract, onPress }: { contract: Contract; onPress: () => void
 
   const isConfirmed = contract.status === "aceito";
   const statusColor = isConfirmed ? DS.success : DS.amber;
-  const statusLabel = isConfirmed ? "CONFIRMED" : "PENDING";
+  const statusLabel = isConfirmed ? "CONFIRMADO" : "PENDENTE";
 
   return (
     <TouchableOpacity style={gigRowStyles.card} onPress={onPress} activeOpacity={0.8}>
@@ -433,6 +510,15 @@ const styles = StyleSheet.create({
   },
   dayWithEvent: {
     backgroundColor: DS.accent,
+  },
+  dayBlocked: {
+    backgroundColor: DS.danger + "55",
+    borderWidth: 1,
+    borderColor: DS.danger,
+  },
+  dayTextBlocked: {
+    color: DS.danger,
+    fontFamily: "Montserrat-Bold",
   },
   dayToday: {
     borderWidth: 1.5,

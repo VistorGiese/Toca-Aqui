@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bookingService, Booking } from "@/http/bookingService";
 import { avaliacaoService, Avaliacao } from "@/http/avaliacaoService";
 import { RootStackParamList } from "@/navigation/Navigate";
+import api from "@/http/api";
 
 const DS = {
   bg: "#09090F",
@@ -42,6 +43,7 @@ export default function EventDetailArtist() {
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [estabelecimento, setEstabelecimento] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchBooking = useCallback(async () => {
@@ -52,6 +54,11 @@ export default function EventDetailArtist() {
       ]);
       setBooking(data);
       setAvaliacoes(reviewsData.avaliacoes);
+      if (data.perfil_estabelecimento_id) {
+        api.get(`/estabelecimentos/${data.perfil_estabelecimento_id}`)
+          .then(r => setEstabelecimento(r.data.estabelecimento || r.data))
+          .catch(() => {});
+      }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar os detalhes da vaga.");
       navigation.goBack();
@@ -82,7 +89,9 @@ export default function EventDetailArtist() {
       eventName: booking.titulo_evento || `Vaga #${booking.id}`,
       date: formattedDate,
       time: timeStr,
-      cache: "A combinar",
+      cache: booking.preco_ingresso_inteira
+        ? `R$ ${Number(booking.preco_ingresso_inteira).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+        : "A combinar",
     });
   };
 
@@ -146,9 +155,11 @@ export default function EventDetailArtist() {
           <View style={styles.locationRow}>
             <FontAwesome5 name="map-marker-alt" size={13} color={DS.textSec} />
             <Text style={styles.locationText}>
-              {booking.estabelecimento_id
-                ? `Estabelecimento #${booking.estabelecimento_id}`
-                : "Local não informado"}
+              {estabelecimento?.nome_estabelecimento
+                ? `${estabelecimento.nome_estabelecimento}${estabelecimento.cidade ? ` · ${estabelecimento.cidade}` : ""}`
+                : booking.estabelecimento_id
+                  ? `Estabelecimento #${booking.estabelecimento_id}`
+                  : "Local não informado"}
             </Text>
           </View>
 
@@ -156,7 +167,11 @@ export default function EventDetailArtist() {
           <View style={styles.cacheCard}>
             <View>
               <Text style={styles.cacheLabel}>CACHÊ OFERECIDO</Text>
-              <Text style={styles.cacheValue}>R$ A combinar</Text>
+              <Text style={styles.cacheValue}>
+                {booking.preco_ingresso_inteira
+                  ? `R$ ${Number(booking.preco_ingresso_inteira).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                  : "A combinar"}
+              </Text>
             </View>
             <FontAwesome5 name="dollar-sign" size={22} color={DS.success} />
           </View>
@@ -212,8 +227,9 @@ export default function EventDetailArtist() {
           <Text style={styles.sectionTitle}>Sobre o local</Text>
           <View style={styles.localCard}>
             <Text style={styles.localText}>
-              Espaço cultural dedicado à música ao vivo. Capacidade para 200 pessoas,
-              palco bem equipado e ambiente acolhedor para artistas.
+              {estabelecimento?.descricao || estabelecimento?.nome_estabelecimento
+                ? `${estabelecimento.nome_estabelecimento}${estabelecimento.descricao ? ` — ${estabelecimento.descricao}` : ""}`
+                : "Local do evento."}
             </Text>
             <View style={styles.localImagePlaceholder}>
               <FontAwesome5 name="building" size={28} color={DS.textDis} />

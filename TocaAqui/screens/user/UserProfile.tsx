@@ -17,7 +17,7 @@ import * as ImagePicker from "expo-image-picker";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { useAuth } from "@/contexts/AuthContext";
 import { getGenreColor } from "@/utils/colors";
-import { artistaPublicoService, ArtistaPublico } from "@/http/artistaPublicoService";
+import { artistaPublicoService, ArtistaPublico, preferenciaService } from "@/http/artistaPublicoService";
 import { ingressoService, Ingresso } from "@/http/ingressoService";
 import { userService } from "@/http/userService";
 import api from "@/http/api";
@@ -46,19 +46,24 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [localizacao, setLocalizacao] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [artistas, ingressos, perfil] = await Promise.all([
+      const [artistas, ingressos, perfil, prefs] = await Promise.allSettled([
         artistaPublicoService.getArtistasQueSigo(),
         ingressoService.getMeusIngressos("proximos"),
         userService.getProfile(),
+        preferenciaService.buscar(),
       ]);
-      setArtistasSeguidos(artistas);
-      setProximosShows(ingressos);
-      if (perfil.user.foto_perfil) {
-        setFotoPerfil(`${api.defaults.baseURL?.replace("/api", "")}/${perfil.user.foto_perfil}`);
+      if (artistas.status === "fulfilled") setArtistasSeguidos(artistas.value);
+      if (ingressos.status === "fulfilled") setProximosShows(ingressos.value);
+      if (perfil.status === "fulfilled" && perfil.value.user.foto_perfil) {
+        setFotoPerfil(`${api.defaults.baseURL?.replace("/api", "")}/${perfil.value.user.foto_perfil}`);
+      }
+      if (prefs.status === "fulfilled" && prefs.value?.cidade) {
+        setLocalizacao(prefs.value.cidade);
       }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar seus dados.");
@@ -75,7 +80,7 @@ export default function UserProfile() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -88,8 +93,8 @@ export default function UserProfile() {
     try {
       const data = await userService.uploadFoto(uri);
       setFotoPerfil(`${api.defaults.baseURL?.replace("/api", "")}/${data.foto_perfil}`);
-    } catch {
-      Alert.alert("Erro", "Não foi possível fazer o upload da foto.");
+    } catch (e: any) {
+      Alert.alert("Erro no upload", e?.message ?? "Não foi possível fazer o upload da foto.");
     } finally {
       setUploadingFoto(false);
     }
@@ -151,10 +156,12 @@ export default function UserProfile() {
           </TouchableOpacity>
 
           <Text style={styles.displayName}>{displayName}</Text>
-          <View style={styles.locationRow}>
-            <FontAwesome5 name="map-marker-alt" size={12} color="#555577" />
-            <Text style={styles.locationText}>São Paulo, Brasil</Text>
-          </View>
+          {localizacao && (
+            <View style={styles.locationRow}>
+              <FontAwesome5 name="map-marker-alt" size={12} color="#555577" />
+              <Text style={styles.locationText}>{localizacao}</Text>
+            </View>
+          )}
         </View>
 
         {loading ? (

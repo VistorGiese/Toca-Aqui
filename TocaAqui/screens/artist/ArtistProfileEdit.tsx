@@ -67,11 +67,10 @@ export default function ArtistProfileEdit() {
   async function onSubmit(data: ProfileFormData) {
     setIsSubmitting(true);
     try {
-      await api.post("/usuarios/perfil-artista", {
-        nome_artistico: data.nome,
-      });
+      // Atualiza nome do usuário
+      await api.put("/usuarios/nome", { nome_completo: data.nome });
       await updateUser();
-      Alert.alert("Perfil atualizado com sucesso!");
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
     } catch (error) {
       showApiError(error, "Erro ao atualizar perfil.");
     } finally {
@@ -205,7 +204,7 @@ export default function ArtistProfileEdit() {
 
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => navigation.navigate("Notifications")}
+              onPress={() => (navigation as any).navigate("UserNotifications")}
             >
               <View style={styles.menuIconWrap}>
                 <FontAwesome5 name="bell" size={16} color={DS.accent} />

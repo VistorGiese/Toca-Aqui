@@ -53,7 +53,7 @@ const service = new AuthService();
 // Helper para criar um usuário fake com método update
 const makeUser = (overrides = {}) => ({
   id: 1,
-  nome: 'Teste',
+  nome_completo: 'Teste',
   email: 'teste@email.com',
   senha: '',
   role: 'artist',
@@ -74,7 +74,7 @@ describe('AuthService', () => {
       );
 
       const result = await service.register({
-        nome: 'Ana',
+        nome_completo: 'Ana',
         email: 'ana@email.com',
         senha: 'Senha1234',
       });
@@ -89,19 +89,19 @@ describe('AuthService', () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(makeUser());
 
       await expect(
-        service.register({ nome: 'Ana', email: 'ana@email.com', senha: 'Senha1234' })
+        service.register({ nome_completo: 'Ana', email: 'ana@email.com', senha: 'Senha1234' })
       ).rejects.toEqual(expect.objectContaining({ statusCode: 400, message: 'Email já está em uso' }));
     });
 
     it('lança AppError 400 para email com formato inválido', async () => {
       await expect(
-        service.register({ nome: 'Ana', email: 'email-invalido', senha: 'Senha1234' })
+        service.register({ nome_completo: 'Ana', email: 'email-invalido', senha: 'Senha1234' })
       ).rejects.toEqual(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('lança AppError 400 para senha com menos de 8 caracteres', async () => {
       await expect(
-        service.register({ nome: 'Ana', email: 'ana@email.com', senha: '123' })
+        service.register({ nome_completo: 'Ana', email: 'ana@email.com', senha: '123' })
       ).rejects.toEqual(expect.objectContaining({ statusCode: 400 }));
     });
 
@@ -112,7 +112,7 @@ describe('AuthService', () => {
       );
 
       const result = await service.register({
-        nome: 'Ana',
+        nome_completo: 'Ana',
         email: 'ana@email.com',
         senha: 'Senha1234',
         tipo_usuario: 'superadmin',
@@ -131,7 +131,7 @@ describe('AuthService', () => {
       );
 
       await service.register({
-        nome: 'Músico',
+        nome_completo: 'Músico',
         email: 'musico@email.com',
         senha: 'Senha1234',
         tipo_usuario: 'artist',
@@ -146,7 +146,7 @@ describe('AuthService', () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(null);
       (UserModel.create as jest.Mock).mockResolvedValue(makeUser({ email_verificado: false }));
 
-      await service.register({ nome: 'Ana', email: 'ana@email.com', senha: 'MinhaSenha1' });
+      await service.register({ nome_completo: 'Ana', email: 'ana@email.com', senha: 'MinhaSenha1' });
 
       const chamada = (UserModel.create as jest.Mock).mock.calls[0][0];
       expect(chamada.senha).not.toBe('MinhaSenha1');

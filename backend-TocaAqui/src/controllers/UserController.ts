@@ -114,6 +114,38 @@ export const uploadArtistPhoto = asyncHandler(async (req: AuthRequest, res: Resp
   res.json({ message: 'Foto de perfil atualizada com sucesso', foto_perfil: novaFoto });
 });
 
+export const uploadArtistPressKit = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const id = req.params.id as string;
+  const userId = req.user?.id;
+
+  const files = req.files as Express.Multer.File[];
+  if (!files || files.length === 0) throw new AppError('Nenhuma imagem enviada', 400);
+
+  const novasFotos = files.map((f) => uploadService.getRelativePath(f));
+
+  const profile = await ArtistProfileModel.findByPk(id);
+  if (!profile) {
+    novasFotos.forEach((p) => uploadService.deleteFile(p));
+    throw new AppError('Perfil de artista não encontrado', 404);
+  }
+
+  if (profile.usuario_id !== userId && req.user?.role !== 'admin') {
+    novasFotos.forEach((p) => uploadService.deleteFile(p));
+    throw new AppError('Você não tem permissão para editar este perfil', 403);
+  }
+
+  const fotosAtuais: string[] = Array.isArray(profile.press_kit)
+    ? (profile.press_kit as unknown as string[])
+    : profile.press_kit
+      ? JSON.parse(profile.press_kit as unknown as string)
+      : [];
+
+  const fotosAtualizadas = [...fotosAtuais, ...novasFotos];
+  await profile.update({ press_kit: JSON.stringify(fotosAtualizadas) });
+
+  res.json({ message: 'Press kit atualizado com sucesso', press_kit: fotosAtualizadas });
+});
+
 export const uploadUserPhoto = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   if (!userId) throw unauthorized('Usuário não identificado');
@@ -194,6 +226,35 @@ export const alterarEmail = asyncHandler(async (req: AuthRequest, res: Response)
   await user.update({ email: novo_email });
 
   res.json({ message: 'Email alterado com sucesso' });
+});
+
+export const atualizarIndisponibilidades = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const id = req.params.id as string;
+  const userId = req.user?.id;
+
+  const { datas_indisponiveis } = req.body;
+  if (!Array.isArray(datas_indisponiveis)) throw new AppError('datas_indisponiveis deve ser um array', 400);
+
+  const profile = await ArtistProfileModel.findByPk(id);
+  if (!profile) throw new AppError('Perfil de artista não encontrado', 404);
+  if (profile.usuario_id !== userId && req.user?.role !== 'admin') throw new AppError('Sem permissão', 403);
+
+  await profile.update({ datas_indisponiveis: JSON.stringify(datas_indisponiveis) });
+  res.json({ message: 'Indisponibilidades atualizadas', datas_indisponiveis });
+});
+
+export const alterarNome = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw unauthorized('Usuário não identificado');
+
+  const { nome_completo } = req.body;
+  if (!nome_completo) throw new AppError('nome_completo é obrigatório', 400);
+
+  const user = await UserModel.findByPk(usuario_id);
+  if (!user) throw new AppError('Usuário não encontrado', 404);
+
+  await user.update({ nome_completo });
+  res.json({ message: 'Nome alterado com sucesso' });
 });
 
 export const excluirConta = asyncHandler(async (req: AuthRequest, res: Response) => {

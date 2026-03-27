@@ -10,10 +10,13 @@ import {
   resetPassword,
   verifyEmail,
   uploadArtistPhoto,
+  uploadArtistPressKit,
   uploadUserPhoto,
   savePreferencias,
   getPreferencias,
   alterarEmail,
+  alterarNome,
+  atualizarIndisponibilidades,
   excluirConta,
 } from '../controllers/UserController';
 import { authMiddleware } from '../middleware/authmiddleware';
@@ -41,10 +44,13 @@ router.get('/perfil', authMiddleware, getUserProfile);
 router.post('/perfil-estabelecimento', authMiddleware, validate(createEstablishmentProfileSchema), createEstablishmentProfile);
 router.post('/perfil-artista', authMiddleware, validate(createArtistProfileSchema), createArtistProfile);
 router.patch('/perfil-artista/:id/foto', authMiddleware, uploadLimiter, uploadService.uploadSingle, uploadArtistPhoto);
+router.patch('/perfil-artista/:id/press-kit', authMiddleware, uploadLimiter, uploadService.uploadMultiple, uploadArtistPressKit);
+router.patch('/perfil-artista/:id/indisponibilidades', authMiddleware, atualizarIndisponibilidades);
 router.patch('/foto', authMiddleware, uploadLimiter, uploadService.uploadSingle, uploadUserPhoto);
 router.post('/preferencias', authMiddleware, savePreferencias);
 router.get('/preferencias', authMiddleware, getPreferencias);
 router.put('/email', authMiddleware, alterarEmail);
+router.put('/nome', authMiddleware, alterarNome);
 router.delete('/conta', authMiddleware, excluirConta);
 
 export default router;

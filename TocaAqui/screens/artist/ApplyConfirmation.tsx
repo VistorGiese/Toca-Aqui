@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bandApplicationService } from "@/http/bandApplicationService";
 import { useAuth } from "@/contexts/AuthContext";
 import { RootStackParamList } from "@/navigation/Navigate";
+import { artistaPublicoService } from "@/http/artistaPublicoService";
 
 const DS = {
   bg: "#09090F",
@@ -43,6 +44,17 @@ export default function ApplyConfirmation() {
 
   const [mensagem, setMensagem] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mediaArtista, setMediaArtista] = useState<number>(0);
+
+  useEffect(() => {
+    if (user?.perfilArtistaId) {
+      artistaPublicoService.getPerfilPublico(user.perfilArtistaId)
+        .then(p => {
+          setMediaArtista(p.media_nota ?? 0);
+        })
+        .catch(() => {});
+    }
+  }, [user?.perfilArtistaId]);
 
   const handleEnviar = async () => {
     if (!mensagem.trim()) {
@@ -54,6 +66,7 @@ export default function ApplyConfirmation() {
     try {
       await bandApplicationService.applyToEvent({
         evento_id: eventId,
+        artista_id: user?.perfilArtistaId,
         mensagem: mensagem.trim(),
       });
 
@@ -147,12 +160,12 @@ export default function ApplyConfirmation() {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <FontAwesome
                     key={i}
-                    name={i < 4 ? "star" : "star-o"}
+                    name={i < Math.round(mediaArtista) ? "star" : "star-o"}
                     size={12}
-                    color={i < 4 ? DS.gold : DS.textDis}
+                    color={i < Math.round(mediaArtista) ? DS.gold : DS.textDis}
                   />
                 ))}
-                <Text style={styles.reviewsCount}>(4.0)</Text>
+                <Text style={styles.reviewsCount}>({mediaArtista > 0 ? mediaArtista.toFixed(1) : "Novo"})</Text>
               </View>
               <View style={styles.locationRow}>
                 <FontAwesome5 name="map-marker-alt" size={10} color={DS.textDis} />

@@ -181,8 +181,8 @@ export class AuthService {
       usuario_id: userId,
       nome_artistico: data.nome_artistico,
       biografia: data.biografia,
-      instrumentos: JSON.stringify(data.instrumentos || []),
-      generos: JSON.stringify(data.generos || []),
+      instrumentos: data.instrumentos || [],
+      generos: data.generos || [],
       anos_experiencia: data.anos_experiencia || 0,
       url_portfolio: data.url_portfolio,
       foto_perfil: data.foto_perfil,
@@ -190,10 +190,10 @@ export class AuthService {
       cache_minimo: data.cache_minimo,
       cache_maximo: data.cache_maximo,
       tem_estrutura_som: data.tem_estrutura_som || false,
-      estrutura_som: JSON.stringify(data.estrutura_som || []),
+      estrutura_som: data.estrutura_som || [],
       cidade: data.cidade,
       estado: data.estado,
-      links_sociais: JSON.stringify(data.links_sociais || []),
+      links_sociais: data.links_sociais || [],
     });
   }
 }

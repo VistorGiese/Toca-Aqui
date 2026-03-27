@@ -66,7 +66,7 @@ export default function EstHome() {
           </TouchableOpacity>
         </View>
 
-        <Text style={s.greeting}>Olá, {user?.nome?.split(" ")[0] ?? "Gestor"}!</Text>
+        <Text style={s.greeting}>Olá, {user?.nome_completo?.split(" ")[0] ?? "Gestor"}!</Text>
         <Text style={s.greetingSub}>Sua agenda está movimentada esta semana.</Text>
 
         {/* Métricas */}

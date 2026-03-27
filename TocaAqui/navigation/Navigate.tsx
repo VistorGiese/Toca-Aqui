@@ -1,5 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
+import { View, ActivityIndicator } from "react-native";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { Booking } from "@/http/bookingService";
 import Register from "../screens/Register";
@@ -19,6 +21,7 @@ import SearchArtists from "../screens/SearchArtists";
 // Artista — onboarding
 import OnboardingArtistProfile from "../screens/OnboardingArtistProfile";
 import OnboardingArtistBio from "../screens/OnboardingArtistBio";
+import ArtistProfileEdit from "../screens/artist/ArtistProfileEdit";
 
 // Artista — register
 import RegisterArtist from "../screens/artist/RegisterArtist";
@@ -118,49 +121,59 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Navigate() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#09090F", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#A78BFA" />
+      </View>
+    );
+  }
+
   return (
-    <Stack.Navigator
-      initialRouteName="Login"
-      screenOptions={{ headerShown: false }}
-    >
-      {/* Telas de autenticação */}
-      <Stack.Screen name="Initial" component={Initial} />
-      <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Register" component={Register} />
-      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-      <Stack.Screen name="RoleSelection" component={RoleSelection} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!isAuthenticated ? (
+        <>
+          {/* Telas de autenticação */}
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Initial" component={Initial} />
+          <Stack.Screen name="Register" component={Register} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+          <Stack.Screen name="RoleSelection" component={RoleSelection} />
+        </>
+      ) : (
+        <>
+          {/* Usuário comum — onboarding e app principal */}
+          <Stack.Screen name="UserNavigator" component={UserNavigator} />
+          <Stack.Screen name="UserOnboardingGenres" component={UserOnboardingGenres} />
+          <Stack.Screen name="UserOnboardingLocation" component={UserOnboardingLocation} />
 
-      {/* Estabelecimento — onboarding */}
-      <Stack.Screen name="OnboardingEstIdentidade" component={OnboardingEstIdentidade} />
-      <Stack.Screen name="OnboardingEstFuncionamento" component={OnboardingEstFuncionamento} />
-      <Stack.Screen name="OnboardingEstPerfil" component={OnboardingEstPerfil} />
-      <Stack.Screen name="OnboardingEstApresentacao" component={OnboardingEstApresentacao} />
+          {/* Estabelecimento — onboarding e app */}
+          <Stack.Screen name="EstablishmentNavigator" component={EstablishmentNavigator} />
+          <Stack.Screen name="OnboardingEstIdentidade" component={OnboardingEstIdentidade} />
+          <Stack.Screen name="OnboardingEstFuncionamento" component={OnboardingEstFuncionamento} />
+          <Stack.Screen name="OnboardingEstPerfil" component={OnboardingEstPerfil} />
+          <Stack.Screen name="OnboardingEstApresentacao" component={OnboardingEstApresentacao} />
 
-      {/* Estabelecimento — app principal */}
-      <Stack.Screen name="EstablishmentNavigator" component={EstablishmentNavigator} />
+          {/* Artista — registro, onboarding e app */}
+          <Stack.Screen name="ArtistNavigator" component={ArtistNavigator} />
+          <Stack.Screen name="RegisterArtist" component={RegisterArtist} />
+          <Stack.Screen name="OnboardingArtistProfile" component={OnboardingArtistProfile} />
+          <Stack.Screen name="OnboardingArtistBio" component={OnboardingArtistBio} />
+          <Stack.Screen name="ArtistProfileEdit" component={ArtistProfileEdit} />
 
-      {/* Artista — registro e onboarding */}
-      <Stack.Screen name="RegisterArtist" component={RegisterArtist} />
-      <Stack.Screen name="OnboardingArtistProfile" component={OnboardingArtistProfile} />
-      <Stack.Screen name="OnboardingArtistBio" component={OnboardingArtistBio} />
-
-      {/* Artista — app principal */}
-      <Stack.Screen name="ArtistNavigator" component={ArtistNavigator} />
-
-      {/* Usuário comum — onboarding e app principal */}
-      <Stack.Screen name="UserOnboardingGenres" component={UserOnboardingGenres} />
-      <Stack.Screen name="UserOnboardingLocation" component={UserOnboardingLocation} />
-      <Stack.Screen name="UserNavigator" component={UserNavigator} />
-
-      {/* Estabelecimento — app principal */}
-      <Stack.Screen name="HomePage" component={HomePage} />
-      <Stack.Screen name="Schedulling" component={Schedulling} />
-      <Stack.Screen name="CreateEvent" component={CreateEvent} />
-      <Stack.Screen name="InfoEvent" component={InfoEvent} />
-      <Stack.Screen name="ArtistProfile" component={ArtistProfile} />
-      <Stack.Screen name="Profile" component={Profile} />
-      <Stack.Screen name="EventDetail" component={EventDetail} />
-      <Stack.Screen name="SearchArtists" component={SearchArtists} />
+          {/* Legado */}
+          <Stack.Screen name="HomePage" component={HomePage} />
+          <Stack.Screen name="Schedulling" component={Schedulling} />
+          <Stack.Screen name="CreateEvent" component={CreateEvent} />
+          <Stack.Screen name="InfoEvent" component={InfoEvent} />
+          <Stack.Screen name="ArtistProfile" component={ArtistProfile} />
+          <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen name="EventDetail" component={EventDetail} />
+          <Stack.Screen name="SearchArtists" component={SearchArtists} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }

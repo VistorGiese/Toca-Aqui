@@ -99,20 +99,23 @@ export const userService = {
     const token = await AsyncStorage.getItem("token");
     const filename = uri.split("/").pop() ?? "photo.jpg";
     const ext = (/\.(\w+)$/.exec(filename)?.[1] ?? "jpeg").toLowerCase();
-    const type = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+    const mimeType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
 
     const formData = new FormData();
-    formData.append("imagem", { uri, name: filename, type } as any);
+    // React Native aceita este objeto como arquivo em FormData quando não se define Content-Type
+    formData.append("imagem", { uri, name: filename, type: mimeType } as any);
 
+    // NÃO definir Content-Type — o fetch do React Native define automaticamente
+    // com o boundary correto para multipart/form-data
     const response = await fetch(`${api.defaults.baseURL}/usuarios/foto`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token ?? ""}` },
       body: formData,
     });
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      throw new Error(body.message ?? "Upload falhou");
+      throw new Error(body.message ?? `Upload falhou (${response.status})`);
     }
 
     return response.json();

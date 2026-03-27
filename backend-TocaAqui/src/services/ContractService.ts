@@ -47,21 +47,20 @@ export class ContractService {
 
     const endereco = await AddressModel.findByPk(estabelecimento.endereco_id);
 
-    // Carregar banda
-    const banda = await BandModel.findByPk(aplicacao.banda_id);
-    if (!banda) throw new AppError('Banda não encontrada', 404);
+    // Carregar contratado — pode ser banda ou artista individual
+    let nomeContratado = 'Artista';
+    let contratadoId: { banda_id?: number; artista_id?: number } = {};
 
-    // Carregar líder da banda para dados do contratado
-    const liderMembro = await BandMemberModel.findOne({
-      where: { banda_id: aplicacao.banda_id, e_lider: true },
-    });
-
-    let telefoneContratado: string | undefined;
-    if (liderMembro) {
-      const artistaLider = await ArtistProfileModel.findByPk(liderMembro.perfil_artista_id);
-      if (artistaLider) {
-        telefoneContratado = undefined; // Será preenchido na edição do contrato
-      }
+    if (aplicacao.banda_id) {
+      const banda = await BandModel.findByPk(aplicacao.banda_id);
+      if (!banda) throw new AppError('Banda não encontrada', 404);
+      nomeContratado = banda.nome_banda ?? 'Artista';
+      contratadoId = { banda_id: aplicacao.banda_id };
+    } else if ((aplicacao as any).artista_id) {
+      const artista = await ArtistProfileModel.findByPk((aplicacao as any).artista_id);
+      if (!artista) throw new AppError('Artista não encontrado', 404);
+      nomeContratado = artista.nome_artistico;
+      contratadoId = { artista_id: (aplicacao as any).artista_id };
     }
 
     // Montar endereço completo como string
@@ -79,7 +78,7 @@ export class ContractService {
     const contrato = await ContractModel.create({
       aplicacao_id: aplicacaoId,
       evento_id: evento.id,
-      banda_id: aplicacao.banda_id,
+      ...contratadoId,
       perfil_estabelecimento_id: evento.perfil_estabelecimento_id,
       status: ContractStatus.RASCUNHO,
       // Snapshot contratante
@@ -87,8 +86,8 @@ export class ContractService {
       endereco_contratante: enderecoStr,
       telefone_contratante: estabelecimento.telefone_contato,
       // Snapshot contratado
-      nome_contratado: banda.nome_banda || 'Artista',
-      telefone_contratado: telefoneContratado,
+      nome_contratado: nomeContratado,
+      telefone_contratado: undefined,
       // Evento
       data_evento: evento.data_show,
       horario_inicio: evento.horario_inicio,

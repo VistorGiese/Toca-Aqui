@@ -11,6 +11,7 @@ import {
   Modal,
   FlatList,
   Image,
+  Platform,
 } from "react-native";
 import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -124,7 +125,7 @@ export default function OnboardingArtistBio() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsMultipleSelection: true,
       quality: 0.8,
       selectionLimit: 5 - pressKit.length,
@@ -169,19 +170,49 @@ export default function OnboardingArtistBio() {
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
         const formData = new FormData();
-        formData.append("imagem", { uri: params.fotoUri, name: filename, type } as any);
+        if (Platform.OS === "web") {
+          const blob = await fetch(params.fotoUri).then((r) => r.blob());
+          formData.append("imagem", blob, filename);
+        } else {
+          formData.append("imagem", { uri: params.fotoUri, name: filename, type } as any);
+        }
         await api.patch(`/usuarios/perfil-artista/${profileId}/foto`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
+      // Upload press kit se houver fotos selecionadas
+      if (pressKit.length > 0 && profileId) {
+        const formData = new FormData();
+        for (let i = 0; i < pressKit.length; i++) {
+          const uri = pressKit[i];
+          const filename = uri.split("/").pop() || `press_kit_${i}.jpg`;
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
+          if (Platform.OS === "web") {
+            const blob = await fetch(uri).then((r) => r.blob());
+            formData.append("imagens", blob, filename);
+          } else {
+            formData.append("imagens", { uri, name: filename, type } as any);
+          }
+        }
+        await api.patch(`/usuarios/perfil-artista/${profileId}/press-kit`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
 
       navigation.reset({ index: 0, routes: [{ name: "ArtistNavigator" }] });
     } catch (err: any) {
+      console.error("[OnboardingArtistBio] Erro:", JSON.stringify(err?.response?.data, null, 2));
+      const data = err?.response?.data;
       const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.errors?.[0]?.message ||
+        data?.message ||
+        data?.error ||
+        data?.detalhes?.[0]?.mensagem ||
+        data?.errors?.[0]?.message ||
         "Não foi possível salvar o perfil.";
-      Alert.alert("Erro", msg);
+      const detalhe = data?.detalhes?.map((d: any) => `${d.campo}: ${d.mensagem}`).join("\n") || "";
+      Alert.alert("Erro", detalhe ? `${msg}\n\n${detalhe}` : msg);
     } finally {
       setLoading(false);
     }

@@ -37,9 +37,11 @@ type FilterTab = typeof FILTER_TABS[number];
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
-function isThisWeek(dateStr: string): boolean {
+function isThisWeek(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
   const today = new Date();
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
@@ -49,8 +51,10 @@ function isThisWeek(dateStr: string): boolean {
   return date >= startOfWeek && date <= endOfWeek;
 }
 
-function isWeekend(dateStr: string): boolean {
+function isWeekend(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
   const day = date.getDay();
   return day === 0 || day === 6;
 }
@@ -92,7 +96,9 @@ export default function BrowseEvents() {
         ? isThisWeek(b.data_show)
         : isWeekend(b.data_show);
 
-    return matchesSearch && matchesTab;
+    const isFuture = new Date(b.data_show) > new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    return matchesSearch && matchesTab && isFuture;
   });
 
   if (loading) {
@@ -110,8 +116,8 @@ export default function BrowseEvents() {
         <View style={styles.avatarSmall}>
           <FontAwesome5 name="user" size={14} color={DS.accent} />
         </View>
-        <Text style={styles.brandName}>THE TOCA AQUI</Text>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Text style={styles.brandName}>TOCA AQUI</Text>
+        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => (navigation as any).navigate("UserNotifications")}>
           <FontAwesome5 name="bell" size={18} color={DS.white} />
         </TouchableOpacity>
       </View>

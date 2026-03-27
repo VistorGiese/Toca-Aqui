@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { contractService, Contract } from "@/http/contractService";
 import { avaliacaoService, Avaliacao } from "@/http/avaliacaoService";
 import { artistaPublicoService } from "@/http/artistaPublicoService";
+import { userService } from "@/http/userService";
 import { RootStackParamList } from "@/navigation/Navigate";
 
 const DS = {
@@ -45,6 +46,7 @@ export default function ArtistEPK() {
   const [reviews, setReviews] = useState<Avaliacao[]>([]);
   const [mediaArtista, setMediaArtista] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [artistProfile, setArtistProfile] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -53,10 +55,19 @@ export default function ArtistEPK() {
       ]);
       setContracts(contractsData);
 
-      // Buscar gêneros do perfil público
+      // Buscar perfil do artista
+      userService.getProfile().then((res) => {
+        const raw = res.user.artist_profiles?.[0];
+        if (raw) {
+          setArtistProfile(raw);
+          const g = Array.isArray(raw.generos) ? raw.generos : (typeof raw.generos === "string" ? JSON.parse(raw.generos) : []);
+          setGeneros(g);
+        }
+      }).catch(() => {});
+
       if (user?.perfilArtistaId) {
         artistaPublicoService.getPerfilPublico(user.perfilArtistaId)
-          .then((perfil) => setGeneros(perfil.generos || []))
+          .then((perfil) => { if (perfil.generos?.length) setGeneros(perfil.generos); })
           .catch(() => {});
       }
 
@@ -119,10 +130,10 @@ export default function ArtistEPK() {
           </View>
         </View>
 
-        {/* Edit Profile Button */}
-        <TouchableOpacity style={styles.editBtn} activeOpacity={0.8}>
+        {/* Editar Perfil */}
+        <TouchableOpacity style={styles.editBtn} activeOpacity={0.8} onPress={() => (navigation as any).navigate("ArtistProfileEdit")}>
           <FontAwesome5 name="edit" size={12} color={DS.accentLight} />
-          <Text style={styles.editBtnText}>EDIT PROFILE</Text>
+          <Text style={styles.editBtnText}>EDITAR PERFIL</Text>
         </TouchableOpacity>
 
         {/* Cover + Avatar */}
@@ -137,34 +148,36 @@ export default function ArtistEPK() {
           </View>
         </View>
 
-        <Text style={styles.artistName}>{user?.nome_completo || "Artista"}</Text>
-        <View style={styles.locationRow}>
-          <FontAwesome5 name="map-marker-alt" size={12} color={DS.textDis} />
-          <Text style={styles.locationText}>Brasil</Text>
-        </View>
+        <Text style={styles.artistName}>{artistProfile?.nome_artistico || user?.nome_completo || "Artista"}</Text>
+        {(artistProfile?.cidade || artistProfile?.estado) && (
+          <View style={styles.locationRow}>
+            <FontAwesome5 name="map-marker-alt" size={12} color={DS.textDis} />
+            <Text style={styles.locationText}>{[artistProfile.cidade, artistProfile.estado].filter(Boolean).join(", ")}</Text>
+          </View>
+        )}
 
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{totalShows}</Text>
-            <Text style={styles.statLabel}>SHOWS{"\n"}PERFORMED</Text>
+            <Text style={styles.statLabel}>SHOWS{"\n"}REALIZADOS</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{mediaArtista > 0 ? mediaArtista : "—"}</Text>
-            <Text style={styles.statLabel}>AVERAGE{"\n"}RATING</Text>
+            <Text style={styles.statLabel}>AVALIAÇÃO{"\n"}MÉDIA</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{acceptedShows}</Text>
-            <Text style={styles.statLabel}>APP{"\n"}BOOKINGS</Text>
+            <Text style={styles.statLabel}>BOOKINGS{"\n"}APP</Text>
           </View>
         </View>
 
         {/* Genre Styles */}
         {generos.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>GENRE STYLES</Text>
+            <Text style={styles.sectionTitle}>ESTILOS MUSICAIS</Text>
             <View style={styles.genreRow}>
               {generos.map((g, i) => {
                 const color = GENRE_COLORS[i % GENRE_COLORS.length];
@@ -178,38 +191,35 @@ export default function ArtistEPK() {
           </>
         )}
 
-        {/* Performance Range */}
-        <Text style={styles.sectionTitle}>PERFORMANCE RANGE • CACHÊ</Text>
+        {/* Faixa de Cachê */}
+        <Text style={styles.sectionTitle}>FAIXA DE CACHÊ</Text>
         <View style={styles.rangeRow}>
           <View style={styles.rangeCard}>
             <Text style={styles.rangeLabel}>MÍNIMO</Text>
-            <Text style={styles.rangeValue}>A combinar</Text>
+            <Text style={styles.rangeValue}>
+              {artistProfile?.cache_minimo
+                ? `R$ ${Number(artistProfile.cache_minimo).toLocaleString("pt-BR")}`
+                : "A combinar"}
+            </Text>
           </View>
           <FontAwesome5 name="long-arrow-alt-right" size={16} color={DS.textDis} />
           <View style={styles.rangeCard}>
             <Text style={styles.rangeLabel}>MÁXIMO</Text>
-            <Text style={styles.rangeValue}>A combinar</Text>
+            <Text style={styles.rangeValue}>
+              {artistProfile?.cache_maximo
+                ? `R$ ${Number(artistProfile.cache_maximo).toLocaleString("pt-BR")}`
+                : "A combinar"}
+            </Text>
           </View>
         </View>
 
         {/* Bio */}
-        <Text style={styles.sectionTitle}>THE TOCA AQUI JOURNEY</Text>
-        <Text style={styles.bioText}>
-          Artista independente apaixonado por música ao vivo. Cada show é uma experiência
-          única, construída com dedicação e energia. Nossa missão é conectar pessoas
-          através da arte e criar memórias inesquecíveis.
-        </Text>
-
-        {/* Visual Reel */}
-        <Text style={styles.sectionTitle}>VISUAL REEL</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reelScroll}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <View key={i} style={styles.reelCard}>
-              <FontAwesome5 name="play-circle" size={28} color={DS.textDis} />
-              <Text style={styles.reelLabel}>Vídeo {i + 1}</Text>
-            </View>
-          ))}
-        </ScrollView>
+        {artistProfile?.biografia ? (
+          <>
+            <Text style={styles.sectionTitle}>SOBRE</Text>
+            <Text style={styles.bioText}>{artistProfile.biografia}</Text>
+          </>
+        ) : null}
 
         {/* Venue Testimonials */}
         {reviews.length > 0 && (

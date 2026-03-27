@@ -15,9 +15,11 @@ export interface Booking {
   descricao_evento?: string;
   data_show: string;
   estabelecimento_id: number;
+  perfil_estabelecimento_id?: number;
   horario_inicio: string;
   horario_fim: string;
   status: BookingStatus;
+  preco_ingresso_inteira?: number;
   banda?: {
     nome_banda: string;
   };
@@ -32,9 +34,14 @@ interface CreateBookingData {
   horario_fim: string;
 }
 
+interface BookingsResponse {
+  data: Booking[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+}
+
 const getBookings = async () => {
-  const response = await api.get<Booking[]>("/agendamentos");
-  return response.data;
+  const response = await api.get<BookingsResponse>("/agendamentos");
+  return response.data.data ?? [];
 };
 
 const getBookingById = async (id: number) => {

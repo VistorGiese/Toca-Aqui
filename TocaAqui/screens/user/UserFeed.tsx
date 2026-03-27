@@ -130,7 +130,7 @@ export default function UserFeed() {
           <FontAwesome5 name="user" size={14} color="#A78BFA" />
         </View>
         <Text style={styles.headerBrand}>TOCA AQUI</Text>
-        <TouchableOpacity style={styles.bellBtn}>
+        <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate("UserNotifications")}>
           <FontAwesome5 name="bell" size={18} color="#A0A0B8" />
         </TouchableOpacity>
       </View>

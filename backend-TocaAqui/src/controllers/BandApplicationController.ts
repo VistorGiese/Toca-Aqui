@@ -7,8 +7,8 @@ import { AuthRequest } from '../middleware/authmiddleware';
 export const applyBandToEvent = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const { banda_id, evento_id } = req.body;
-  const aplicacao = await bandApplicationService.apply(banda_id, evento_id, req.user.id);
+  const { banda_id, artista_id, evento_id, mensagem } = req.body;
+  const aplicacao = await bandApplicationService.apply(banda_id, evento_id, req.user.id, artista_id, mensagem);
   res.status(201).json({ message: 'Banda aplicou ao evento com sucesso', aplicacao });
 });
 

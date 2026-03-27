@@ -18,27 +18,55 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { useAuth } from "@/contexts/AuthContext";
 import { userService } from "@/http/userService";
+import { preferenciaService } from "@/http/artistaPublicoService";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserSettings">;
 
-const GENRE_CHIPS = [
-  { label: "ELETRÔNICA", color: "#00CEC9" },
-  { label: "ROCK", color: "#A67C7C" },
-  { label: "TECHNO", color: "#6C5CE7" },
-];
+const GENRE_COLORS: Record<string, string> = {
+  Samba: "#F39C12", Forró: "#E67E22", Rock: "#A67C7C", MPB: "#27AE60",
+  Pop: "#8E44AD", Eletrônica: "#00CEC9", Sertanejo: "#D35400", Jazz: "#2980B9",
+  Blues: "#1A252F", Funk: "#C0392B", Techno: "#6C5CE7",
+};
 
 export default function UserSettings({ navigation }: Props) {
   const { user, signOut } = useAuth();
   const [notifyShows, setNotifyShows] = useState(true);
   const [notifyReminders, setNotifyReminders] = useState(true);
   const [radius, setRadius] = useState(25);
+  const [generosFavoritos, setGenerosFavoritos] = useState<string[]>([]);
+  const [savingPrefs, setSavingPrefs] = useState(false);
   const [hasEstablishment, setHasEstablishment] = useState(false);
+  const [hasArtistProfile, setHasArtistProfile] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem("estabelecimentoId").then(id => {
       setHasEstablishment(!!id);
     });
+    preferenciaService.buscar().then(prefs => {
+      if (prefs?.generos_favoritos) setGenerosFavoritos(prefs.generos_favoritos);
+      if (prefs?.raio_busca_km) setRadius(prefs.raio_busca_km);
+    }).catch(() => {});
+    userService.getProfile().then(res => {
+      setHasArtistProfile((res.user.artist_profiles?.length ?? 0) > 0);
+    }).catch(() => {});
   }, []);
+
+  async function handleSalvarPreferencias() {
+    setSavingPrefs(true);
+    try {
+      await preferenciaService.salvar({
+        generos_favoritos: generosFavoritos,
+        raio_busca_km: radius,
+        notif_novos_shows: notifyShows,
+        notif_lembretes: notifyReminders,
+      });
+      Alert.alert("Salvo", "Preferências atualizadas com sucesso.");
+    } catch {
+      Alert.alert("Erro", "Não foi possível salvar as preferências.");
+    } finally {
+      setSavingPrefs(false);
+    }
+  }
 
   // Alterar email
   const [emailModal, setEmailModal] = useState(false);
@@ -117,9 +145,7 @@ export default function UserSettings({ navigation }: Props) {
         {
           text: "Sair",
           style: "destructive",
-          onPress: async () => {
-            await signOut();
-          },
+          onPress: () => { signOut(); },
         },
       ]
     );
@@ -219,14 +245,18 @@ export default function UserSettings({ navigation }: Props) {
           </View>
 
           <View style={styles.genreChips}>
-            {GENRE_CHIPS.map((g) => (
-              <View
-                key={g.label}
-                style={[styles.genreChip, { backgroundColor: g.color + "22", borderColor: g.color + "55" }]}
-              >
-                <Text style={[styles.genreChipText, { color: g.color }]}>{g.label}</Text>
-              </View>
-            ))}
+            {generosFavoritos.length === 0 ? (
+              <Text style={[styles.settingValue, { fontStyle: "italic" }]}>Nenhum gênero selecionado</Text>
+            ) : (
+              generosFavoritos.map((g) => {
+                const color = GENRE_COLORS[g] ?? "#A78BFA";
+                return (
+                  <View key={g} style={[styles.genreChip, { backgroundColor: color + "22", borderColor: color + "55" }]}>
+                    <Text style={[styles.genreChipText, { color }]}>{g.toUpperCase()}</Text>
+                  </View>
+                );
+              })
+            )}
           </View>
 
           <View style={styles.divider} />
@@ -259,6 +289,17 @@ export default function UserSettings({ navigation }: Props) {
               <FontAwesome5 name="plus" size={12} color="#A78BFA" />
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={[styles.smallBtn, { marginTop: 16, alignSelf: "center", paddingHorizontal: 28 }]}
+            onPress={handleSalvarPreferencias}
+            disabled={savingPrefs}
+          >
+            {savingPrefs
+              ? <ActivityIndicator size="small" color="#A78BFA" />
+              : <Text style={styles.smallBtnText}>SALVAR PREFERÊNCIAS</Text>
+            }
+          </TouchableOpacity>
         </View>
 
         {/* NOTIFICAÇÕES */}
@@ -304,22 +345,41 @@ export default function UserSettings({ navigation }: Props) {
             <Text style={styles.sectionLabel}>GERENCIAR PERFIL</Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.profileActionCard}
-            onPress={goToArtistOnboarding}
-            activeOpacity={0.85}
-          >
-            <View style={styles.profileActionIcon}>
-              <FontAwesome5 name="microphone" size={18} color="#A78BFA" />
-            </View>
-            <View style={styles.profileActionInfo}>
-              <Text style={styles.profileActionTitle}>Criar Perfil de Artista</Text>
-              <Text style={styles.profileActionSubtitle}>
-                Mostre seu talento e apareça nos shows
-              </Text>
-            </View>
-            <FontAwesome5 name="chevron-right" size={12} color="#555577" />
-          </TouchableOpacity>
+          {hasArtistProfile ? (
+            <TouchableOpacity
+              style={styles.profileActionCard}
+              onPress={() => (navigation as any).getParent()?.navigate("ArtistNavigator")}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.profileActionIcon, { backgroundColor: "rgba(167,139,250,0.18)" }]}>
+                <FontAwesome5 name="microphone" size={18} color="#A78BFA" />
+              </View>
+              <View style={styles.profileActionInfo}>
+                <Text style={styles.profileActionTitle}>Acessar Perfil de Artista</Text>
+                <Text style={styles.profileActionSubtitle}>
+                  Gerencie seu perfil, shows e contratos
+                </Text>
+              </View>
+              <FontAwesome5 name="chevron-right" size={12} color="#555577" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.profileActionCard}
+              onPress={goToArtistOnboarding}
+              activeOpacity={0.85}
+            >
+              <View style={styles.profileActionIcon}>
+                <FontAwesome5 name="microphone" size={18} color="#A78BFA" />
+              </View>
+              <View style={styles.profileActionInfo}>
+                <Text style={styles.profileActionTitle}>Criar Perfil de Artista</Text>
+                <Text style={styles.profileActionSubtitle}>
+                  Mostre seu talento e apareça nos shows
+                </Text>
+              </View>
+              <FontAwesome5 name="chevron-right" size={12} color="#555577" />
+            </TouchableOpacity>
+          )}
 
           <View style={styles.divider} />
 
