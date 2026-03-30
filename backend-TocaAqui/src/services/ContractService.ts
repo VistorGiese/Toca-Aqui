@@ -48,6 +48,10 @@ export class ContractService {
     const endereco = await AddressModel.findByPk(estabelecimento.endereco_id);
 
     // Carregar contratado — pode ser banda ou artista individual
+    if (!aplicacao.banda_id && !aplicacao.artista_id) {
+      throw new AppError('Candidatura inválida: sem artista ou banda associada', 400);
+    }
+
     let nomeContratado = 'Artista';
     let contratadoId: { banda_id?: number; artista_id?: number } = {};
 
@@ -56,11 +60,11 @@ export class ContractService {
       if (!banda) throw new AppError('Banda não encontrada', 404);
       nomeContratado = banda.nome_banda ?? 'Artista';
       contratadoId = { banda_id: aplicacao.banda_id };
-    } else if ((aplicacao as any).artista_id) {
-      const artista = await ArtistProfileModel.findByPk((aplicacao as any).artista_id);
+    } else if (aplicacao.artista_id) {
+      const artista = await ArtistProfileModel.findByPk(aplicacao.artista_id);
       if (!artista) throw new AppError('Artista não encontrado', 404);
       nomeContratado = artista.nome_artistico;
-      contratadoId = { artista_id: (aplicacao as any).artista_id };
+      contratadoId = { artista_id: aplicacao.artista_id };
     }
 
     // Montar endereço completo como string
@@ -93,7 +97,7 @@ export class ContractService {
       horario_inicio: evento.horario_inicio,
       horario_fim: evento.horario_fim,
       duracao_minutos: duracao,
-      genero_musical: estabelecimento.generos_musicais,
+      genero_musical: estabelecimento.generos_musicais?.split(',')[0].trim() ?? null,
       local_evento: `${estabelecimento.nome_estabelecimento} - ${enderecoStr}`,
       // Cachê — valores padrão para serem definidos na negociação
       cache_total: 0,
@@ -159,18 +163,28 @@ export class ContractService {
     });
     const bandaIds = membros.map(m => m.banda_id);
 
-    // Buscar contratos de ambos os lados
+    // Buscar contratos onde o usuário é artista individual
+    const perfilArtista = await ArtistProfileModel.findOne({
+      where: { usuario_id: userId },
+      attributes: ['id'],
+    });
+    const artistaId = perfilArtista?.id;
+
+    const orConditions = [
+      ...(estabIds.length ? [{ perfil_estabelecimento_id: { [Op.in]: estabIds } }] : []),
+      ...(bandaIds.length ? [{ banda_id: { [Op.in]: bandaIds } }] : []),
+      ...(artistaId ? [{ artista_id: artistaId }] : []),
+    ];
+
+    if (!orConditions.length) return [];
+
     return ContractModel.findAll({
-      where: {
-        [Op.or]: [
-          ...(estabIds.length ? [{ perfil_estabelecimento_id: { [Op.in]: estabIds } }] : []),
-          ...(bandaIds.length ? [{ banda_id: { [Op.in]: bandaIds } }] : []),
-        ],
-      },
+      where: { [Op.or]: orConditions },
       include: [
         { association: 'Event' },
         { association: 'Band' },
         { association: 'EstablishmentProfile' },
+        { association: 'ArtistProfile' },
       ],
       order: [['created_at', 'DESC']],
     });
@@ -347,6 +361,22 @@ export class ContractService {
     }
 
     await contrato.update({ status: ContractStatus.CONCLUIDO });
+
+    // Increment shows_realizados for artist (or band members) and establishment
+    if (contrato.artista_id) {
+      await ArtistProfileModel.increment('shows_realizados', { by: 1, where: { id: contrato.artista_id } });
+    } else if (contrato.banda_id) {
+      const membros = await BandMemberModel.findAll({ where: { banda_id: contrato.banda_id } });
+      const artistaIds = membros.map(m => m.perfil_artista_id).filter(Boolean);
+      if (artistaIds.length) {
+        await ArtistProfileModel.increment('shows_realizados', { by: 1, where: { id: artistaIds } });
+      }
+    }
+
+    if (contrato.perfil_estabelecimento_id) {
+      await EstablishmentProfileModel.increment('shows_realizados', { by: 1, where: { id: contrato.perfil_estabelecimento_id } });
+    }
+
     return contrato.reload();
   }
 
@@ -373,15 +403,25 @@ export class ContractService {
     const estabelecimento = await EstablishmentProfileModel.findByPk(contrato.perfil_estabelecimento_id);
     if (estabelecimento && estabelecimento.usuario_id === userId) return 'contratante';
 
+    // Verificar se é artista individual do contrato
+    if (contrato.artista_id) {
+      const artista = await ArtistProfileModel.findOne({
+        where: { id: contrato.artista_id, usuario_id: userId },
+      });
+      if (artista) return 'contratado';
+    }
+
     // Verificar se é líder da banda
-    const lider = await BandMemberModel.findOne({
-      where: { banda_id: contrato.banda_id, e_lider: true },
-      include: [{
-        association: 'ArtistProfile',
-        where: { usuario_id: userId },
-      }],
-    });
-    if (lider) return 'contratado';
+    if (contrato.banda_id) {
+      const lider = await BandMemberModel.findOne({
+        where: { banda_id: contrato.banda_id, e_lider: true },
+        include: [{
+          association: 'ArtistProfile',
+          where: { usuario_id: userId },
+        }],
+      });
+      if (lider) return 'contratado';
+    }
 
     return null;
   }

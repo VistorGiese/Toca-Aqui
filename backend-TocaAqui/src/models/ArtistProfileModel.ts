@@ -22,6 +22,8 @@ export interface ArtistProfileAttributes {
   links_sociais?: any;
   press_kit?: any;
   datas_indisponiveis?: any;
+  shows_realizados?: number;
+  nota_media?: number;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -47,6 +49,8 @@ class ArtistProfileModel extends Model<ArtistProfileAttributes> implements Artis
   public links_sociais?: any;
   public press_kit?: any;
   public datas_indisponiveis?: any;
+  public shows_realizados!: number;
+  public nota_media?: number;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -61,10 +65,9 @@ ArtistProfileModel.init(
     usuario_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'usuarios',
-        key: 'id',
-      },
+      references: { model: 'usuarios', key: 'id' },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
     },
     nome_artistico: {
       type: DataTypes.STRING(255),
@@ -145,6 +148,15 @@ ArtistProfileModel.init(
       type: DataTypes.JSON,
       allowNull: true,
       defaultValue: '[]',
+    },
+    shows_realizados: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    nota_media: {
+      type: DataTypes.DECIMAL(3, 2),
+      allowNull: true,
     },
   },
   {

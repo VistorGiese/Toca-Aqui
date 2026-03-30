@@ -14,7 +14,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bandApplicationService } from "@/http/bandApplicationService";
 import { useAuth } from "@/contexts/AuthContext";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 import { artistaPublicoService } from "@/http/artistaPublicoService";
 
 const DS = {
@@ -33,8 +33,8 @@ const DS = {
   bgSurface: "#1A1040",
 };
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
-type RouteType = RouteProp<RootStackParamList, "ApplyConfirmation">;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
+type RouteType = RouteProp<ArtistStackParamList, "ApplyConfirmation">;
 
 export default function ApplyConfirmation() {
   const navigation = useNavigation<NavProp>();
@@ -45,12 +45,16 @@ export default function ApplyConfirmation() {
   const [mensagem, setMensagem] = useState("");
   const [loading, setLoading] = useState(false);
   const [mediaArtista, setMediaArtista] = useState<number>(0);
+  const [cidadeArtista, setCidadeArtista] = useState<string>("");
 
   useEffect(() => {
     if (user?.perfilArtistaId) {
       artistaPublicoService.getPerfilPublico(user.perfilArtistaId)
         .then(p => {
           setMediaArtista(p.media_nota ?? 0);
+          if (p.cidade) {
+            setCidadeArtista(p.estado ? `${p.cidade}, ${p.estado}` : p.cidade);
+          }
         })
         .catch(() => {});
     }
@@ -66,7 +70,6 @@ export default function ApplyConfirmation() {
     try {
       await bandApplicationService.applyToEvent({
         evento_id: eventId,
-        artista_id: user?.perfilArtistaId,
         mensagem: mensagem.trim(),
       });
 
@@ -76,12 +79,12 @@ export default function ApplyConfirmation() {
         [
           {
             text: "OK",
-            onPress: () => (navigation as any).navigate("BrowseEvents"),
+            onPress: () => navigation.popToTop(),
           },
         ]
       );
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Não foi possível enviar a candidatura.";
+      const msg = err?.response?.data?.error || err?.response?.data?.message || "Não foi possível enviar a candidatura.";
       Alert.alert("Erro", msg);
     } finally {
       setLoading(false);
@@ -101,7 +104,10 @@ export default function ApplyConfirmation() {
           <FontAwesome5 name="arrow-left" size={14} color={DS.white} />
           <Text style={styles.headerTitle}>Confirmar Candidatura</Text>
         </TouchableOpacity>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={() => Alert.alert("Ajuda", "Preencha sua mensagem de apresentação e envie sua candidatura para o evento.")}
+        >
           <FontAwesome5 name="ellipsis-v" size={16} color={DS.white} />
         </TouchableOpacity>
       </View>
@@ -169,7 +175,7 @@ export default function ApplyConfirmation() {
               </View>
               <View style={styles.locationRow}>
                 <FontAwesome5 name="map-marker-alt" size={10} color={DS.textDis} />
-                <Text style={styles.previewLocation}> Brasil</Text>
+                <Text style={styles.previewLocation}> {cidadeArtista || "Brasil"}</Text>
               </View>
             </View>
           </View>

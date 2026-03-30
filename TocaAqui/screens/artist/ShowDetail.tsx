@@ -13,7 +13,7 @@ import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { contractService, Contract } from "@/http/contractService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
   bg: "#09090F",
@@ -31,8 +31,8 @@ const DS = {
   bgSurface: "#1A1040",
 };
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
-type RouteType = RouteProp<RootStackParamList, "ShowDetail">;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
+type RouteType = RouteProp<ArtistStackParamList, "ShowDetail">;
 
 export default function ShowDetail() {
   const navigation = useNavigation<NavProp>();
@@ -68,15 +68,15 @@ export default function ShowDetail() {
 
   if (!contract) return null;
 
-  const formattedDate = contract.data_show
-    ? new Date(contract.data_show).toLocaleDateString("pt-BR", {
+  const formattedDate = contract.data_evento
+    ? new Date(contract.data_evento).toLocaleDateString("pt-BR", {
         day: "2-digit",
         month: "short",
       }).toUpperCase()
     : "--";
 
-  const weekday = contract.data_show
-    ? new Date(contract.data_show).toLocaleDateString("pt-BR", { weekday: "long" })
+  const weekday = contract.data_evento
+    ? new Date(contract.data_evento).toLocaleDateString("pt-BR", { weekday: "long" })
     : "";
 
   const openMaps = () => {
@@ -135,7 +135,7 @@ export default function ShowDetail() {
           <Text style={styles.cacheLabel}>CACHÊ ACORDADO</Text>
           <Text style={styles.cacheValue}>
             R${" "}
-            {Number(contract.cache_acordado || 0).toLocaleString("pt-BR", {
+            {Number(contract.cache_total || 0).toLocaleString("pt-BR", {
               minimumFractionDigits: 2,
             })}
           </Text>
@@ -214,13 +214,22 @@ export default function ShowDetail() {
                 </Text>
               </View>
               <View style={styles.contactActions}>
-                <TouchableOpacity style={styles.contactActionBtn}>
+                <TouchableOpacity
+                  style={styles.contactActionBtn}
+                  onPress={() => Alert.alert("Ligar", "Entre em contato com o estabelecimento pelo telefone informado no contrato.")}
+                >
                   <FontAwesome5 name="phone" size={14} color={DS.accent} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.contactActionBtn}>
+                <TouchableOpacity
+                  style={styles.contactActionBtn}
+                  onPress={() => Alert.alert("Mensagem", "Use o telefone ou e-mail do responsável para enviar mensagens.")}
+                >
                   <FontAwesome5 name="comment" size={14} color={DS.accent} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.contactActionBtn}>
+                <TouchableOpacity
+                  style={styles.contactActionBtn}
+                  onPress={() => Alert.alert("Perfil", `Responsável: ${contract.nome_responsavel}`)}
+                >
                   <FontAwesome5 name="user" size={14} color={DS.accent} />
                 </TouchableOpacity>
               </View>

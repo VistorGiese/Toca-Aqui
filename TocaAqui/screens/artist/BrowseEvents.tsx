@@ -14,7 +14,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bookingService, Booking } from "@/http/bookingService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
   bg: "#09090F",
@@ -35,7 +35,7 @@ const DS = {
 const FILTER_TABS = ["TODOS", "ESTA SEMANA", "FIM DE SEMANA"] as const;
 type FilterTab = typeof FILTER_TABS[number];
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 
 function isThisWeek(dateStr: string | null | undefined): boolean {
   if (!dateStr) return false;
@@ -85,6 +85,9 @@ export default function BrowseEvents() {
   }, [fetchBookings]);
 
   const filteredBookings = bookings.filter((b) => {
+    // Only show gigs that are open for applications
+    const isOpen = b.status === "pendente";
+
     const matchesSearch =
       !searchText.trim() ||
       b.titulo_evento?.toLowerCase().includes(searchText.toLowerCase());
@@ -98,7 +101,7 @@ export default function BrowseEvents() {
 
     const isFuture = new Date(b.data_show) > new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    return matchesSearch && matchesTab && isFuture;
+    return isOpen && matchesSearch && matchesTab && isFuture;
   });
 
   if (loading) {
@@ -117,7 +120,7 @@ export default function BrowseEvents() {
           <FontAwesome5 name="user" size={14} color={DS.accent} />
         </View>
         <Text style={styles.brandName}>TOCA AQUI</Text>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => (navigation as any).navigate("UserNotifications")}>
+        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <FontAwesome5 name="bell" size={18} color={DS.white} />
         </TouchableOpacity>
       </View>
@@ -167,7 +170,7 @@ export default function BrowseEvents() {
           <BookingCard
             booking={item}
             onPress={() =>
-              (navigation as any).navigate("EventDetailArtist", { eventId: item.id })
+              navigation.navigate("EventDetailArtist", { eventId: item.id })
             }
           />
         )}

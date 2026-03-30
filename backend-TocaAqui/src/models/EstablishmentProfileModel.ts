@@ -12,8 +12,10 @@ export interface EstablishmentProfileAttributes {
   horario_fechamento: string;
   endereco_id?: number;
   telefone_contato: string;
-  fotos?: string; 
+  fotos?: string;
   esta_ativo?: boolean;
+  shows_realizados?: number;
+  nota_media?: number;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -31,6 +33,8 @@ class EstablishmentProfileModel extends Model<EstablishmentProfileAttributes> im
   public telefone_contato!: string;
   public fotos?: string;
   public esta_ativo!: boolean;
+  public shows_realizados!: number;
+  public nota_media?: number;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -45,10 +49,9 @@ EstablishmentProfileModel.init(
     usuario_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'usuarios',
-        key: 'id',
-      },
+      references: { model: 'usuarios', key: 'id' },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
     },
     nome_estabelecimento: {
       type: DataTypes.STRING(255),
@@ -94,6 +97,15 @@ EstablishmentProfileModel.init(
     esta_ativo: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+    },
+    shows_realizados: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    nota_media: {
+      type: DataTypes.DECIMAL(3, 2),
+      allowNull: true,
     },
   },
   {
