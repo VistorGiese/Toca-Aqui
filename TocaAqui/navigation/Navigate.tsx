@@ -3,7 +3,9 @@ import React from "react";
 
 import { Booking } from "@/http/bookingService";
 import AdditionalInformation from "../screens/AdditionalInformation";
+import ArtistFavorites from "../screens/ArtistFavorites";
 import ArtistProfile from "../screens/ArtistProfile";
+import ArtistSelfProfile from "../screens/ArtistSelfProfile";
 import ConfirmRegister from "../screens/ConfirmRegister";
 import CreateEvent from "../screens/CreateEvent";
 import EventDetail from "../screens/EventDetail";
@@ -17,12 +19,14 @@ import Profile from "../screens/Profile";
 import RegisterLocationAndress from "../screens/RegisterLocationAndress";
 import RegisterLocationName from "../screens/RegisterLocationName";
 import RegisterPassword from "../screens/RegisterPassword";
+import RegisterUserType from "../screens/RegisterUserType";
 import Schedulling from "../screens/Schedulling";
 import SearchArtists from '../screens/SearchArtists';
 
 export type RootStackParamList = {
   Initial: undefined;
   Login: undefined;
+  RegisterUserType: undefined;
   RegisterLocationName: undefined;
   RegisterLocationAndress: undefined;
   RegisterPassword: undefined;
@@ -34,6 +38,8 @@ export type RootStackParamList = {
   CreateEvent: undefined;
   InfoEvent: undefined;
   ArtistProfile: undefined;
+  ArtistFavorites: undefined;
+  ArtistSelfProfile: undefined;
   ConfirmRegister: undefined;
   Profile: undefined;
   EventDetail: { event: Booking };
@@ -54,6 +60,7 @@ export default function Navigate() {
 
       {/* Agrupamento de telas de registro */}
       <Stack.Group>
+        <Stack.Screen name="RegisterUserType" component={RegisterUserType} />
         <Stack.Screen name="RegisterLocationName" component={RegisterLocationName} />
         <Stack.Screen name="RegisterLocationAndress" component={RegisterLocationAndress} />
         <Stack.Screen name="RegisterPassword" component={RegisterPassword} />
@@ -68,6 +75,8 @@ export default function Navigate() {
       <Stack.Screen name="CreateEvent" component={CreateEvent} />
       <Stack.Screen name="InfoEvent" component={InfoEvent} />
       <Stack.Screen name="ArtistProfile" component={ArtistProfile} />
+      <Stack.Screen name="ArtistFavorites" component={ArtistFavorites} />
+      <Stack.Screen name="ArtistSelfProfile" component={ArtistSelfProfile} />
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="EventDetail" component={EventDetail} />
       <Stack.Screen name="SearchArtists" component={SearchArtists} />

@@ -19,7 +19,7 @@ interface EstabelecimentoResponse {
 
 interface LoginResponse {
   token: string;
-  estabelecimentoId: number;
+  estabelecimentoId?: number;
   user?: any;
   message?: string;
 }
@@ -70,15 +70,26 @@ const salvarTokenEConfigurarAxios = async (token: string) => {
   }
 };
 
+const salvarRoleUsuario = async (role?: string) => {
+  try {
+    if (role) {
+      await AsyncStorage.setItem("userRole", role);
+    }
+  } catch (error) {
+    console.warn("Nao foi possivel salvar o role do usuario.", error);
+  }
+};
+
 export const registerUser = async (
   userData: Partial<AccountProps>
 ): Promise<RegisterUserResponse> => {
   try {
+    const selectedRole = userData.tipo_usuario || "establishment_owner";
     const payload = {
       nome: userData.nome_dono,
       email: userData.email_responsavel,
       senha: userData.password,
-      tipo_usuario: "establishment_owner",
+      tipo_usuario: selectedRole,
     };
 
     const response = await api.post<RegisterUserResponse>(
@@ -88,6 +99,7 @@ export const registerUser = async (
 
     if (response.data.token) {
       await salvarTokenEConfigurarAxios(response.data.token);
+      await salvarRoleUsuario(response.data.user?.role);
     }
 
     return response.data;
@@ -155,6 +167,30 @@ export const createEstabelecimento = async (
   }
 };
 
+export const createArtistProfile = async (
+  artistData: Partial<AccountProps>
+): Promise<void> => {
+  try {
+    const payload = {
+      nome_artistico: artistData.nome_dono || artistData.nome || "Artista",
+      biografia: "Perfil criado via app",
+      instrumentos: [],
+      generos: [],
+      anos_experiencia: 0,
+    };
+
+    await api.post("/usuarios/perfil-artista", payload);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Detalhes do erro ao criar perfil de artista:",
+        JSON.stringify(error.response?.data, null, 2)
+      );
+    }
+    throw error;
+  }
+};
+
 export const loginEstabelecimento = async (
   loginData: LoginPayload
 ): Promise<LoginResponse> => {
@@ -176,6 +212,7 @@ export const loginEstabelecimento = async (
 
     if (token) {
       await salvarTokenEConfigurarAxios(token);
+      await salvarRoleUsuario(response.data.user?.role);
 
       try {
         const perfilResponse = await api.get("/usuarios/perfil");
@@ -248,6 +285,18 @@ export const cadastrarEstabelecimentoCompleto = async (
     console.error("Erro no fluxo completo de cadastro:", error);
     throw error;
   }
+};
+
+export const cadastrarUsuarioSimples = async (
+  fullData: AccountProps
+): Promise<RegisterUserResponse> => {
+  const response = await registerUser(fullData);
+
+  if (fullData.tipo_usuario === "artist") {
+    await createArtistProfile(fullData);
+  }
+
+  return response;
 };
 
 export const getEstabelecimentoProfile = async (): Promise<ProfileResponse> => {

@@ -142,7 +142,7 @@ export default function Profile() {
     const handleLogout = async () => {
         try {
             // 1. Remove os dados
-            await AsyncStorage.multiRemove(["token", "estabelecimentoId"]);
+            await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
 
             // 2. Validação Simples: Confere se sumiu
             const checkToken = await AsyncStorage.getItem("token");
@@ -167,7 +167,7 @@ export default function Profile() {
                     onPress: async () => {
                         try {
                             await deleteEstabelecimento();
-                            await AsyncStorage.multiRemove(["token", "estabelecimentoId"]);
+                            await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
                             Alert.alert("Sucesso", "Sua conta foi apagada.");
                             navigation.replace("Login");
                         } catch (error) {

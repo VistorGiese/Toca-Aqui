@@ -92,7 +92,7 @@ export default function Login() {
         <Text style={styles.registerText}>Não tem uma conta? </Text>
         <Text
           style={styles.registerLink}
-          onPress={() => navigation.navigate("RegisterLocationName")}
+          onPress={() => navigation.navigate("RegisterUserType")}
         >
           Cadastre-se
         </Text>
