@@ -1,0 +1,116 @@
+# Roadmap: Toca Aqui v1.0
+
+## Overview
+
+O codebase já existe mas está quebrado em múltiplas camadas. O caminho para a defesa do TCC é: corrigir a fundação primeiro (rotas, navegação, dados), depois garantir que cada fluxo de persona funcione de ponta a ponta — artista candidatando, estabelecimento aceitando, contrato gerado, usuário comum navegando o feed. Cinco fases, entrega incremental, cada fase verificável de forma independente.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+- [ ] **Phase 1: Foundation** - Corrigir bugs críticos de rota, navegação e IP hardcoded que bloqueiam todos os outros fluxos
+- [ ] **Phase 2: Artist Application Flow** - Artista navega eventos, se candidata com valor proposto, visualiza status das candidaturas
+- [ ] **Phase 3: Accept & Contract Flow** - Estabelecimento aceita candidatura, sistema recusa as demais, contrato gerado, artista confirma
+- [ ] **Phase 4: User Feed** - Usuário comum navega feed de eventos e visualiza detalhe com artista confirmado
+- [ ] **Phase 5: Integration Polish** - Dados reais em perfis, smoke test ponta-a-ponta, onPress handlers faltantes, loading states
+
+## Phase Details
+
+### Phase 1: Foundation
+**Goal**: App conecta ao backend correto em qualquer máquina, rotas de candidatura retornam dados, e a navegação do fluxo principal não crasha
+**Depends on**: Nothing (first phase)
+**Requirements**: REQ-01, REQ-02, REQ-03
+**Success Criteria** (what must be TRUE):
+  1. App abre em qualquer máquina sem precisar editar código — IP/URL do backend vem de variável de ambiente ou constante centralizada
+  2. `bandApplicationService` chama as mesmas rotas registradas em `BandApplicationRoutes.ts` — nenhuma chamada retorna 404
+  3. Navegar de BrowseEvents → ApplyConfirmation → MyApplications → ContractDetail não produz erros de parâmetro faltando
+  4. Telas de listagem (candidaturas, contratos, agenda) exibem dados do banco em vez de listas vazias causadas por erros de rota
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01: fix-base-url — Centralizar baseURL em `constants/api.ts`, remover IPs hardcoded de todos os services
+- [ ] 01-02: fix-band-application-routes — Auditar e alinhar todos os paths de `bandApplicationService.ts` com `BandApplicationRoutes.ts`
+- [ ] 01-03: fix-navigation-params — Corrigir parâmetros faltando na navegação entre telas do fluxo principal (ApplyConfirmation, ContractDetail, ShowDetail)
+
+### Phase 2: Artist Application Flow
+**Goal**: Artista consegue navegar eventos abertos, se candidatar informando um valor, e acompanhar o status das suas candidaturas
+**Depends on**: Phase 1
+**Requirements**: REQ-04, REQ-05, REQ-06
+**Success Criteria** (what must be TRUE):
+  1. `BrowseEvents` exibe apenas eventos com status `pendente` — eventos fechados ou já contratados não aparecem
+  2. Artista consegue abrir um evento, preencher `valor_proposto` e submeter a candidatura sem erro
+  3. `MyApplications` lista as candidaturas do artista com o status atual (pendente / aceito / recusado) buscado do backend
+  4. Status em `MyApplications` atualiza ao voltar para a tela após mudança no backend
+**Plans**: 3 plans
+
+Plans:
+- [ ] 02-01: browse-events-filter — Garantir que BrowseEvents filtra por status `pendente` e exibe dados reais com loading state
+- [ ] 02-02: apply-to-gig — Implementar/corrigir fluxo de candidatura com `valor_proposto` em ApplyConfirmation, conectado ao backend
+- [ ] 02-03: my-applications-status — Corrigir MyApplications para buscar e exibir candidaturas reais com status correto
+
+### Phase 3: Accept & Contract Flow
+**Goal**: Estabelecimento vê candidaturas com valores propostos, aceita uma, sistema recusa as demais automaticamente, contrato é gerado e artista pode confirmar
+**Depends on**: Phase 2
+**Requirements**: REQ-07, REQ-08, REQ-09, REQ-10, REQ-11, REQ-12, REQ-13, REQ-14
+**Success Criteria** (what must be TRUE):
+  1. `EstGigApplications` exibe todas as candidaturas de um evento com nome do artista e `valor_proposto`
+  2. Estabelecimento aceita uma candidatura — backend cria contrato com status `aguardando_aceite` e recusa todas as outras candidaturas do mesmo evento
+  3. Artistas recusados veem status `recusado` em MyApplications após o aceite
+  4. Artista aceito vê o contrato em ContractDetail e consegue confirmar — status muda para `aceito`
+  5. `EstShowDetail` exibe o show confirmado com dados do artista após o artista assinar o contrato
+**Plans**: 4 plans
+
+Plans:
+- [ ] 03-01: est-gig-applications — Corrigir EstGigApplications para listar candidaturas com valor_proposto e conectar botão de aceitar
+- [ ] 03-02: accept-reject-logic — Validar/corrigir BandApplicationService e ContractService: aceitar uma candidatura, rejeitar demais, criar contrato (com transaction)
+- [ ] 03-03: contract-detail-confirm — Corrigir ContractDetail no app do artista: buscar contrato, exibir dados, implementar botão de confirmação conectado ao backend
+- [ ] 03-04: est-show-detail — Corrigir EstShowDetail para exibir show confirmado e notificação/feedback para artista aceito/recusado (REQ-07)
+**UI hint**: yes
+
+### Phase 4: User Feed
+**Goal**: Usuário comum navega feed de eventos reais e visualiza detalhe de qualquer evento com informações completas
+**Depends on**: Phase 1
+**Requirements**: REQ-15, REQ-16
+**Success Criteria** (what must be TRUE):
+  1. Feed do usuário comum exibe eventos reais do banco com data, local e nome do show
+  2. Usuário abre detalhe de um evento e vê descrição, data, local e artista confirmado (quando houver)
+  3. Navegação Feed → EventDetail → volta ao Feed funciona sem crashes
+**Plans**: 2 plans
+
+Plans:
+- [ ] 04-01: user-feed — Corrigir UserFeed para buscar eventos reais com loading state e exibir dados corretos
+- [ ] 04-02: user-show-detail — Corrigir UserShowDetail para exibir todos os campos do evento e artista confirmado (se contrato aceito)
+**UI hint**: yes
+
+### Phase 5: Integration Polish
+**Goal**: Fluxo ponta-a-ponta funciona sem erros visíveis: perfis mostram dados reais, botões sem handler são corrigidos ou removidos, loading states aparecem durante carregamento
+**Depends on**: Phase 3, Phase 4
+**Requirements**: REQ-17
+**Success Criteria** (what must be TRUE):
+  1. Perfil de artista exibe `shows_realizados` e `nota_media` com valores reais após shows concluídos (ContractService incrementa ao marcar `concluido`)
+  2. Nenhum botão relevante ao fluxo do TCC tem `onPress={() => {}}` vazio — todos fazem algo ou foram removidos
+  3. Todas as telas do fluxo principal exibem ActivityIndicator durante carregamento — sem telas em branco
+  4. Demo ponta-a-ponta completa: criar evento → candidatar → aceitar → contrato → confirmar → feed funciona sem erros visíveis
+**Plans**: 3 plans
+
+Plans:
+- [ ] 05-01: profile-stats — Implementar trigger em ContractService para incrementar `shows_realizados` e recomputar `nota_media` ao marcar contrato como `concluido`
+- [ ] 05-02: onpress-audit — Auditar todos os `onPress={() => {}}` nas telas do fluxo do TCC; implementar navegação correta ou esconder botões irrelevantes
+- [ ] 05-03: loading-states — Adicionar ActivityIndicator/skeleton em todas as telas de listagem e detalhe do fluxo principal
+**UI hint**: yes
+
+## Progress
+
+**Execution Order:**
+Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
+(Phases 2 and 4 can run in parallel once Phase 1 is complete)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Foundation | 0/3 | Not started | - |
+| 2. Artist Application Flow | 0/3 | Not started | - |
+| 3. Accept & Contract Flow | 0/4 | Not started | - |
+| 4. User Feed | 0/2 | Not started | - |
+| 5. Integration Polish | 0/3 | Not started | - |
