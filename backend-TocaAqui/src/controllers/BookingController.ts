@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { Op } from "sequelize";
 import BookingModel, { BookingStatus } from "../models/BookingModel";
 import BandApplicationModel from "../models/BandApplicationModel";
@@ -60,12 +60,26 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
   res.status(201).json(booking);
 });
 
-export const getBookings = asyncHandler(async (req: Request, res: Response) => {
+export const getBookings = asyncHandler(async (req: AuthRequest, res: Response) => {
   const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
   const offset = (page - 1) * limit;
 
   const { data_inicio, data_fim, status, estabelecimento_id } = req.query as Record<string, string>;
+
+  // Se filtrou por estabelecimento, verificar que o usuário logado é dono ou membro
+  if (estabelecimento_id && req.user?.id) {
+    const perfil = await EstablishmentProfileModel.findByPk(estabelecimento_id);
+    if (!perfil) throw new AppError('Estabelecimento não encontrado', 404);
+
+    const isDono = perfil.usuario_id === req.user.id;
+    if (!isDono) {
+      const membro = await EstablishmentMemberModel.findOne({
+        where: { estabelecimento_id, usuario_id: req.user.id },
+      });
+      if (!membro) throw new AppError('Acesso negado: este estabelecimento não pertence ao usuário logado', 403);
+    }
+  }
 
   const where: any = {};
   if (data_inicio && data_fim) where.data_show = { [Op.between]: [data_inicio, data_fim] };
@@ -89,13 +103,23 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) => {
 
   const { count, rows } = await BookingModel.findAndCountAll({
     where,
+    include: [{
+      model: EstablishmentProfileModel,
+      as: 'EstablishmentProfile',
+      attributes: ['id', 'nome_estabelecimento'],
+    }],
     order: [['data_show', 'DESC']],
     limit,
     offset,
   });
 
+  const mappedRows = rows.map((row: any) => ({
+    ...row.toJSON(),
+    nome_estabelecimento: row.EstablishmentProfile?.nome_estabelecimento ?? null,
+  }));
+
   const payload = {
-    data: rows,
+    data: mappedRows,
     pagination: {
       total: count,
       page,
@@ -108,7 +132,7 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) => {
   res.json(payload);
 });
 
-export const getBookingById = asyncHandler(async (req: Request, res: Response) => {
+export const getBookingById = asyncHandler(async (req: AuthRequest, res: Response) => {
   const id = req.params.id as string;
   const cacheKey = CACHE_KEYS.agendamento(id);
 
