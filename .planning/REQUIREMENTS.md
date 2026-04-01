@@ -74,7 +74,7 @@ Para a defesa, deve ser possível demonstrar:
 |-------------|-------|--------|
 | REQ-01 | Phase 1 — Foundation | Pending |
 | REQ-02 | Phase 1 — Foundation | Pending |
-| REQ-03 | Phase 1 — Foundation | Pending |
+| REQ-03 | Phase 1 — Foundation | Complete |
 | REQ-04 | Phase 2 — Artist Application Flow | Pending |
 | REQ-05 | Phase 2 — Artist Application Flow | Pending |
 | REQ-06 | Phase 2 — Artist Application Flow | Pending |
