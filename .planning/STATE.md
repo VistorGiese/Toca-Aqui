@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-fix-navigation-params-PLAN.md
-last_updated: "2026-04-01T16:37:14.356Z"
+stopped_at: Completed 01-foundation 01-01-fix-base-url-PLAN.md
+last_updated: "2026-04-01T16:37:31.256Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 5
@@ -67,6 +67,7 @@ Recent decisions affecting current work:
 - Artista confirma o contrato — dupla confirmação, contrato nasce como `aguardando_aceite`
 - `nome→nome_completo` migration já aplicada — qualquer referência a `.nome` em objetos user/profile exibe `undefined`
 - [Phase 01]: Use ArtistStackParamList from ArtistNavigator.tsx for artist screen navigation types — not RootStackParamList from Navigate.tsx
+- [Phase 01-foundation]: HTTP services use named import isAxiosError from axios for error type narrowing — never default axios import
 
 ### Pending Todos
 
@@ -81,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T16:36:59.970Z
-Stopped at: Completed 01-03-fix-navigation-params-PLAN.md
+Last session: 2026-04-01T16:37:31.253Z
+Stopped at: Completed 01-foundation 01-01-fix-base-url-PLAN.md
 Resume file: None
