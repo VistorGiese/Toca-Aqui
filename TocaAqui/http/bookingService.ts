@@ -20,6 +20,7 @@ export interface Booking {
   horario_fim: string;
   status: BookingStatus;
   preco_ingresso_inteira?: number;
+  nome_estabelecimento?: string;
   banda?: {
     nome_banda: string;
   };
@@ -39,8 +40,8 @@ interface BookingsResponse {
   pagination: { total: number; page: number; limit: number; totalPages: number };
 }
 
-const getBookings = async () => {
-  const response = await api.get<BookingsResponse>("/agendamentos");
+const getBookings = async (params?: { status?: string }) => {
+  const response = await api.get<BookingsResponse>("/agendamentos", { params });
   return response.data.data ?? [];
 };
 

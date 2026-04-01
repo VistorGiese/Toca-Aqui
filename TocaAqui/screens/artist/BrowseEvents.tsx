@@ -70,7 +70,7 @@ export default function BrowseEvents() {
   const fetchBookings = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const data = await bookingService.getBookings();
+      const data = await bookingService.getBookings({ status: 'pendente' });
       setBookings(data);
     } catch {
       Alert.alert("Erro", "Não foi possível carregar as vagas.");
@@ -85,9 +85,6 @@ export default function BrowseEvents() {
   }, [fetchBookings]);
 
   const filteredBookings = bookings.filter((b) => {
-    // Only show gigs that are open for applications
-    const isOpen = b.status === "pendente";
-
     const matchesSearch =
       !searchText.trim() ||
       b.titulo_evento?.toLowerCase().includes(searchText.toLowerCase());
@@ -101,7 +98,7 @@ export default function BrowseEvents() {
 
     const isFuture = new Date(b.data_show) > new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    return isOpen && matchesSearch && matchesTab && isFuture;
+    return matchesSearch && matchesTab && isFuture;
   });
 
   if (loading) {
@@ -237,7 +234,7 @@ function BookingCard({ booking, onPress }: { booking: Booking; onPress: () => vo
         <View style={cardStyles.locationRow}>
           <FontAwesome5 name="map-marker-alt" size={11} color={DS.textDis} />
           <Text style={cardStyles.locationText}>
-            {booking.estabelecimento_id ? `Estab. #${booking.estabelecimento_id}` : "Local não informado"}
+            {booking.nome_estabelecimento ?? "Local não informado"}
           </Text>
         </View>
 
