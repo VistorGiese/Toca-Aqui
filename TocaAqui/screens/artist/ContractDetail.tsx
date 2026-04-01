@@ -12,7 +12,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { contractService, Contract } from "@/http/contractService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
   bg: "#09090F",
@@ -30,8 +30,8 @@ const DS = {
   dangerDark: "#2D0A0A",
 };
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
-type RouteType = RouteProp<RootStackParamList, "ContractDetail">;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
+type RouteType = RouteProp<ArtistStackParamList, "ContractDetail">;
 
 export default function ContractDetail() {
   const navigation = useNavigation<NavProp>();
