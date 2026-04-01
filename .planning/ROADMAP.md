@@ -110,7 +110,7 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete   | 2026-04-01 |
-| 2. Artist Application Flow | 0/3 | Not started | - |
+| 2. Artist Application Flow | 1/3 | In Progress|  |
 | 3. Accept & Contract Flow | 0/4 | Not started | - |
 | 4. User Feed | 0/2 | Not started | - |
 | 5. Integration Polish | 0/3 | Not started | - |
