@@ -67,7 +67,7 @@ export default function MyApplications() {
       case "Aceitas":
         return applications.filter((a) => a.status === "aceito");
       case "Recusadas":
-        return applications.filter((a) => a.status === "rejeitado" || a.status === "cancelado");
+        return applications.filter((a) => a.status === "recusado" || a.status === "cancelado");
       default:
         return [];
     }
