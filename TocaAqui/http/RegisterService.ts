@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { isAxiosError } from "axios";
 import { AccountProps } from "../contexts/AccountFromContexto";
 import api from "./api";
 
@@ -92,7 +92,7 @@ export const registerUser = async (
 
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao criar usuário:",
         JSON.stringify(error.response?.data, null, 2)
@@ -112,7 +112,7 @@ export const createEndereco = async (
     );
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao criar endereço:",
         JSON.stringify(error.response?.data, null, 2)
@@ -144,7 +144,7 @@ export const createEstabelecimento = async (
     );
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao criar estabelecimento:",
         JSON.stringify(error.response?.data, null, 2)
@@ -204,7 +204,7 @@ export const loginEstabelecimento = async (
       user: response.data.user,
     };
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error("--- ERRO DE LOGIN (401) ---");
       console.error("URL:", error.config?.url);
       console.error("Status:", error.response?.status);
@@ -298,7 +298,7 @@ export const getEstabelecimentoProfile = async (): Promise<ProfileResponse> => {
       endereco: enderecoData,
     };
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao buscar perfil:",
         JSON.stringify(error.response?.data, null, 2)
@@ -319,7 +319,7 @@ export const updateEstabelecimento = async (
     }
     await api.put(`/estabelecimentos/${estabelecimentoId}`, updateData);
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao atualizar estabelecimento:",
         JSON.stringify(error.response?.data, null, 2)
@@ -337,7 +337,7 @@ export const updateEndereco = async (
   try {
     await api.put(`/enderecos/${enderecoId}`, updateData);
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao atualizar endereço:",
         JSON.stringify(error.response?.data, null, 2)
@@ -356,7 +356,7 @@ export const deleteEstabelecimento = async (): Promise<void> => {
     }
     await api.delete(`/estabelecimentos/${estabelecimentoId}`);
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao deletar estabelecimento:",
         JSON.stringify(error.response?.data, null, 2)
@@ -371,7 +371,7 @@ export const deleteEndereco = async (enderecoId: number): Promise<void> => {
   try {
     await api.delete(`/enderecos/${enderecoId}`);
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao deletar endereço:",
         JSON.stringify(error.response?.data, null, 2)
