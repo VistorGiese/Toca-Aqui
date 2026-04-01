@@ -54,6 +54,9 @@ O codebase já existe mas tem bugs em múltiplas camadas: fluxo de candidatura, 
 - Navegação por papel (artist/establishment/common_user)
 - Error boundary na app (corrigido)
 - `shows_realizados`/`nota_media` com migration aplicada
+- HTTP layer centralizado — todos os services usam `api.ts` (Validado na Phase 1)
+- `bandApplicationService` com rotas alinhadas ao backend e response handling correto (Validado na Phase 1)
+- Navegação do fluxo artista com tipos corretos (`ArtistStackParamList`) (Validado na Phase 1)
 
 ## What Needs to Work (Active)
 
@@ -64,7 +67,6 @@ O codebase já existe mas tem bugs em múltiplas camadas: fluxo de candidatura, 
 - [ ] Confirmação do contrato pelo artista
 - [ ] Visualização de evento pelo usuário comum (feed + detalhe)
 - [ ] Dados reais nos perfis (nota_media, shows_realizados populados)
-- [ ] Telas sem bugs de navegação e dados
 
 ## Out of Scope (TCC)
 
@@ -98,4 +100,4 @@ Este documento evolui a cada transição de fase e marco do milestone.
 3. Audit de Out of Scope — razões ainda válidas?
 
 ---
-*Last updated: 2026-03-30 após inicialização*
+*Last updated: 2026-04-01 após Phase 1 (Foundation) completa*
