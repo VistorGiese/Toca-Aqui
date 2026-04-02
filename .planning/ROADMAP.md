@@ -65,7 +65,7 @@ Plans:
 Plans:
 - [x] 03-01: est-gig-applications — Corrigir EstGigApplications para listar candidaturas com valor_proposto e conectar botão de aceitar
 - [x] 03-02: accept-reject-logic — Validar/corrigir BandApplicationService e ContractService: aceitar uma candidatura, rejeitar demais, criar contrato (com transaction)
-- [ ] 03-03: contract-detail-confirm — Corrigir ContractDetail no app do artista: buscar contrato, exibir dados, implementar botão de confirmação conectado ao backend
+- [x] 03-03: contract-detail-confirm — Corrigir ContractDetail no app do artista: buscar contrato, exibir dados, implementar botão de confirmação conectado ao backend
 - [ ] 03-04: est-show-detail — Corrigir EstShowDetail para exibir show confirmado e notificação/feedback para artista aceito/recusado (REQ-07)
 **UI hint**: yes
 
@@ -111,6 +111,6 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete   | 2026-04-01 |
 | 2. Artist Application Flow | 1/3 | Complete    | 2026-04-02 |
-| 3. Accept & Contract Flow | 2/4 | In Progress|  |
+| 3. Accept & Contract Flow | 3/4 | In Progress|  |
 | 4. User Feed | 0/2 | Not started | - |
 | 5. Integration Polish | 0/3 | Not started | - |

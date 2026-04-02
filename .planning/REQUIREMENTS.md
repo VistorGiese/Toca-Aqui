@@ -85,7 +85,7 @@ Para a defesa, deve ser possível demonstrar:
 | REQ-11 | Phase 3 — Accept & Contract Flow | Complete |
 | REQ-12 | Phase 3 — Accept & Contract Flow | Complete |
 | REQ-13 | Phase 3 — Accept & Contract Flow | Complete |
-| REQ-14 | Phase 3 — Accept & Contract Flow | Pending |
+| REQ-14 | Phase 3 — Accept & Contract Flow | Complete |
 | REQ-15 | Phase 4 — User Feed | Pending |
 | REQ-16 | Phase 4 — User Feed | Pending |
 | REQ-17 | Phase 5 — Integration Polish | Pending |
