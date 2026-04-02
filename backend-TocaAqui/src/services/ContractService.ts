@@ -84,7 +84,7 @@ export class ContractService {
       evento_id: evento.id,
       ...contratadoId,
       perfil_estabelecimento_id: evento.perfil_estabelecimento_id,
-      status: ContractStatus.RASCUNHO,
+      status: ContractStatus.AGUARDANDO_ACEITE,
       // Snapshot contratante
       nome_contratante: estabelecimento.nome_estabelecimento,
       endereco_contratante: enderecoStr,
@@ -99,10 +99,10 @@ export class ContractService {
       duracao_minutos: duracao,
       genero_musical: estabelecimento.generos_musicais?.split(',')[0].trim() ?? null,
       local_evento: `${estabelecimento.nome_estabelecimento} - ${enderecoStr}`,
-      // Cachê — valores padrão para serem definidos na negociação
-      cache_total: 0,
+      // Cachê — semeado a partir do valor proposto pelo artista
+      cache_total: aplicacao.valor_proposto ?? 0,
       percentual_sinal: 50.00,
-      valor_sinal: 0,
+      valor_sinal: Math.round(((aplicacao.valor_proposto ?? 0) * 50) / 100 * 100) / 100,
       // Penalidades padrão conforme mini-contrato
       penalidade_cancelamento_72h: 0,
       penalidade_cancelamento_24_72h: 50,
@@ -271,8 +271,8 @@ export class ContractService {
       throw new AppError('Contrato não pode ser aceito neste status', 400);
     }
 
-    if (Number(contrato.cache_total) <= 0) {
-      throw new AppError('Defina o valor do cachê antes de aceitar o contrato', 400);
+    if (Number(contrato.cache_total) < 0) {
+      throw new AppError('Valor do cache invalido', 400);
     }
 
     const updateData: Partial<ContractModel> = {} as any;
