@@ -316,7 +316,7 @@ export class BandApplicationService {
 
     return aplicacoes.map((a: any) => ({
       id: a.id,
-      status: a.status,
+      status: a.status === 'rejeitado' ? 'recusado' : a.status,
       mensagem: a.mensagem,
       data_aplicacao: a.data_aplicacao,
       evento_id: a.evento_id,
@@ -325,6 +325,7 @@ export class BandApplicationService {
       horario_inicio: a.Event?.horario_inicio ?? null,
       horario_fim: a.Event?.horario_fim ?? null,
       nome_estabelecimento: a.Event?.EstablishmentProfile?.nome_estabelecimento ?? null,
+      valor_proposto: a.valor_proposto ?? null,
     }));
   }
 }
