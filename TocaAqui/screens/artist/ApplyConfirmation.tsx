@@ -43,6 +43,7 @@ export default function ApplyConfirmation() {
   const { user } = useAuth();
 
   const [mensagem, setMensagem] = useState("");
+  const [valorProposto, setValorProposto] = useState("");
   const [loading, setLoading] = useState(false);
   const [mediaArtista, setMediaArtista] = useState<number>(0);
   const [cidadeArtista, setCidadeArtista] = useState<string>("");
@@ -66,11 +67,18 @@ export default function ApplyConfirmation() {
       return;
     }
 
+    const valorNum = parseFloat(valorProposto);
+    if (!valorProposto.trim() || isNaN(valorNum) || valorNum <= 0) {
+      Alert.alert("Atencao", "Informe um valor proposto valido.");
+      return;
+    }
+
     setLoading(true);
     try {
       await bandApplicationService.applyToEvent({
         evento_id: eventId,
         mensagem: mensagem.trim(),
+        valor_proposto: valorNum,
       });
 
       Alert.alert(
@@ -147,6 +155,18 @@ export default function ApplyConfirmation() {
           value={mensagem}
           onChangeText={setMensagem}
           textAlignVertical="top"
+        />
+
+        {/* Valor Proposto */}
+        <Text style={styles.cardSectionTitle}>VALOR PROPOSTO</Text>
+        <Text style={styles.inputLabel}>Valor proposto (R$)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: 350"
+          placeholderTextColor={DS.textDis}
+          keyboardType="numeric"
+          value={valorProposto}
+          onChangeText={setValorProposto}
         />
 
         {/* Preview do Perfil */}
@@ -277,6 +297,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: DS.bgSurface,
     textAlignVertical: "top",
+  },
+  inputLabel: {
+    color: DS.white,
+    fontSize: 14,
+    marginBottom: 6,
+    fontWeight: '600' as const,
+    fontFamily: "Montserrat-SemiBold",
+  },
+  input: {
+    backgroundColor: DS.bgInput,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: DS.white,
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: DS.bgSurface,
   },
   profilePreviewCard: {
     backgroundColor: DS.bgCard,
