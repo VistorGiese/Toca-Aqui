@@ -80,7 +80,7 @@ export default function MyApplications() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={DS.accent} />
+        <ActivityIndicator size="large" color="#A78BFA" />
       </View>
     );
   }

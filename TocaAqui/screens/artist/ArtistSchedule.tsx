@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { contractService, Contract } from "@/http/contractService";
 import { userService } from "@/http/userService";
 import api from "@/http/api";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
   bg: "#09090F",
@@ -40,7 +40,7 @@ const MONTHS = [
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
 ];
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -109,8 +109,8 @@ export default function ArtistSchedule() {
   // Datas dos contratos aceitos como Set de "YYYY-MM-DD"
   const eventDates = new Set(
     acceptedContracts
-      .filter((c) => c.data_show)
-      .map((c) => c.data_show!.split("T")[0])
+      .filter((c) => c.data_evento)
+      .map((c) => c.data_evento!.split("T")[0])
   );
 
   const handlePrevMonth = () => {
@@ -141,13 +141,13 @@ export default function ArtistSchedule() {
   ];
 
   const upcomingGigs = acceptedContracts
-    .filter((c) => c.data_show && new Date(c.data_show) >= new Date())
-    .sort((a, b) => new Date(a.data_show!).getTime() - new Date(b.data_show!).getTime());
+    .filter((c) => c.data_evento && new Date(c.data_evento) >= new Date())
+    .sort((a, b) => new Date(a.data_evento!).getTime() - new Date(b.data_evento!).getTime());
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={DS.accent} />
+        <ActivityIndicator size="large" color="#A78BFA" />
       </View>
     );
   }
@@ -251,7 +251,7 @@ export default function ArtistSchedule() {
               key={c.id}
               contract={c}
               onPress={() =>
-                (navigation as any).navigate("ShowDetail", { contractId: c.id })
+                navigation.navigate("ShowDetail", { contractId: c.id })
               }
             />
           ))
@@ -306,7 +306,7 @@ const modalSt = StyleSheet.create({
 });
 
 function GigRow({ contract, onPress }: { contract: Contract; onPress: () => void }) {
-  const date = contract.data_show ? new Date(contract.data_show) : null;
+  const date = contract.data_evento ? new Date(contract.data_evento) : null;
   const monthLabel = date
     ? date.toLocaleDateString("pt-BR", { month: "short" }).toUpperCase()
     : "--";

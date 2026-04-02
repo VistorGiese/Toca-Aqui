@@ -92,7 +92,7 @@ export default function EstGigApplications() {
       </View>
 
       {loading
-        ? <View style={{flex:1,justifyContent:"center",alignItems:"center"}}><ActivityIndicator size="large" color={DS.accent} /></View>
+        ? <View style={{flex:1,justifyContent:"center",alignItems:"center"}}><ActivityIndicator size="large" color="#A78BFA" /></View>
         : <FlatList
             data={filtered}
             keyExtractor={i => String(i.id)}
