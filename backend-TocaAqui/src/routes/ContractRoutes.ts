@@ -9,6 +9,7 @@ import {
   getContractHistory,
   completeContractHandler,
   avaliarEstabelecimento,
+  avaliarArtista,
 } from '../controllers/ContractController';
 import { authMiddleware } from '../middleware/authmiddleware';
 import { validate } from '../middleware/validate';
@@ -42,5 +43,8 @@ router.put('/:id/concluir', authMiddleware, completeContractHandler);
 
 // Artista avalia estabelecimento após contrato concluído
 router.post('/:id/avaliar', authMiddleware, avaliarEstabelecimento);
+
+// Estabelecimento avalia artista apos contrato concluido
+router.post('/:id/avaliar-artista', authMiddleware, avaliarArtista);
 
 export default router;
