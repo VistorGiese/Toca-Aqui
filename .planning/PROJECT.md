@@ -60,11 +60,11 @@ O codebase já existe mas tem bugs em múltiplas camadas: fluxo de candidatura, 
 
 ## What Needs to Work (Active)
 
-- [ ] Fluxo de candidatura ponta-a-ponta (aplicar + listar + status)
-- [ ] Aceite de candidatura pelo estabelecimento com valor negociado
-- [ ] Geração automática de contrato após aceite
-- [ ] Recusa automática das demais candidaturas ao aceitar uma
-- [ ] Confirmação do contrato pelo artista
+- [x] Fluxo de candidatura ponta-a-ponta (aplicar + listar + status) — Validado na Phase 2
+- [x] Aceite de candidatura pelo estabelecimento com valor negociado — Validado na Phase 3
+- [x] Geração automática de contrato após aceite — Validado na Phase 3
+- [x] Recusa automática das demais candidaturas ao aceitar uma — Validado na Phase 3
+- [x] Confirmação do contrato pelo artista — Validado na Phase 3
 - [ ] Visualização de evento pelo usuário comum (feed + detalhe)
 - [ ] Dados reais nos perfis (nota_media, shows_realizados populados)
 
@@ -100,4 +100,4 @@ Este documento evolui a cada transição de fase e marco do milestone.
 3. Audit de Out of Scope — razões ainda válidas?
 
 ---
-*Last updated: 2026-04-01 após Phase 1 (Foundation) completa*
+*Last updated: 2026-04-02 após Phase 3 (Accept & Contract Flow) completa*
