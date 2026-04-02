@@ -8,6 +8,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
+import { contractService } from "@/http/contractService";
 import api from "@/http/api";
 
 const DS = {
@@ -36,6 +37,7 @@ export default function EstShowDetail() {
   const [contract, setContract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -73,6 +75,31 @@ export default function EstShowDetail() {
               Alert.alert("Erro", msg);
             } finally {
               setCancelling(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleComplete = () => {
+    Alert.alert(
+      "Marcar como realizado",
+      "Confirma que este show foi realizado com sucesso?",
+      [
+        { text: "Voltar", style: "cancel" },
+        {
+          text: "Confirmar",
+          onPress: async () => {
+            setCompleting(true);
+            try {
+              await contractService.completeContract(contractId);
+              await load();
+            } catch (err: any) {
+              const msg = err?.response?.data?.message || err?.response?.data?.error || "Erro ao concluir.";
+              Alert.alert("Erro", msg);
+            } finally {
+              setCompleting(false);
             }
           },
         },
@@ -205,6 +232,23 @@ export default function EstShowDetail() {
           </TouchableOpacity>
         )}
 
+        {contract.status === "aceito" && (
+          <TouchableOpacity
+            style={[s.btnComplete, completing && s.disabled]}
+            onPress={handleComplete}
+            disabled={completing}
+            activeOpacity={0.85}
+          >
+            {completing
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <>
+                  <FontAwesome5 name="check-circle" size={14} color="#fff" />
+                  <Text style={s.btnCompleteText}>MARCAR COMO REALIZADO</Text>
+                </>
+            }
+          </TouchableOpacity>
+        )}
+
         {isActive && (
           <TouchableOpacity
             style={[s.btnCancel, cancelling && s.disabled]}
@@ -275,6 +319,12 @@ const s = StyleSheet.create({
     flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, marginBottom: 12,
   },
   btnRateText: { fontFamily: "Montserrat-Bold", fontSize: 13, color: "#fff", letterSpacing: 0.5 },
+
+  btnComplete: {
+    backgroundColor: DS.success, borderRadius: 12, paddingVertical: 16,
+    flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, marginBottom: 12,
+  },
+  btnCompleteText: { fontFamily: "Montserrat-Bold", fontSize: 13, color: "#fff", letterSpacing: 0.5 },
 
   btnCancel: {
     borderWidth: 1.5, borderColor: DS.danger, borderRadius: 12, paddingVertical: 14,

@@ -3,13 +3,14 @@ import api from "./api";
 export interface Contract {
   id: number;
   evento_id: number;
-  artista_id: number;
-  estabelecimento_id: number;
-  status: "aguardando_aceite" | "aceito" | "cancelado" | "recusado" | "concluido";
-  cache_acordado: number;
+  artista_id?: number;
+  banda_id?: number;
+  perfil_estabelecimento_id?: number;
+  status: "rascunho" | "aguardando_aceite" | "aceito" | "cancelado" | "concluido";
+  cache_total?: number;
   horario_inicio?: string;
   horario_fim?: string;
-  data_show?: string;
+  data_evento?: string;
   nome_evento?: string;
   nome_estabelecimento?: string;
   cidade?: string;
@@ -42,6 +43,11 @@ const cancelContract = async (id: number): Promise<Contract> => {
   return response.data;
 };
 
+const completeContract = async (id: number): Promise<Contract> => {
+  const response = await api.put<Contract>(`/contratos/${id}/concluir`);
+  return response.data;
+};
+
 const avaliarEstabelecimento = async (
   contractId: number,
   payload: { nota: number; comentario?: string; tags?: string[] }
@@ -54,5 +60,6 @@ export const contractService = {
   getContractById,
   acceptContract,
   cancelContract,
+  completeContract,
   avaliarEstabelecimento,
 };
