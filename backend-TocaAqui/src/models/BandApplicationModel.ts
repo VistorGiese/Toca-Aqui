@@ -16,6 +16,7 @@ class BandApplicationModel extends Model {
   evento_id!: number;
   status!: ApplicationStatus;
   data_aplicacao!: Date;
+  valor_proposto?: number;
 }
 
 BandApplicationModel.init({
@@ -60,6 +61,10 @@ BandApplicationModel.init({
   data_aplicacao: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
+  },
+  valor_proposto: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
   },
 }, {
   sequelize,
