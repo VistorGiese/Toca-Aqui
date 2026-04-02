@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 04-user-feed 04-02-PLAN.md
-last_updated: "2026-04-02T16:36:48.261Z"
+status: executing
+stopped_at: Completed 05-integration-polish 05-01-PLAN.md
+last_updated: "2026-04-02T21:42:45.683Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 15
+  completed_plans: 14
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Fluxo ponta-a-ponta de contratação de show funcionando sem erros visíveis na defesa do TCC
-**Current focus:** Phase 03 — accept-contract-flow
+**Current focus:** Phase 05 — integration-polish
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 05 (integration-polish) — EXECUTING
+Plan: 3 of 3
+Status: Ready to execute
 Last activity: 2026-04-02
 
 Progress: [░░░░░░░░░░] 0%
@@ -62,6 +62,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P03 | 1 | 2 tasks | 2 files |
 | Phase 03 P04 | 10 | 2 tasks | 3 files |
 | Phase 04 P02 | 2 | 1 tasks | 1 files |
+| Phase 05-integration-polish P01 | 2 | 2 tasks | 4 files |
+| Phase 05-integration-polish P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +90,11 @@ Recent decisions affecting current work:
 - [Phase 03]: EstShowDetail field names corrected to match Contract interface: cache_total, data_evento, nome_contratado
 - [Phase 03]: Cast navigation as any for cross-navigator (stack->tab) navigation — ArtistTabs/ArtistSchedule after contract signing
 - [Phase 04]: confirmedBand null-check is single source of truth for artist availability — View instead of TouchableOpacity for unconfirmed state
+- [Phase 05-integration-polish]: completeContractHandler restricted to contratante role — establishment completes show, not artist
+- [Phase 05-integration-polish]: MARCAR COMO REALIZADO button shows only for status=aceito — only fully-confirmed contracts can be completed
+- [Phase 05-integration-polish]: avaliarArtista mirrors avaliarEstabelecimento pattern — ownership check, concluido guard, duplicate prevention, AvaliacaoShowModel.create
+- [Phase 05-integration-polish]: nota_media recalculated by averaging nota_artista across all avaliacoes linked to artist's concluded contract events, rounded to 1 decimal place
+- [Phase 05-integration-polish]: rateArtist body changed from { contrato_id, ...data } to just data — contratoId now in URL path for /contratos/:id/avaliar-artista
 
 ### Pending Todos
 
@@ -102,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T16:35:03.958Z
-Stopped at: Completed 04-user-feed 04-02-PLAN.md
+Last session: 2026-04-02T21:42:33.403Z
+Stopped at: Completed 05-integration-polish 05-01-PLAN.md
 Resume file: None

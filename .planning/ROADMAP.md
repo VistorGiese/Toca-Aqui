@@ -96,9 +96,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: profile-stats — Implementar trigger em ContractService para incrementar `shows_realizados` e recomputar `nota_media` ao marcar contrato como `concluido`
-- [ ] 05-02: onpress-audit — Auditar todos os `onPress={() => {}}` nas telas do fluxo do TCC; implementar navegação correta ou esconder botões irrelevantes
-- [ ] 05-03: loading-states — Adicionar ActivityIndicator/skeleton em todas as telas de listagem e detalhe do fluxo principal
+- [x] 05-01-PLAN.md — Rota PUT /contratos/:id/concluir + botão "Marcar como Realizado" em EstShowDetail
+- [x] 05-02-PLAN.md — Rota POST /contratos/:id/avaliar-artista + fix establishmentService.rateArtist endpoint
+- [ ] 05-03-PLAN.md — Standardizar ActivityIndicator color, auditar onPress handlers, verificação ponta-a-ponta
 **UI hint**: yes
 
 ## Progress
@@ -113,4 +113,4 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
 | 2. Artist Application Flow | 1/3 | Complete    | 2026-04-02 |
 | 3. Accept & Contract Flow | 3/4 | In Progress|  |
 | 4. User Feed | 1/2 | In Progress|  |
-| 5. Integration Polish | 0/3 | Not started | - |
+| 5. Integration Polish | 2/3 | In Progress|  |
