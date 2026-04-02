@@ -77,7 +77,7 @@ Para a defesa, deve ser possível demonstrar:
 | REQ-03 | Phase 1 — Foundation | Complete |
 | REQ-04 | Phase 2 — Artist Application Flow | Complete |
 | REQ-05 | Phase 2 — Artist Application Flow | Complete |
-| REQ-06 | Phase 2 — Artist Application Flow | Pending |
+| REQ-06 | Phase 2 — Artist Application Flow | Complete |
 | REQ-07 | Phase 3 — Accept & Contract Flow | Pending |
 | REQ-08 | Phase 3 — Accept & Contract Flow | Pending |
 | REQ-09 | Phase 3 — Accept & Contract Flow | Pending |

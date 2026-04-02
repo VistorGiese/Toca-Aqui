@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-artist-application-flow 02-02-apply-to-gig-PLAN.md
-last_updated: "2026-04-02T03:07:45.849Z"
+status: verifying
+stopped_at: Completed 02-artist-application-flow 02-03-my-applications-status-PLAN.md
+last_updated: "2026-04-02T03:12:09.495Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 Phase: 02 (artist-application-flow) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-02
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P01 | 5 | 1 tasks | 2 files |
 | Phase 02 P01 | 5 | 2 tasks | 3 files |
 | Phase 02-artist-application-flow P02 | 15 | 2 tasks | 7 files |
+| Phase 02 P03 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Server-side status filter preferred over client-side for correctness — getBookings accepts params and backend filters by status query param
 - [Phase 02]: valor_proposto obrigatorio no Zod schema — artista deve informar valor ao se candidatar (REQ-05)
 - [Phase 02]: parseFloat no frontend antes de enviar numero ao backend — z.number() rejeita strings de TextInput
+- [Phase 02]: Status normalization at response mapping layer — enum ApplicationStatus.REJEITADO unchanged, normalization only in getApplicationsByArtist map()
+- [Phase 02]: useFocusEffect replaces useEffect entirely in MyApplications — fires on both initial mount and re-focus
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T03:07:45.845Z
-Stopped at: Completed 02-artist-application-flow 02-02-apply-to-gig-PLAN.md
+Last session: 2026-04-02T03:12:09.491Z
+Stopped at: Completed 02-artist-application-flow 02-03-my-applications-status-PLAN.md
 Resume file: None
