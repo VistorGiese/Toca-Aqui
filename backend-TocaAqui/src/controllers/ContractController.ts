@@ -175,6 +175,16 @@ async function getOtherPartyUserId(
   }
 }
 
+export const completeContractHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuario nao identificado', 401);
+  const contractId = parseInt(req.params.id as string);
+  const role = await contractService.getUserRole(contractId, req.user.id);
+  if (role !== 'contratante') throw new AppError('Apenas o contratante pode concluir o contrato', 403);
+  const contrato = await contractService.completeContract(contractId);
+  await redisService.invalidatePattern('contratos:*');
+  res.json(contrato);
+});
+
 export const avaliarEstabelecimento = asyncHandler(async (req: AuthRequest, res: Response) => {
   const usuario_id = req.user?.id;
   if (!usuario_id) throw new AppError('Usuário não identificado', 401);
@@ -220,4 +230,67 @@ export const avaliarEstabelecimento = asyncHandler(async (req: AuthRequest, res:
   });
 
   res.status(201).json({ message: 'Avaliação registrada com sucesso', avaliacao });
+});
+
+export const avaliarArtista = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw new AppError('Usuario nao identificado', 401);
+
+  const contrato_id = parseInt(req.params.id as string);
+  const { nota, comentario, tags } = req.body;
+
+  if (!nota || nota < 1 || nota > 5) {
+    throw new AppError('Nota deve ser entre 1 e 5', 400);
+  }
+
+  const contract = await ContractModel.findByPk(contrato_id);
+  if (!contract) throw new AppError('Contrato nao encontrado', 404);
+  if (contract.status !== 'concluido') throw new AppError('So e possivel avaliar contratos concluidos', 400);
+
+  // Verify caller is the contratante (establishment owner)
+  const estab = await EstablishmentProfileModel.findByPk(contract.perfil_estabelecimento_id);
+  if (!estab || estab.usuario_id !== usuario_id) throw new AppError('Acesso negado', 403);
+
+  // Check for duplicate rating
+  const existing = await AvaliacaoShowModel.findOne({
+    where: { usuario_id, agendamento_id: contract.evento_id },
+  });
+  if (existing) throw new AppError('Voce ja avaliou este artista', 400);
+
+  // Create evaluation record
+  const avaliacao = await AvaliacaoShowModel.create({
+    usuario_id,
+    agendamento_id: contract.evento_id,
+    nota_artista: nota,
+    nota_local: nota,
+    comentario: comentario || null,
+    tags_artista: tags || [],
+    tags_local: [],
+  });
+
+  // Recalculate nota_media for the artist
+  const artistId = contract.artista_id;
+  if (artistId) {
+    const artistContracts = await ContractModel.findAll({
+      where: { artista_id: artistId, status: 'concluido' },
+      attributes: ['evento_id'],
+    });
+    const eventoIds = artistContracts.map((c: any) => c.evento_id);
+
+    if (eventoIds.length > 0) {
+      const avaliacoes = await AvaliacaoShowModel.findAll({
+        where: { agendamento_id: eventoIds },
+        attributes: ['nota_artista'],
+      });
+      if (avaliacoes.length > 0) {
+        const avg = avaliacoes.reduce((sum: number, a: any) => sum + a.nota_artista, 0) / avaliacoes.length;
+        await ArtistProfileModel.update(
+          { nota_media: Math.round(avg * 10) / 10 },
+          { where: { id: artistId } }
+        );
+      }
+    }
+  }
+
+  res.status(201).json({ message: 'Avaliacao registrada com sucesso', avaliacao });
 });

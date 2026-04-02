@@ -7,6 +7,7 @@ import {
   acceptContract,
   cancelContract,
   getContractHistory,
+  completeContractHandler,
   avaliarEstabelecimento,
 } from '../controllers/ContractController';
 import { authMiddleware } from '../middleware/authmiddleware';
@@ -35,6 +36,9 @@ router.put('/:id/cancelar', authMiddleware, validate(cancelContractSchema), canc
 
 // Histórico de edições do contrato
 router.get('/:id/historico', authMiddleware, getContractHistory);
+
+// Concluir contrato (apenas contratante)
+router.put('/:id/concluir', authMiddleware, completeContractHandler);
 
 // Artista avalia estabelecimento após contrato concluído
 router.post('/:id/avaliar', authMiddleware, avaliarEstabelecimento);
