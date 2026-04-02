@@ -5,6 +5,7 @@ import BandModel from '../models/BandModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import BandMemberModel from '../models/BandMemberModel';
 import ArtistProfileModel from '../models/ArtistProfileModel';
+import ContractModel from '../models/ContractModel';
 import { createNotification } from './NotificationService';
 import { NotificationType } from '../models/NotificationModel';
 import { AppError } from '../errors/AppError';
@@ -210,7 +211,7 @@ export class BandApplicationService {
       }
     }
 
-    return aplicacao;
+    return { aplicacao, contrato };
   }
 
   async reject(applicationId: string | number) {
@@ -314,18 +315,26 @@ export class BandApplicationService {
       order: [['data_aplicacao', 'DESC']],
     });
 
-    return aplicacoes.map((a: any) => ({
-      id: a.id,
-      status: a.status === 'rejeitado' ? 'recusado' : a.status,
-      mensagem: a.mensagem,
-      data_aplicacao: a.data_aplicacao,
-      evento_id: a.evento_id,
-      nome_evento: a.Event?.titulo_evento ?? null,
-      data_show: a.Event?.data_show ?? null,
-      horario_inicio: a.Event?.horario_inicio ?? null,
-      horario_fim: a.Event?.horario_fim ?? null,
-      nome_estabelecimento: a.Event?.EstablishmentProfile?.nome_estabelecimento ?? null,
-      valor_proposto: a.valor_proposto ?? null,
+    return Promise.all(aplicacoes.map(async (a: any) => {
+      let contrato_id: number | null = null;
+      if (a.status === 'aceito') {
+        const contrato = await ContractModel.findOne({ where: { aplicacao_id: a.id }, attributes: ['id'] });
+        contrato_id = contrato?.id ?? null;
+      }
+      return {
+        id: a.id,
+        status: a.status === 'rejeitado' ? 'recusado' : a.status,
+        mensagem: a.mensagem,
+        data_aplicacao: a.data_aplicacao,
+        evento_id: a.evento_id,
+        nome_evento: a.Event?.titulo_evento ?? null,
+        data_show: a.Event?.data_show ?? null,
+        horario_inicio: a.Event?.horario_inicio ?? null,
+        horario_fim: a.Event?.horario_fim ?? null,
+        nome_estabelecimento: a.Event?.EstablishmentProfile?.nome_estabelecimento ?? null,
+        valor_proposto: a.valor_proposto ?? null,
+        contrato_id,
+      };
     }));
   }
 }
