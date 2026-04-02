@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bandApplicationService, BandApplication } from "@/http/bandApplicationService";
 import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
@@ -56,9 +56,11 @@ export default function MyApplications() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchApplications();
+    }, [fetchApplications])
+  );
 
   const getFiltered = (): BandApplication[] => {
     switch (activeTab) {
@@ -67,7 +69,7 @@ export default function MyApplications() {
       case "Aceitas":
         return applications.filter((a) => a.status === "aceito");
       case "Recusadas":
-        return applications.filter((a) => a.status === "recusado" || a.status === "cancelado");
+        return applications.filter((a) => a.status === "recusado");
       default:
         return [];
     }
@@ -199,6 +201,12 @@ function ApplicationCard({ application }: { application: BandApplication }) {
             {application.horario_inicio} — {application.horario_fim}
           </Text>
         ) : null}
+
+        {application.valor_proposto != null && (
+          <Text style={{ color: DS.textSec, fontSize: 13, marginTop: 2 }}>
+            Valor proposto: R$ {Number(application.valor_proposto).toFixed(2).replace('.', ',')}
+          </Text>
+        )}
 
         {isPending ? (
           <View style={cardStyles.statusBadgePending}>
