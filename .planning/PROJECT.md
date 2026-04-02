@@ -65,7 +65,7 @@ O codebase já existe mas tem bugs em múltiplas camadas: fluxo de candidatura, 
 - [x] Geração automática de contrato após aceite — Validado na Phase 3
 - [x] Recusa automática das demais candidaturas ao aceitar uma — Validado na Phase 3
 - [x] Confirmação do contrato pelo artista — Validado na Phase 3
-- [ ] Visualização de evento pelo usuário comum (feed + detalhe)
+- [x] Visualização de evento pelo usuário comum (feed + detalhe) — Validado na Phase 4
 - [ ] Dados reais nos perfis (nota_media, shows_realizados populados)
 
 ## Out of Scope (TCC)
@@ -100,4 +100,4 @@ Este documento evolui a cada transição de fase e marco do milestone.
 3. Audit de Out of Scope — razões ainda válidas?
 
 ---
-*Last updated: 2026-04-02 após Phase 3 (Accept & Contract Flow) completa*
+*Last updated: 2026-04-02 após Phase 4 (User Feed) completa*
