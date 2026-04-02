@@ -169,7 +169,7 @@ const createEstablishmentProfile = async (data: {
 };
 
 const rateArtist = async (contratoId: number, data: { nota: number; comentario?: string; tags?: string[] }): Promise<any> => {
-  const r = await api.post("/avaliacoes", { contrato_id: contratoId, ...data });
+  const r = await api.post(`/contratos/${contratoId}/avaliar-artista`, data);
   return r.data;
 };
 
