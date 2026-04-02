@@ -11,7 +11,7 @@ O codebase já existe mas está quebrado em múltiplas camadas. O caminho para a
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Foundation** - Corrigir bugs críticos de rota, navegação e IP hardcoded que bloqueiam todos os outros fluxos (completed 2026-04-01)
-- [ ] **Phase 2: Artist Application Flow** - Artista navega eventos, se candidata com valor proposto, visualiza status das candidaturas
+- [x] **Phase 2: Artist Application Flow** - Artista navega eventos, se candidata com valor proposto, visualiza status das candidaturas (completed 2026-04-02)
 - [ ] **Phase 3: Accept & Contract Flow** - Estabelecimento aceita candidatura, sistema recusa as demais, contrato gerado, artista confirma
 - [ ] **Phase 4: User Feed** - Usuário comum navega feed de eventos e visualiza detalhe com artista confirmado
 - [ ] **Phase 5: Integration Polish** - Dados reais em perfis, smoke test ponta-a-ponta, onPress handlers faltantes, loading states
@@ -110,7 +110,7 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete   | 2026-04-01 |
-| 2. Artist Application Flow | 1/3 | In Progress|  |
+| 2. Artist Application Flow | 1/3 | Complete    | 2026-04-02 |
 | 3. Accept & Contract Flow | 0/4 | Not started | - |
 | 4. User Feed | 0/2 | Not started | - |
 | 5. Integration Polish | 0/3 | Not started | - |
