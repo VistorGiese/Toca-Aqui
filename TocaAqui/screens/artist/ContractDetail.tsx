@@ -158,9 +158,9 @@ export default function ContractDetail() {
     <View style={styles.root}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <View>
           <FontAwesome5 name="bars" size={18} color={DS.white} />
-        </TouchableOpacity>
+        </View>
         <Text style={styles.brandName}>TOCA AQUI</Text>
         <FontAwesome5 name="music" size={18} color={DS.accent} />
       </View>

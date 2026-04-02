@@ -157,9 +157,9 @@ export default function ArtistSchedule() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <View>
             <FontAwesome5 name="bars" size={18} color={DS.white} />
-          </TouchableOpacity>
+          </View>
           <Text style={styles.brandName}>TOCA AQUI</Text>
           <View style={styles.avatarSmall}>
             <FontAwesome5 name="user" size={14} color={DS.accent} />

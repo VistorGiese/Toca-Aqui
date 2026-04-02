@@ -131,9 +131,9 @@ export default function UserShowDetail({ route, navigation }: Props) {
           <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.goBack()}>
             <FontAwesome5 name="arrow-left" size={16} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn}>
+          <View style={styles.actionBtn}>
             <FontAwesome5 name="share-alt" size={16} color="#FFFFFF" />
-          </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.coverInfo}>
           <View style={[styles.genreBadge, { backgroundColor: genreColor + "33" }]}>
@@ -276,15 +276,15 @@ export default function UserShowDetail({ route, navigation }: Props) {
               </View>
             ) : null}
             <View style={styles.venueActions}>
-              <TouchableOpacity style={styles.venueBtn}>
+              <View style={styles.venueBtn}>
                 <FontAwesome5 name="directions" size={12} color="#A78BFA" />
                 <Text style={styles.venueBtnText}>Como chegar</Text>
-              </TouchableOpacity>
+              </View>
               {show.EstablishmentProfile?.telefone_contato ? (
-                <TouchableOpacity style={styles.venueBtn}>
+                <View style={styles.venueBtn}>
                   <FontAwesome5 name="phone" size={12} color="#A78BFA" />
                   <Text style={styles.venueBtnText}>Contato</Text>
-                </TouchableOpacity>
+                </View>
               ) : null}
             </View>
           </View>

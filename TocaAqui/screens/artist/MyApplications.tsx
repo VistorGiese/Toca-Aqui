@@ -93,9 +93,9 @@ export default function MyApplications() {
           <FontAwesome5 name="arrow-left" size={16} color={DS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Minhas candidaturas</Text>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <View>
           <FontAwesome5 name="ellipsis-v" size={16} color={DS.white} />
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tabs */}

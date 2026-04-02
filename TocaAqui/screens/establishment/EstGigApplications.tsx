@@ -50,9 +50,9 @@ export default function EstGigApplications() {
             {item.shows_realizados != null && <Text style={s.metaText}>· {item.shows_realizados} shows</Text>}
           </View>
         </View>
-        <TouchableOpacity hitSlop={{top:8,bottom:8,left:8,right:8}}>
+        <View>
           <FontAwesome5 name="heart" size={16} color={item.favorited ? DS.accent : DS.border} />
-        </TouchableOpacity>
+        </View>
       </View>
       {item.mensagem && <Text style={s.message} numberOfLines={2}>{item.mensagem}</Text>}
       <Text style={s.valorLine}>
