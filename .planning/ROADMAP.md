@@ -80,7 +80,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: user-feed — Corrigir UserFeed para buscar eventos reais com loading state e exibir dados corretos
+- [x] 04-01: user-feed — Corrigir UserFeed para buscar eventos reais com loading state e exibir dados corretos
 - [ ] 04-02: user-show-detail — Corrigir UserShowDetail para exibir todos os campos do evento e artista confirmado (se contrato aceito)
 **UI hint**: yes
 
@@ -112,5 +112,5 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation | 3/3 | Complete   | 2026-04-01 |
 | 2. Artist Application Flow | 1/3 | Complete    | 2026-04-02 |
 | 3. Accept & Contract Flow | 3/4 | In Progress|  |
-| 4. User Feed | 0/2 | Not started | - |
+| 4. User Feed | 1/2 | In Progress|  |
 | 5. Integration Polish | 0/3 | Not started | - |

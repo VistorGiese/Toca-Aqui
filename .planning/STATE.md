@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 03-accept-contract-flow 03-04-PLAN.md
-last_updated: "2026-04-02T10:28:10.088Z"
+status: executing
+stopped_at: Completed 04-user-feed 04-01-PLAN.md
+last_updated: "2026-04-02T16:34:19.813Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Fluxo ponta-a-ponta de contratação de show funcionando sem erros visíveis na defesa do TCC
-**Current focus:** Phase 03 — accept-contract-flow
+**Current focus:** Phase 04 — user-feed
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 04 (user-feed) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-04-02
 
 Progress: [░░░░░░░░░░] 0%
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P01 | 8 | 2 tasks | 3 files |
 | Phase 03 P03 | 1 | 2 tasks | 2 files |
 | Phase 03 P04 | 10 | 2 tasks | 3 files |
+| Phase 04 P01 | 5 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 03]: EstAcceptContract navigates to EstShowDetail with contractId from acceptApplication response; goBack only as fallback when contractId is missing
 - [Phase 03]: EstShowDetail field names corrected to match Contract interface: cache_total, data_evento, nome_contratado
 - [Phase 03]: Cast navigation as any for cross-navigator (stack->tab) navigation — ArtistTabs/ArtistSchedule after contract signing
+- [Phase 04]: titulo_evento is the single source of truth for event titles — no fallback to nome_banda
+- [Phase 04]: Hoje filter uses esta_hoje=true param, backend filters data_show within today 00:00-23:59
 
 ### Pending Todos
 
@@ -100,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T10:21:29.614Z
-Stopped at: Completed 03-accept-contract-flow 03-04-PLAN.md
+Last session: 2026-04-02T16:34:19.809Z
+Stopped at: Completed 04-user-feed 04-01-PLAN.md
 Resume file: None
