@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 02-artist-application-flow 02-03-my-applications-status-PLAN.md
-last_updated: "2026-04-02T03:13:03.862Z"
+status: executing
+stopped_at: Completed 03-accept-contract-flow 03-01-PLAN.md
+last_updated: "2026-04-02T10:16:58.115Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 10
+  completed_plans: 8
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Fluxo ponta-a-ponta de contratação de show funcionando sem erros visíveis na defesa do TCC
-**Current focus:** Phase 02 — artist-application-flow
+**Current focus:** Phase 03 — accept-contract-flow
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 03 (accept-contract-flow) — EXECUTING
+Plan: 3 of 4
+Status: Ready to execute
 Last activity: 2026-04-02
 
 Progress: [░░░░░░░░░░] 0%
@@ -57,6 +57,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P01 | 5 | 2 tasks | 3 files |
 | Phase 02-artist-application-flow P02 | 15 | 2 tasks | 7 files |
 | Phase 02 P03 | 2 | 2 tasks | 2 files |
+| Phase 03 P02 | 8 | 2 tasks | 3 files |
+| Phase 03 P01 | 8 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -76,6 +78,9 @@ Recent decisions affecting current work:
 - [Phase 02]: parseFloat no frontend antes de enviar numero ao backend — z.number() rejeita strings de TextInput
 - [Phase 02]: Status normalization at response mapping layer — enum ApplicationStatus.REJEITADO unchanged, normalization only in getApplicationsByArtist map()
 - [Phase 02]: useFocusEffect replaces useEffect entirely in MyApplications — fires on both initial mount and re-focus
+- [Phase 03]: Contract generated from application uses AGUARDANDO_ACEITE status and valor_proposto as cache seed
+- [Phase 03]: BandApplicationService.accept() returns composite { aplicacao, contrato } to expose contrato.id upstream
+- [Phase 03]: valor_proposto displayed with pt-BR currency format using toLocaleString, null check uses != null to handle both null and undefined
 
 ### Pending Todos
 
@@ -90,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T03:12:09.491Z
-Stopped at: Completed 02-artist-application-flow 02-03-my-applications-status-PLAN.md
+Last session: 2026-04-02T10:16:58.111Z
+Stopped at: Completed 03-accept-contract-flow 03-01-PLAN.md
 Resume file: None

@@ -80,11 +80,11 @@ Para a defesa, deve ser possível demonstrar:
 | REQ-06 | Phase 2 — Artist Application Flow | Complete |
 | REQ-07 | Phase 3 — Accept & Contract Flow | Pending |
 | REQ-08 | Phase 3 — Accept & Contract Flow | Pending |
-| REQ-09 | Phase 3 — Accept & Contract Flow | Pending |
-| REQ-10 | Phase 3 — Accept & Contract Flow | Pending |
-| REQ-11 | Phase 3 — Accept & Contract Flow | Pending |
-| REQ-12 | Phase 3 — Accept & Contract Flow | Pending |
-| REQ-13 | Phase 3 — Accept & Contract Flow | Pending |
+| REQ-09 | Phase 3 — Accept & Contract Flow | Complete |
+| REQ-10 | Phase 3 — Accept & Contract Flow | Complete |
+| REQ-11 | Phase 3 — Accept & Contract Flow | Complete |
+| REQ-12 | Phase 3 — Accept & Contract Flow | Complete |
+| REQ-13 | Phase 3 — Accept & Contract Flow | Complete |
 | REQ-14 | Phase 3 — Accept & Contract Flow | Pending |
 | REQ-15 | Phase 4 — User Feed | Pending |
 | REQ-16 | Phase 4 — User Feed | Pending |
