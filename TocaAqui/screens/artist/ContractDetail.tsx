@@ -72,8 +72,11 @@ export default function ContractDetail() {
               await contractService.acceptContract(contractId);
               Alert.alert(
                 "Contrato assinado!",
-                "Parabéns! O show foi confirmado.",
-                [{ text: "OK", onPress: () => navigation.goBack() }]
+                "Parabéns! O show foi confirmado. Abrindo sua agenda...",
+                [{
+                  text: "OK",
+                  onPress: () => (navigation as any).navigate("ArtistTabs", { screen: "ArtistSchedule" }),
+                }]
               );
             } catch (err: any) {
               const msg = err?.response?.data?.message || "Erro ao assinar o contrato.";
@@ -132,8 +135,8 @@ export default function ContractDetail() {
 
   const refNumber = `SE-2026-${String(contract.id).padStart(4, "0")}-GIG`;
 
-  const formattedDate = contract.data_show
-    ? new Date(contract.data_show).toLocaleDateString("pt-BR", {
+  const formattedDate = contract.data_evento
+    ? new Date(contract.data_evento).toLocaleDateString("pt-BR", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -222,7 +225,7 @@ export default function ContractDetail() {
             </View>
             <Text style={styles.termValue}>
               R${" "}
-              {Number(contract.cache_acordado || 0).toLocaleString("pt-BR", {
+              {Number(contract.cache_total || 0).toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
               })}
             </Text>
