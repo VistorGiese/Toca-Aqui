@@ -95,13 +95,13 @@ export default function UserShowDetail({ route, navigation }: Props) {
   const imageColor = show.genero_musical
     ? getGenreColor(show.genero_musical) + "55"
     : "#2D1B4E";
-  const artistName = show.Contract?.Band?.nome_banda || show.titulo_evento;
+  const confirmedBand = show.Contract?.Band ?? null;
+  const artistId = confirmedBand?.id ?? null; // null quando sem artista confirmado
   const venue = show.EstablishmentProfile?.nome_estabelecimento || "";
   const address = buildAddress(show);
   const attendees = show.ingressos_vendidos ?? 0;
   const rating =
     avaliacoes && avaliacoes.total > 0 ? avaliacoes.media_artista : null;
-  const artistId = show.Contract?.Band?.id ?? 1;
 
   function goToCheckout() {
     navigation.navigate("UserCheckout", {
@@ -113,6 +113,7 @@ export default function UserShowDetail({ route, navigation }: Props) {
   }
 
   function goToArtist() {
+    if (!artistId) return; // guard: nunca navegar sem artista real
     navigation.navigate("UserArtistProfile", { artistId });
   }
 
@@ -232,23 +233,36 @@ export default function UserShowDetail({ route, navigation }: Props) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>O Artista</Text>
-          <TouchableOpacity style={styles.artistCard} onPress={goToArtist} activeOpacity={0.85}>
-            <View style={styles.artistAvatar}>
-              <FontAwesome5 name="microphone" size={20} color="#A78BFA" />
-            </View>
-            <View style={styles.artistInfo}>
-              <Text style={styles.artistName}>{artistName}</Text>
-              {show.Contract?.Band?.generos_musicais?.length ? (
-                <Text style={styles.artistBio} numberOfLines={2}>
-                  {show.Contract.Band.generos_musicais.join(", ")}
-                </Text>
-              ) : null}
-            </View>
-            <TouchableOpacity style={styles.viewProfileBtn} onPress={goToArtist}>
-              <Text style={styles.viewProfileText}>ver perfil completo</Text>
-              <FontAwesome5 name="chevron-right" size={10} color="#A78BFA" />
+          {confirmedBand ? (
+            <TouchableOpacity style={styles.artistCard} onPress={goToArtist} activeOpacity={0.85}>
+              <View style={styles.artistAvatar}>
+                <FontAwesome5 name="microphone" size={20} color="#A78BFA" />
+              </View>
+              <View style={styles.artistInfo}>
+                <Text style={styles.artistName}>{confirmedBand.nome_banda}</Text>
+                {confirmedBand.generos_musicais?.length ? (
+                  <Text style={styles.artistBio} numberOfLines={2}>
+                    {confirmedBand.generos_musicais.join(", ")}
+                  </Text>
+                ) : null}
+              </View>
+              <TouchableOpacity style={styles.viewProfileBtn} onPress={goToArtist}>
+                <Text style={styles.viewProfileText}>ver perfil completo</Text>
+                <FontAwesome5 name="chevron-right" size={10} color="#A78BFA" />
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
+          ) : (
+            <View style={styles.artistCard}>
+              <View style={styles.artistAvatar}>
+                <FontAwesome5 name="microphone" size={20} color="#555577" />
+              </View>
+              <View style={styles.artistInfo}>
+                <Text style={[styles.artistName, { color: "#555577" }]}>
+                  Artista a ser confirmado
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
