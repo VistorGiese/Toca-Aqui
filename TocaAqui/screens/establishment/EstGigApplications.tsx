@@ -55,11 +55,16 @@ export default function EstGigApplications() {
         </TouchableOpacity>
       </View>
       {item.mensagem && <Text style={s.message} numberOfLines={2}>{item.mensagem}</Text>}
+      <Text style={s.valorLine}>
+        Proposta: {item.valor_proposto != null
+          ? `R$ ${Number(item.valor_proposto).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+          : "A combinar"}
+      </Text>
       <View style={s.actions}>
         <TouchableOpacity style={s.viewBtn} onPress={() => navigation.navigate("EstArtistProfile", { artistId: item.artista_id ?? item.banda_id ?? 0 })} activeOpacity={0.8}>
           <Text style={s.viewBtnText}>VER PERFIL</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.acceptBtn} onPress={() => navigation.navigate("EstAcceptContract", { applicationId: item.id, artistName: item.nome_artista ?? "Artista", gigTitle })} activeOpacity={0.8}>
+        <TouchableOpacity style={s.acceptBtn} onPress={() => navigation.navigate("EstAcceptContract", { applicationId: item.id, artistId: item.artista_id ?? item.banda_id, artistName: item.nome_artista ?? "Artista", gigTitle, valorProposto: item.valor_proposto })} activeOpacity={0.8}>
           <Text style={s.acceptBtnText}>ACEITAR</Text>
         </TouchableOpacity>
       </View>
@@ -121,6 +126,7 @@ const s = StyleSheet.create({
   rating:{fontFamily:"Montserrat-SemiBold",fontSize:12,color:"#F39C12"},
   metaText:{fontFamily:"Montserrat-Regular",fontSize:12,color:DS.textSecondary},
   message:{fontFamily:"Montserrat-Regular",fontSize:13,color:DS.textSecondary,marginTop:10,lineHeight:20,borderTopWidth:1,borderTopColor:DS.border,paddingTop:10},
+  valorLine:{fontFamily:"Montserrat-SemiBold",fontSize:13,color:DS.cyan,marginTop:8,paddingTop:8,borderTopWidth:1,borderTopColor:DS.border},
   actions:{flexDirection:"row",gap:10,marginTop:12},
   viewBtn:{flex:1,borderWidth:1,borderColor:DS.accent,borderRadius:10,paddingVertical:10,alignItems:"center"},
   viewBtnText:{fontFamily:"Montserrat-Bold",fontSize:12,color:DS.accent},
