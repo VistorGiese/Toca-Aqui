@@ -80,8 +80,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [x] 04-01: user-feed — Corrigir UserFeed para buscar eventos reais com loading state e exibir dados corretos
-- [ ] 04-02: user-show-detail — Corrigir UserShowDetail para exibir todos os campos do evento e artista confirmado (se contrato aceito)
+- [ ] 04-01: user-feed — Corrigir UserFeed para buscar eventos reais com loading state e exibir dados corretos
+- [x] 04-02: user-show-detail — Corrigir UserShowDetail para exibir todos os campos do evento e artista confirmado (se contrato aceito)
 **UI hint**: yes
 
 ### Phase 5: Integration Polish
