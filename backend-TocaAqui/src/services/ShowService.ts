@@ -16,6 +16,7 @@ class ShowService {
     data_fim?: string;
     esta_semana?: boolean;
     fim_de_semana?: boolean;
+    esta_hoje?: boolean;
     page?: number;
     limit?: number;
   }): Promise<{ shows: any[]; total: number; page: number; totalPages: number }> {
@@ -52,6 +53,10 @@ class ShowService {
       domingo.setDate(sabado.getDate() + 1);
       domingo.setHours(23, 59, 59, 999);
       whereClause.data_show = { [Op.between]: [sabado, domingo] };
+    } else if (params.esta_hoje) {
+      const fimHoje = new Date(hoje);
+      fimHoje.setHours(23, 59, 59, 999);
+      whereClause.data_show = { [Op.between]: [hoje, fimHoje] };
     } else {
       whereClause.data_show = { [Op.gte]: hoje };
     }
