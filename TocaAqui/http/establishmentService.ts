@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
 
 export interface Gig {
@@ -24,13 +25,14 @@ export interface Candidatura {
   artista_id?: number;
   banda_id?: number;
   mensagem?: string;
-  status: "pendente" | "aceito" | "recusado";
+  status: "pendente" | "aceito" | "rejeitado";
   nome_artista?: string;
   foto_artista?: string;
   genero?: string;
   nota_media?: number;
   shows_realizados?: number;
   favorited?: boolean;
+  valor_proposto?: number;
 }
 
 export interface EstablishmentProfile {
@@ -104,17 +106,17 @@ const deleteGig = async (id: number): Promise<void> => {
 };
 
 const getGigApplications = async (eventoId: number): Promise<Candidatura[]> => {
-  const r = await api.get(`/band-applications/${eventoId}`);
+  const r = await api.get(`/eventos/${eventoId}`);
   return toArray<Candidatura>(r.data);
 };
 
 const acceptApplication = async (applicationId: number): Promise<any> => {
-  const r = await api.put(`/band-applications/${applicationId}/aceitar`);
+  const r = await api.put(`/eventos/${applicationId}/aceitar`);
   return r.data;
 };
 
 const rejectApplication = async (applicationId: number): Promise<any> => {
-  const r = await api.put(`/band-applications/${applicationId}/recusar`);
+  const r = await api.put(`/eventos/${applicationId}/recusar`);
   return r.data;
 };
 
@@ -144,7 +146,9 @@ const getMyEstablishmentProfile = async (): Promise<EstablishmentProfile> => {
   const user = data?.user ?? data;
   const profiles: any[] = user?.establishment_profiles ?? [];
   if (profiles.length === 0) throw new Error("Perfil de estabelecimento não encontrado.");
-  const p = profiles[0];
+
+  const storedId = await AsyncStorage.getItem("estabelecimentoId");
+  const p = (storedId ? profiles.find((x: any) => String(x.id) === storedId) : null) ?? profiles[0];
   return { ...p, cidade: p?.Address?.cidade ?? p?.cidade, estado: p?.Address?.estado ?? p?.estado };
 };
 

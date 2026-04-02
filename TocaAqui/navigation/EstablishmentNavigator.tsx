@@ -38,7 +38,7 @@ export type EstStackParamList = {
   EstNewGig: { gigId?: number };
   EstGigApplications: { gigId: number; gigTitle: string };
   EstArtistProfile: { artistId: number };
-  EstAcceptContract: { applicationId: number; artistName: string; gigTitle: string };
+  EstAcceptContract: { applicationId: number; artistId?: number; artistName: string; gigTitle: string; valorProposto?: number };
   EstShowDetail: { contractId: number };
   EstNotifications: undefined;
   EstRateArtist: { contractId: number; artistName: string; showDate: string };
