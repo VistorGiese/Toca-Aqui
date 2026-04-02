@@ -17,6 +17,7 @@ export interface BandApplication {
   nome_estabelecimento?: string;
   cidade?: string;
   created_at?: string;
+  contrato_id?: number;
 }
 
 const applyToEvent = async (data: { evento_id: number; artista_id?: number; mensagem: string; valor_proposto: number }): Promise<BandApplication> => {

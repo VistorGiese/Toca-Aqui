@@ -125,6 +125,7 @@ export default function MyApplications() {
         renderItem={({ item }) => (
           <ApplicationCard
             application={item}
+            onViewContract={(contractId) => navigation.navigate("ContractDetail", { contractId })}
           />
         )}
         contentContainerStyle={styles.listContent}
@@ -153,7 +154,7 @@ export default function MyApplications() {
   );
 }
 
-function ApplicationCard({ application }: { application: BandApplication }) {
+function ApplicationCard({ application, onViewContract }: { application: BandApplication; onViewContract?: (contractId: number) => void }) {
   const isPending = application.status === "pendente";
   const isAccepted = application.status === "aceito";
 
@@ -213,9 +214,28 @@ function ApplicationCard({ application }: { application: BandApplication }) {
             <Text style={cardStyles.statusBadgePendingText}>Candidatura em análise...</Text>
           </View>
         ) : isAccepted ? (
-          <View style={cardStyles.statusBadgeAccepted}>
-            <Text style={cardStyles.statusBadgeAcceptedText}>ACEITA</Text>
-          </View>
+          <>
+            <View style={cardStyles.statusBadgeAccepted}>
+              <Text style={cardStyles.statusBadgeAcceptedText}>ACEITA</Text>
+            </View>
+            {application.contrato_id != null && onViewContract && (
+              <TouchableOpacity
+                style={{
+                  marginTop: 8,
+                  backgroundColor: DS.accent,
+                  borderRadius: 10,
+                  paddingVertical: 10,
+                  alignItems: "center",
+                }}
+                onPress={() => onViewContract(application.contrato_id!)}
+                activeOpacity={0.85}
+              >
+                <Text style={{ fontFamily: "Montserrat-Bold", fontSize: 12, color: DS.white, letterSpacing: 1 }}>
+                  VER CONTRATO
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
         ) : (
           <View style={cardStyles.statusBadgeRejected}>
             <Text style={cardStyles.statusBadgeRejectedText}>RECUSADA</Text>
