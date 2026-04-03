@@ -21,7 +21,7 @@ export interface BandApplication {
 }
 
 const applyToEvent = async (data: { evento_id: number; artista_id?: number; mensagem: string; valor_proposto: number }): Promise<BandApplication> => {
-  const response = await api.post<BandApplication>("/candidaturas", data);
+  const response = await api.post<BandApplication>("/eventos", data);
   return response.data;
 };
 
