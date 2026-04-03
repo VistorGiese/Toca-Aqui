@@ -6,6 +6,7 @@ import { uploadService } from '../services/UploadService';
 import { AppError } from '../errors/AppError';
 import { verifyToken } from '../utils/jwt';
 import ArtistProfileModel from '../models/ArtistProfileModel';
+import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import PreferenciaUsuarioModel from '../models/PreferenciaUsuarioModel';
 import UserModel from '../models/UserModel';
 import bcrypt from 'bcryptjs';
@@ -257,6 +258,27 @@ export const alterarNome = asyncHandler(async (req: AuthRequest, res: Response) 
   res.json({ message: 'Nome alterado com sucesso' });
 });
 
+export const atualizarPerfilArtista = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw unauthorized('Usuário não identificado');
+
+  const id = parseInt(req.params.id as string, 10);
+  const profile = await ArtistProfileModel.findByPk(id);
+  if (!profile) throw new AppError('Perfil de artista não encontrado', 404);
+  if (profile.usuario_id !== usuario_id) throw new AppError('Sem permissão', 403);
+
+  const { nome_artistico, biografia, generos, cache_minimo, cache_maximo } = req.body;
+  const updates: Partial<ArtistProfileModel> = {};
+  if (nome_artistico !== undefined) (updates as any).nome_artistico = nome_artistico;
+  if (biografia !== undefined) (updates as any).biografia = biografia;
+  if (generos !== undefined) (updates as any).generos = generos;
+  if (cache_minimo !== undefined) (updates as any).cache_minimo = cache_minimo;
+  if (cache_maximo !== undefined) (updates as any).cache_maximo = cache_maximo;
+
+  await profile.update(updates);
+  res.json({ message: 'Perfil atualizado com sucesso', perfil: profile });
+});
+
 export const excluirConta = asyncHandler(async (req: AuthRequest, res: Response) => {
   const usuario_id = req.user?.id;
   if (!usuario_id) throw unauthorized('Usuário não identificado');
@@ -273,4 +295,35 @@ export const excluirConta = asyncHandler(async (req: AuthRequest, res: Response)
   await user.destroy();
 
   res.json({ message: 'Conta excluída com sucesso' });
+});
+
+export const getMinhasPaginas = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) throw new AppError('Usuário não identificado', 401);
+
+  const [artistProfile, establishmentProfile] = await Promise.all([
+    ArtistProfileModel.findOne({ where: { usuario_id: userId } }),
+    EstablishmentProfileModel.findOne({
+      where: { usuario_id: userId },
+      include: [{ association: 'Address', attributes: ['cidade', 'estado'] }],
+    }),
+  ]);
+
+  res.json({
+    usuario_id: userId,
+    pagina_artista: artistProfile
+      ? {
+          id: artistProfile.id,
+          nome_artistico: artistProfile.nome_artistico,
+          foto_perfil: artistProfile.foto_perfil ?? null,
+        }
+      : null,
+    pagina_estabelecimento: establishmentProfile
+      ? {
+          id: (establishmentProfile as any).id,
+          nome_estabelecimento: (establishmentProfile as any).nome_estabelecimento,
+          tipo_estabelecimento: (establishmentProfile as any).tipo_estabelecimento,
+        }
+      : null,
+  });
 });
