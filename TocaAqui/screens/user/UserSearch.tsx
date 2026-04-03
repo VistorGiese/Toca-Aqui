@@ -88,7 +88,11 @@ export default function UserSearch() {
     setLoading(true);
     try {
       const data = await showService.searchShows(q);
-      const shows: Show[] = data.shows ?? [];
+      // Backend retorna { tipo: 'shows', resultados: [...] } via spread no controller
+      // Suportar também formatos legados: array direto ou { shows: [...] }
+      const shows: Show[] = Array.isArray(data)
+        ? data
+        : (data?.resultados ?? data?.shows ?? data?.data ?? []);
       setResults(shows);
     } catch {
       Alert.alert("Erro", "Não foi possível buscar resultados.");
