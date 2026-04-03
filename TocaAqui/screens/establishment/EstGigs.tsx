@@ -12,7 +12,12 @@ const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", 
 type NavProp = NativeStackNavigationProp<EstStackParamList>;
 type Tab = "abertas" | "encerradas" | "rascunhos";
 
-function formatBRL(v?: number) { return v != null ? `R$ ${v.toFixed(2).replace(".",",")}` : "—"; }
+function formatBRL(v?: number | string) {
+  if (v == null) return "—";
+  const n = Number(v);
+  if (isNaN(n)) return "—";
+  return `R$ ${n.toFixed(2).replace(".", ",")}`;
+}
 function formatDate(d: string) {
   try { return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"}); }
   catch { return d; }
