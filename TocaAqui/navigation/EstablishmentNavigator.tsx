@@ -17,6 +17,7 @@ import EstShowDetail from "@/screens/establishment/EstShowDetail";
 import EstNotifications from "@/screens/establishment/EstNotifications";
 import EstRateArtist from "@/screens/establishment/EstRateArtist";
 import EstSettings from "@/screens/establishment/EstSettings";
+import EstEditProfile from "@/screens/establishment/EstEditProfile";
 
 const DS = {
   bg: "#09090F",
@@ -43,6 +44,7 @@ export type EstStackParamList = {
   EstNotifications: undefined;
   EstRateArtist: { contractId: number; artistName: string; showDate: string };
   EstSettings: undefined;
+  EstEditProfile: undefined;
 };
 
 const Tab = createBottomTabNavigator<EstTabParamList>();
@@ -126,6 +128,7 @@ export default function EstablishmentNavigator() {
       <Stack.Screen name="EstNotifications" component={EstNotifications} />
       <Stack.Screen name="EstRateArtist" component={EstRateArtist} />
       <Stack.Screen name="EstSettings" component={EstSettings} />
+      <Stack.Screen name="EstEditProfile" component={EstEditProfile} />
     </Stack.Navigator>
   );
 }
