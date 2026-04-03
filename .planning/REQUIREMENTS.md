@@ -103,8 +103,8 @@ Para a defesa, deve ser possível demonstrar:
 | REQ-20 | Phase 6 — Bug Fixes & UX | Pending |
 | REQ-21 | Phase 6 — Bug Fixes & UX | Pending |
 | REQ-22 | Phase 6 — Bug Fixes & UX | Pending |
-| REQ-23 | Phase 6 — Bug Fixes & UX | Pending |
-| REQ-24 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-23 | Phase 6 — Bug Fixes & UX | Complete |
+| REQ-24 | Phase 6 — Bug Fixes & UX | Complete |
 | REQ-25 | Phase 6 — Bug Fixes & UX | Pending |
 | REQ-26 | Phase 6 — Bug Fixes & UX | Pending |
 | REQ-27 | Phase 6 — Bug Fixes & UX | Pending |
