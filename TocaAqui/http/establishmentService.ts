@@ -121,7 +121,7 @@ const rejectApplication = async (applicationId: number): Promise<any> => {
 };
 
 const searchArtists = async (params?: { q?: string; genero?: string }): Promise<ArtistPublicProfile[]> => {
-  const r = await api.get("/perfis-artista/busca", { params });
+  const r = await api.get("/artistas/busca", { params });
   return toArray<ArtistPublicProfile>(r.data);
 };
 
