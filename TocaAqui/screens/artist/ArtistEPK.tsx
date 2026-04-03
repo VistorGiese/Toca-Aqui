@@ -40,7 +40,7 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ArtistEPK() {
   const navigation = useNavigation<NavProp>();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [generos, setGeneros] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Avaliacao[]>([]);
@@ -103,6 +103,10 @@ export default function ArtistEPK() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  async function handleSignOut() {
+    await signOut();
+  }
 
   const completedShows = contracts.filter((c) => c.status === "concluido").length;
   const acceptedShows = contracts.filter((c) => c.status === "aceito").length;
@@ -254,6 +258,30 @@ export default function ArtistEPK() {
             ))}
           </>
         )}
+
+        {/* Logout */}
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(255,107,107,0.08)",
+            borderWidth: 1,
+            borderColor: "rgba(255,107,107,0.3)",
+            borderRadius: 12,
+            paddingVertical: 15,
+            marginTop: 24,
+            marginHorizontal: 20,
+            marginBottom: 32,
+          }}
+          onPress={handleSignOut}
+          activeOpacity={0.85}
+        >
+          <FontAwesome5 name="sign-out-alt" size={16} color="#FF6B6B" style={{ marginRight: 10 }} />
+          <Text style={{ fontFamily: "Montserrat-Bold", fontSize: 14, color: "#FF6B6B", letterSpacing: 1.5 }}>
+            SAIR DA CONTA
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

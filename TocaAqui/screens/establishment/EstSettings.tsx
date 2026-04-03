@@ -14,11 +14,13 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome5 } from "@expo/vector-icons";
 import {
   establishmentService,
   EstablishmentMember,
   EstablishmentMembersResponse,
 } from "@/http/establishmentService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ACCENT = "#A78BFA";
 const BG = "#09090F";
@@ -28,6 +30,7 @@ const TEXT = "#E2E8F0";
 const MUTED = "#6B7280";
 
 export default function EstSettings() {
+  const { signOut } = useAuth();
   const [estabelecimentoId, setEstabelecimentoId] = useState<number | null>(null);
   const [data, setData] = useState<EstablishmentMembersResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +102,13 @@ export default function EstSettings() {
     );
   };
 
+  function handleSignOut() {
+    Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Sair", style: "destructive", onPress: async () => { await signOut(); } },
+    ]);
+  }
+
   const renderMember = ({ item }: { item: EstablishmentMember }) => {
     const isOwner = item.role === "owner";
     return (
@@ -161,6 +171,16 @@ export default function EstSettings() {
           }
         />
       )}
+
+      {/* Logout */}
+      <TouchableOpacity
+        style={s.signOutBtn}
+        onPress={handleSignOut}
+        activeOpacity={0.85}
+      >
+        <FontAwesome5 name="sign-out-alt" size={16} color="#FF6B6B" style={{ marginRight: 10 }} />
+        <Text style={s.signOutText}>SAIR DA CONTA</Text>
+      </TouchableOpacity>
 
       {/* Modal de adicionar */}
       <Modal
@@ -249,4 +269,6 @@ const s = StyleSheet.create({
   confirmBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: ACCENT, alignItems: "center" },
   confirmText: { color: "#fff", fontFamily: "Montserrat-SemiBold" },
   disabled: { opacity: 0.5 },
+  signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,107,107,0.08)", borderWidth: 1, borderColor: "rgba(255,107,107,0.3)", borderRadius: 12, paddingVertical: 15, marginTop: 24, marginBottom: 32 },
+  signOutText: { fontFamily: "Montserrat-Bold", fontSize: 14, color: "#FF6B6B", letterSpacing: 1.5 },
 });
