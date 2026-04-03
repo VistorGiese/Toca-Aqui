@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-bug-fixes-ux 06-02-PLAN.md
-last_updated: "2026-04-03T02:20:41.799Z"
+stopped_at: Completed 06-bug-fixes-ux 06-01-PLAN.md
+last_updated: "2026-04-03T02:21:25.266Z"
 last_activity: 2026-04-03
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 19
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 06 (bug-fixes-ux) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-03
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-integration-polish P02 | 5 | 2 tasks | 3 files |
 | Phase 05-integration-polish P03 | 30 | 2 tasks | 5 files |
 | Phase 06-bug-fixes-ux P02 | 8 | 2 tasks | 3 files |
+| Phase 06-bug-fixes-ux P01 | 103 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - [Phase 05-integration-polish]: Task 3 end-to-end demo verification deferred to new phase — pre-existing bugs found during human review are out of scope for this polish plan
 - [Phase 06-bug-fixes-ux]: New backend GET /artistas/busca route added before /:id routes to avoid parametric capture
 - [Phase 06-bug-fixes-ux]: UserSearch parsing changed to use data.resultados (primary) with fallbacks for data.shows and data.data
+- [Phase 06-bug-fixes-ux]: applyToEvent fixed from /candidaturas to /eventos — backend mounts BandApplicationRoutes at /eventos
+- [Phase 06-bug-fixes-ux]: formatBRL uses Number(v) before toFixed to handle string values from backend in EstGigs
+- [Phase 06-bug-fixes-ux]: signOut button uses Alert confirm in EstSettings, direct call in ArtistEPK — both use useAuth().signOut()
 
 ### Pending Todos
 
@@ -114,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T02:20:41.795Z
-Stopped at: Completed 06-bug-fixes-ux 06-02-PLAN.md
+Last session: 2026-04-03T02:21:25.262Z
+Stopped at: Completed 06-bug-fixes-ux 06-01-PLAN.md
 Resume file: None

@@ -100,9 +100,9 @@ Para a defesa, deve ser possível demonstrar:
 | REQ-15 | Phase 4 — User Feed | Pending |
 | REQ-16 | Phase 4 — User Feed | Complete |
 | REQ-17 | Phase 5 — Integration Polish | Complete |
-| REQ-20 | Phase 6 — Bug Fixes & UX | Pending |
-| REQ-21 | Phase 6 — Bug Fixes & UX | Pending |
-| REQ-22 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-20 | Phase 6 — Bug Fixes & UX | Complete |
+| REQ-21 | Phase 6 — Bug Fixes & UX | Complete |
+| REQ-22 | Phase 6 — Bug Fixes & UX | Complete |
 | REQ-23 | Phase 6 — Bug Fixes & UX | Complete |
 | REQ-24 | Phase 6 — Bug Fixes & UX | Complete |
 | REQ-25 | Phase 6 — Bug Fixes & UX | Pending |
