@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-bug-fixes-ux 06-01-PLAN.md
-last_updated: "2026-04-03T02:21:25.266Z"
+stopped_at: Completed 06-bug-fixes-ux 06-04-PLAN.md
+last_updated: "2026-04-03T02:25:14.222Z"
 last_activity: 2026-04-03
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 19
-  completed_plans: 17
+  completed_plans: 18
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 06 (bug-fixes-ux) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-04-03
 
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-integration-polish P03 | 30 | 2 tasks | 5 files |
 | Phase 06-bug-fixes-ux P02 | 8 | 2 tasks | 3 files |
 | Phase 06-bug-fixes-ux P01 | 103 | 3 tasks | 4 files |
+| Phase 06-bug-fixes-ux P04 | 10 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,7 @@ Recent decisions affecting current work:
 - [Phase 06-bug-fixes-ux]: applyToEvent fixed from /candidaturas to /eventos — backend mounts BandApplicationRoutes at /eventos
 - [Phase 06-bug-fixes-ux]: formatBRL uses Number(v) before toFixed to handle string values from backend in EstGigs
 - [Phase 06-bug-fixes-ux]: signOut button uses Alert confirm in EstSettings, direct call in ArtistEPK — both use useAuth().signOut()
+- [Phase 06-bug-fixes-ux]: EstEditProfile uses PUT /estabelecimentos/:id (existing updateEstablishment route) — no new backend endpoint needed
 
 ### Pending Todos
 
@@ -118,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T02:21:25.262Z
-Stopped at: Completed 06-bug-fixes-ux 06-01-PLAN.md
+Last session: 2026-04-03T02:25:14.217Z
+Stopped at: Completed 06-bug-fixes-ux 06-04-PLAN.md
 Resume file: None
