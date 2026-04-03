@@ -14,7 +14,7 @@ O codebase já existe mas está quebrado em múltiplas camadas. O caminho para a
 - [x] **Phase 2: Artist Application Flow** - Artista navega eventos, se candidata com valor proposto, visualiza status das candidaturas (completed 2026-04-02)
 - [ ] **Phase 3: Accept & Contract Flow** - Estabelecimento aceita candidatura, sistema recusa as demais, contrato gerado, artista confirma
 - [ ] **Phase 4: User Feed** - Usuário comum navega feed de eventos e visualiza detalhe com artista confirmado
-- [ ] **Phase 5: Integration Polish** - Dados reais em perfis, smoke test ponta-a-ponta, onPress handlers faltantes, loading states
+- [x] **Phase 5: Integration Polish** - Dados reais em perfis, smoke test ponta-a-ponta, onPress handlers faltantes, loading states (completed 2026-04-03)
 
 ## Phase Details
 
@@ -98,7 +98,7 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Rota PUT /contratos/:id/concluir + botão "Marcar como Realizado" em EstShowDetail
 - [x] 05-02-PLAN.md — Rota POST /contratos/:id/avaliar-artista + fix establishmentService.rateArtist endpoint
-- [ ] 05-03-PLAN.md — Standardizar ActivityIndicator color, auditar onPress handlers, verificação ponta-a-ponta
+- [x] 05-03-PLAN.md — Standardizar ActivityIndicator color, auditar onPress handlers, verificação ponta-a-ponta
 **UI hint**: yes
 
 ## Progress
@@ -113,4 +113,4 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
 | 2. Artist Application Flow | 1/3 | Complete    | 2026-04-02 |
 | 3. Accept & Contract Flow | 3/4 | In Progress|  |
 | 4. User Feed | 1/2 | In Progress|  |
-| 5. Integration Polish | 2/3 | In Progress|  |
+| 5. Integration Polish | 3/3 | Complete   | 2026-04-03 |
