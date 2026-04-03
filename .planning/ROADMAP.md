@@ -114,7 +114,13 @@ Plans:
   5. Agenda do estabelecimento lista os eventos criados pelo estabelecimento
   6. Tela de edição de perfil do estabelecimento existe e salva dados
   7. Edição de perfil artista navega para telas corretas (não telas antigas)
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Bugs críticos: v.toFixed crash em EstGigs, 404 candidatura (POST /candidaturas→/eventos), logout em ArtistEPK e EstSettings
+- [ ] 06-02-PLAN.md — Busca funcional: UserSearch parsing robusto, EstSearch endpoint /artistas/busca
+- [ ] 06-03-PLAN.md — Agenda EstSchedule com mapeamento defensivo de campos, ArtistProfileEdit reescrita para editar perfil artista real
+- [ ] 06-04-PLAN.md — Nova tela EstEditProfile: edição de perfil do estabelecimento com campos nome, descrição, tipo, telefone
 **UI hint**: yes
 
 ## Progress
@@ -130,4 +136,4 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Accept & Contract Flow | 3/4 | In Progress|  |
 | 4. User Feed | 1/2 | In Progress|  |
 | 5. Integration Polish | 3/3 | Complete   | 2026-04-03 |
-| 6. Bug Fixes & UX | 0/TBD | Planned    |  |
+| 6. Bug Fixes & UX | 0/4 | Planned    |  |
