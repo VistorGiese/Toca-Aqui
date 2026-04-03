@@ -64,7 +64,16 @@ export default function EstSchedule() {
     if (!silent) setLoading(true);
     try {
       const data = await establishmentService.getMyContracts();
-      setContracts(Array.isArray(data) ? data : []);
+      const raw = Array.isArray(data) ? data : [];
+      const normalized = raw.map((c: any) => ({
+        ...c,
+        data_show: c.data_show ?? c.data_evento ?? c.Event?.data_show ?? null,
+        nome_evento: c.nome_evento ?? c.Event?.titulo_evento ?? c.local_evento ?? `Show #${c.id}`,
+        nome_artista: c.nome_artista ?? c.nome_contratado ?? c.ArtistProfile?.nome_artistico ?? c.Band?.nome_banda,
+        horario_inicio: c.horario_inicio ?? c.Event?.horario_inicio,
+        cache_acordado: c.cache_acordado ?? c.cache_total,
+      }));
+      setContracts(normalized);
     } catch {
       Alert.alert("Erro", "Não foi possível carregar a agenda.");
     } finally {
