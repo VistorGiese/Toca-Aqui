@@ -15,6 +15,7 @@ O codebase já existe mas está quebrado em múltiplas camadas. O caminho para a
 - [ ] **Phase 3: Accept & Contract Flow** - Estabelecimento aceita candidatura, sistema recusa as demais, contrato gerado, artista confirma
 - [ ] **Phase 4: User Feed** - Usuário comum navega feed de eventos e visualiza detalhe com artista confirmado
 - [x] **Phase 5: Integration Polish** - Dados reais em perfis, smoke test ponta-a-ponta, onPress handlers faltantes, loading states (completed 2026-04-03)
+- [ ] **Phase 6: Bug Fixes & UX** - Corrigir bugs encontrados no UAT (v.toFixed, 404 candidatura, logout, busca), implementar telas faltando (editar perfil estab), ajustar edição perfil artista
 
 ## Phase Details
 
@@ -101,10 +102,25 @@ Plans:
 - [x] 05-03-PLAN.md — Standardizar ActivityIndicator color, auditar onPress handlers, verificação ponta-a-ponta
 **UI hint**: yes
 
+### Phase 6: Bug Fixes & UX
+**Goal**: Corrigir todos os bugs encontrados no UAT de 2026-04-03 e implementar features faltando identificadas durante o teste ponta-a-ponta do TCC
+**Depends on**: Phase 5
+**Requirements**: REQ-20, REQ-21, REQ-22, REQ-23, REQ-24, REQ-25, REQ-26, REQ-27
+**Success Criteria** (what must be TRUE):
+  1. Logout funciona em todos os 3 perfis (usuário, artista, estabelecimento) e navega para Login
+  2. Abrir lista de vagas no estabelecimento não crasha com `v.toFixed is not a function`
+  3. Artista consegue se candidatar a uma vaga sem erro 404 e "som próprio" funciona
+  4. Busca no perfil comum retorna artistas/eventos do backend
+  5. Agenda do estabelecimento lista os eventos criados pelo estabelecimento
+  6. Tela de edição de perfil do estabelecimento existe e salva dados
+  7. Edição de perfil artista navega para telas corretas (não telas antigas)
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 **Execution Order:**
-Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
+Phases execute in dependency order: 1 → 2 → 3 → 4 → 5 → 6
 (Phases 2 and 4 can run in parallel once Phase 1 is complete)
 
 | Phase | Plans Complete | Status | Completed |
@@ -114,3 +130,4 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5
 | 3. Accept & Contract Flow | 3/4 | In Progress|  |
 | 4. User Feed | 1/2 | In Progress|  |
 | 5. Integration Polish | 3/3 | Complete   | 2026-04-03 |
+| 6. Bug Fixes & UX | 0/TBD | Planned    |  |

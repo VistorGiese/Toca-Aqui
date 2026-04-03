@@ -44,6 +44,17 @@
 - **REQ-18** — Usuário comum pode comprar ingresso para um evento (`UserCheckout`)
 - **REQ-19** — Avaliação pós-show funcional para artista e estabelecimento
 
+## Bug Fixes & Missing Features (fase 6 — UAT 2026-04-03)
+
+- **REQ-20** — Logout funcional para todos os perfis: usuário comum, artista e estabelecimento devem navegar para a tela de Login ao clicar "Sair"
+- **REQ-21** — Bug crítico: `v.toFixed is not a function` ao abrir lista de vagas no perfil estabelecimento corrigido
+- **REQ-22** — Bug crítico: candidatura de artista a vaga não retorna 404; erro de "som próprio" na candidatura corrigido
+- **REQ-23** — Busca no perfil comum (UserSearch) funcional: lista artistas/eventos do backend
+- **REQ-24** — Busca no perfil estabelecimento funcional: sem 404
+- **REQ-25** — Agenda do estabelecimento (`EstSchedule`) lista eventos/shows criados pelo estabelecimento
+- **REQ-26** — Tela de edição de perfil do estabelecimento (`EstEditProfile`) implementada
+- **REQ-27** — Edição de perfil artista corrigida: removidas telas antigas, navegação para telas corretas e consistentes com o estilo do app
+
 ---
 
 ## Out of Scope (v1)
@@ -89,3 +100,11 @@ Para a defesa, deve ser possível demonstrar:
 | REQ-15 | Phase 4 — User Feed | Pending |
 | REQ-16 | Phase 4 — User Feed | Complete |
 | REQ-17 | Phase 5 — Integration Polish | Complete |
+| REQ-20 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-21 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-22 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-23 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-24 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-25 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-26 | Phase 6 — Bug Fixes & UX | Pending |
+| REQ-27 | Phase 6 — Bug Fixes & UX | Pending |
