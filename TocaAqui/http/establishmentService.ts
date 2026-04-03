@@ -168,6 +168,11 @@ const createEstablishmentProfile = async (data: {
   return r.data;
 };
 
+const updateMyEstablishmentProfile = async (id: number, data: Partial<EstablishmentProfile>): Promise<EstablishmentProfile> => {
+  const r = await api.put<EstablishmentProfile>(`/estabelecimentos/${id}`, data);
+  return r.data;
+};
+
 const rateArtist = async (contratoId: number, data: { nota: number; comentario?: string; tags?: string[] }): Promise<any> => {
   const r = await api.post(`/contratos/${contratoId}/avaliar-artista`, data);
   return r.data;
@@ -219,7 +224,7 @@ export const establishmentService = {
   getGigApplications, acceptApplication, rejectApplication,
   searchArtists, getArtistPublicProfile,
   getMyContracts, getContractById,
-  getMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
+  getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,
   listMembers, addMember, removeMember,
 };
