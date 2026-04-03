@@ -15,7 +15,7 @@ O codebase já existe mas está quebrado em múltiplas camadas. O caminho para a
 - [ ] **Phase 3: Accept & Contract Flow** - Estabelecimento aceita candidatura, sistema recusa as demais, contrato gerado, artista confirma
 - [ ] **Phase 4: User Feed** - Usuário comum navega feed de eventos e visualiza detalhe com artista confirmado
 - [x] **Phase 5: Integration Polish** - Dados reais em perfis, smoke test ponta-a-ponta, onPress handlers faltantes, loading states (completed 2026-04-03)
-- [ ] **Phase 6: Bug Fixes & UX** - Corrigir bugs encontrados no UAT (v.toFixed, 404 candidatura, logout, busca), implementar telas faltando (editar perfil estab), ajustar edição perfil artista
+- [x] **Phase 6: Bug Fixes & UX** - Corrigir bugs encontrados no UAT (v.toFixed, 404 candidatura, logout, busca), implementar telas faltando (editar perfil estab), ajustar edição perfil artista (completed 2026-04-03)
 
 ## Phase Details
 
@@ -119,7 +119,7 @@ Plans:
 Plans:
 - [x] 06-01-PLAN.md — Bugs críticos: v.toFixed crash em EstGigs, 404 candidatura (POST /candidaturas→/eventos), logout em ArtistEPK e EstSettings
 - [x] 06-02-PLAN.md — Busca funcional: UserSearch parsing robusto, EstSearch endpoint /artistas/busca
-- [ ] 06-03-PLAN.md — Agenda EstSchedule com mapeamento defensivo de campos, ArtistProfileEdit reescrita para editar perfil artista real
+- [x] 06-03-PLAN.md — Agenda EstSchedule com mapeamento defensivo de campos, ArtistProfileEdit reescrita para editar perfil artista real
 - [x] 06-04-PLAN.md — Nova tela EstEditProfile: edição de perfil do estabelecimento com campos nome, descrição, tipo, telefone
 **UI hint**: yes
 
@@ -136,4 +136,4 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Accept & Contract Flow | 3/4 | In Progress|  |
 | 4. User Feed | 1/2 | In Progress|  |
 | 5. Integration Polish | 3/3 | Complete   | 2026-04-03 |
-| 6. Bug Fixes & UX | 3/4 | In Progress|  |
+| 6. Bug Fixes & UX | 4/4 | Complete   | 2026-04-03 |

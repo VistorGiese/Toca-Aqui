@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 06-bug-fixes-ux 06-04-PLAN.md
-last_updated: "2026-04-03T02:25:14.222Z"
+status: verifying
+stopped_at: Completed 06-bug-fixes-ux 06-03-PLAN.md
+last_updated: "2026-04-03T02:27:06.638Z"
 last_activity: 2026-04-03
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 19
-  completed_plans: 18
+  completed_plans: 19
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 Phase: 06 (bug-fixes-ux) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-03
 
 Progress: [░░░░░░░░░░] 0%
@@ -68,6 +68,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06-bug-fixes-ux P02 | 8 | 2 tasks | 3 files |
 | Phase 06-bug-fixes-ux P01 | 103 | 3 tasks | 4 files |
 | Phase 06-bug-fixes-ux P04 | 10 | 2 tasks | 4 files |
+| Phase 06-bug-fixes-ux P03 | 10 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,8 @@ Recent decisions affecting current work:
 - [Phase 06-bug-fixes-ux]: formatBRL uses Number(v) before toFixed to handle string values from backend in EstGigs
 - [Phase 06-bug-fixes-ux]: signOut button uses Alert confirm in EstSettings, direct call in ArtistEPK — both use useAuth().signOut()
 - [Phase 06-bug-fixes-ux]: EstEditProfile uses PUT /estabelecimentos/:id (existing updateEstablishment route) — no new backend endpoint needed
+- [Phase 06-bug-fixes-ux]: Contract response normalization maps data_evento->data_show and cache_total->cache_acordado at load time in EstSchedule
+- [Phase 06-bug-fixes-ux]: New PATCH /usuarios/perfil-artista/:id route added to UserRoutes for artist profile general update
 
 ### Pending Todos
 
@@ -120,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T02:25:14.217Z
-Stopped at: Completed 06-bug-fixes-ux 06-04-PLAN.md
+Last session: 2026-04-03T02:27:06.634Z
+Stopped at: Completed 06-bug-fixes-ux 06-03-PLAN.md
 Resume file: None
