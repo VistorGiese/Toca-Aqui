@@ -2,6 +2,7 @@ import { createContext, useState } from "react";
 
 export type AccountProps = {
     nome?: string;
+    tipo_usuario?: "establishment_owner" | "artist" | "common_user";
     email_responsavel?: string;
     password?: string;
     passwordConfirm?: string;
@@ -21,7 +22,8 @@ export type AccountProps = {
 
 type AccountFormContextDataProps = {
     accountFormData: AccountProps;
-    updateFormData: (formData: AccountProps) => void
+    updateFormData: (formData: AccountProps) => void;
+    resetFormData: () => void;
 }
 
 type AccountFormContextProviderProps = {
@@ -37,10 +39,15 @@ function AccountProvider({ children }: AccountFormContextProviderProps) {
         setAccountFormData(prevState => ({ ...prevState, ...data }));
     }
 
+    function resetFormData() {
+        setAccountFormData({} as AccountProps);
+    }
+
     return (
         <AccontFormContext.Provider value={{
             accountFormData,
-            updateFormData
+            updateFormData,
+            resetFormData
         }}>
             {children}
         </AccontFormContext.Provider>

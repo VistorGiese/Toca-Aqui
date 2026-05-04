@@ -46,7 +46,6 @@ export default function RegisterPassword() {
 
     function handleNext(data: AccountProps) {
         updateFormData({ password: data.password });
-        console.log(data);
         navigation.navigate("InformationPersonResponsible");
     }
 

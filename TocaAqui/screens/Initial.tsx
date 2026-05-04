@@ -44,7 +44,7 @@ export default function Initial() {
         <View style={styles.registerContainer}>
           /<Text style={styles.registerText}>Ainda não tem conta? </Text>
           <TouchableOpacity
-            onPress={() => navigation.navigate("RegisterLocationName")}
+            onPress={() => navigation.navigate("RegisterUserType")}
             style={{ backgroundColor: "transparent" }}
           >
             <Text style={styles.registerLink}>Cadastre-se</Text>
