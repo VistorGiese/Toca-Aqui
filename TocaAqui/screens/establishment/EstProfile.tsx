@@ -141,6 +141,9 @@ export default function EstProfile() {
           {/* Botões do topo */}
           <View style={s.heroActions}>
             <View style={{ flex: 1 }} />
+            <TouchableOpacity style={[s.iconBtn, { marginRight: 8 }]} onPress={() => navigation.navigate("EstEditProfile")}>
+              <FontAwesome5 name="edit" size={16} color={DS.accent} />
+            </TouchableOpacity>
             <TouchableOpacity style={s.iconBtn} onPress={goToSettings}>
               <Ionicons name="settings-outline" size={20} color={DS.textPrimary} />
             </TouchableOpacity>

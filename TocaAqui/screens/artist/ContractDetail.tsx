@@ -12,7 +12,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { contractService, Contract } from "@/http/contractService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
   bg: "#09090F",
@@ -30,8 +30,8 @@ const DS = {
   dangerDark: "#2D0A0A",
 };
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
-type RouteType = RouteProp<RootStackParamList, "ContractDetail">;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
+type RouteType = RouteProp<ArtistStackParamList, "ContractDetail">;
 
 export default function ContractDetail() {
   const navigation = useNavigation<NavProp>();
@@ -72,8 +72,11 @@ export default function ContractDetail() {
               await contractService.acceptContract(contractId);
               Alert.alert(
                 "Contrato assinado!",
-                "Parabéns! O show foi confirmado.",
-                [{ text: "OK", onPress: () => navigation.goBack() }]
+                "Parabéns! O show foi confirmado. Abrindo sua agenda...",
+                [{
+                  text: "OK",
+                  onPress: () => (navigation as any).navigate("ArtistTabs", { screen: "ArtistSchedule" }),
+                }]
               );
             } catch (err: any) {
               const msg = err?.response?.data?.message || "Erro ao assinar o contrato.";
@@ -120,7 +123,7 @@ export default function ContractDetail() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={DS.accent} />
+        <ActivityIndicator size="large" color="#A78BFA" />
       </View>
     );
   }
@@ -132,8 +135,8 @@ export default function ContractDetail() {
 
   const refNumber = `SE-2026-${String(contract.id).padStart(4, "0")}-GIG`;
 
-  const formattedDate = contract.data_show
-    ? new Date(contract.data_show).toLocaleDateString("pt-BR", {
+  const formattedDate = contract.data_evento
+    ? new Date(contract.data_evento).toLocaleDateString("pt-BR", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -155,9 +158,9 @@ export default function ContractDetail() {
     <View style={styles.root}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <View>
           <FontAwesome5 name="bars" size={18} color={DS.white} />
-        </TouchableOpacity>
+        </View>
         <Text style={styles.brandName}>TOCA AQUI</Text>
         <FontAwesome5 name="music" size={18} color={DS.accent} />
       </View>
@@ -222,7 +225,7 @@ export default function ContractDetail() {
             </View>
             <Text style={styles.termValue}>
               R${" "}
-              {Number(contract.cache_acordado || 0).toLocaleString("pt-BR", {
+              {Number(contract.cache_total || 0).toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
               })}
             </Text>

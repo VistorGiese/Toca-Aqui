@@ -45,20 +45,13 @@ export default function ConfirmRegister() {
 
             const estabelecimentoPayload = {
                 ...accountFormData,
-                endereco_id: enderecoId,
-                horario_funcionamento_inicio: accountFormData.horario_funcionamento_inicio?.includes(
-                    ":"
-                )
+                horario_funcionamento_inicio: accountFormData.horario_funcionamento_inicio?.includes(":")
                     ? accountFormData.horario_funcionamento_inicio
                     : `${accountFormData.horario_funcionamento_inicio}:00:00`,
-                horario_funcionamento_fim: accountFormData.horario_funcionamento_fim?.includes(
-                    ":"
-                )
+                horario_funcionamento_fim: accountFormData.horario_funcionamento_fim?.includes(":")
                     ? accountFormData.horario_funcionamento_fim
                     : `${accountFormData.horario_funcionamento_fim}:00:00`,
-            };
-
-            await createEstabelecimento(estabelecimentoPayload);
+            });
 
             Alert.alert("Sucesso!", "Cadastro realizado com sucesso!", [
                 { text: "OK", onPress: () => navigation.reset({ index: 0, routes: [{ name: "HomePage" }] }) },

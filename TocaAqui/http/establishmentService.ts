@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
 
 export interface Gig {
@@ -24,13 +25,14 @@ export interface Candidatura {
   artista_id?: number;
   banda_id?: number;
   mensagem?: string;
-  status: "pendente" | "aceito" | "recusado";
+  status: "pendente" | "aceito" | "rejeitado";
   nome_artista?: string;
   foto_artista?: string;
   genero?: string;
   nota_media?: number;
   shows_realizados?: number;
   favorited?: boolean;
+  valor_proposto?: number;
 }
 
 export interface EstablishmentProfile {
@@ -54,10 +56,14 @@ export interface ArtistPublicProfile {
   nome_artistico?: string;
   nome?: string;
   foto_url?: string;
+  foto_perfil?: string;
   tipo?: string;
+  tipo_atuacao?: string;
   generos?: string[];
   nota_media?: number;
   shows_realizados?: number;
+  cache_minimo?: number;
+  cache_maximo?: number;
   cache_medio?: number;
   biografia?: string;
   cidade?: string;
@@ -104,28 +110,30 @@ const deleteGig = async (id: number): Promise<void> => {
 };
 
 const getGigApplications = async (eventoId: number): Promise<Candidatura[]> => {
-  const r = await api.get(`/band-applications/${eventoId}`);
+  const r = await api.get(`/eventos/${eventoId}`);
   return toArray<Candidatura>(r.data);
 };
 
 const acceptApplication = async (applicationId: number): Promise<any> => {
-  const r = await api.put(`/band-applications/${applicationId}/aceitar`);
+  const r = await api.put(`/eventos/${applicationId}/aceitar`);
   return r.data;
 };
 
 const rejectApplication = async (applicationId: number): Promise<any> => {
-  const r = await api.put(`/band-applications/${applicationId}/recusar`);
+  const r = await api.put(`/eventos/${applicationId}/recusar`);
   return r.data;
 };
 
 const searchArtists = async (params?: { q?: string; genero?: string }): Promise<ArtistPublicProfile[]> => {
-  const r = await api.get("/perfis-artista/busca", { params });
+  const r = await api.get("/artistas/busca", { params });
   return toArray<ArtistPublicProfile>(r.data);
 };
 
 const getArtistPublicProfile = async (artistId: number): Promise<ArtistPublicProfile> => {
-  const r = await api.get<ArtistPublicProfile>(`/artistas/${artistId}/publico`);
-  return r.data;
+  const r = await api.get(`/artistas/${artistId}/publico`);
+  // Backend retorna { message, perfil } — extrair o perfil
+  const data = r.data as any;
+  return data?.perfil ?? data;
 };
 
 const getMyContracts = async (): Promise<any[]> => {
@@ -144,7 +152,9 @@ const getMyEstablishmentProfile = async (): Promise<EstablishmentProfile> => {
   const user = data?.user ?? data;
   const profiles: any[] = user?.establishment_profiles ?? [];
   if (profiles.length === 0) throw new Error("Perfil de estabelecimento não encontrado.");
-  const p = profiles[0];
+
+  const storedId = await AsyncStorage.getItem("estabelecimentoId");
+  const p = (storedId ? profiles.find((x: any) => String(x.id) === storedId) : null) ?? profiles[0];
   return { ...p, cidade: p?.Address?.cidade ?? p?.cidade, estado: p?.Address?.estado ?? p?.estado };
 };
 
@@ -164,8 +174,13 @@ const createEstablishmentProfile = async (data: {
   return r.data;
 };
 
+const updateMyEstablishmentProfile = async (id: number, data: Partial<EstablishmentProfile>): Promise<EstablishmentProfile> => {
+  const r = await api.put<EstablishmentProfile>(`/estabelecimentos/${id}`, data);
+  return r.data;
+};
+
 const rateArtist = async (contratoId: number, data: { nota: number; comentario?: string; tags?: string[] }): Promise<any> => {
-  const r = await api.post("/avaliacoes", { contrato_id: contratoId, ...data });
+  const r = await api.post(`/contratos/${contratoId}/avaliar-artista`, data);
   return r.data;
 };
 
@@ -215,7 +230,7 @@ export const establishmentService = {
   getGigApplications, acceptApplication, rejectApplication,
   searchArtists, getArtistPublicProfile,
   getMyContracts, getContractById,
-  getMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
+  getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,
   listMembers, addMember, removeMember,
 };

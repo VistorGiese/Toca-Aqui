@@ -9,16 +9,39 @@ const bookingBaseSchema = z.object({
   perfil_estabelecimento_id: z.number().int().positive().optional(),
   horario_inicio: z.string().regex(timeRegex, 'horario_inicio deve estar no formato HH:MM'),
   horario_fim: z.string().regex(timeRegex, 'horario_fim deve estar no formato HH:MM'),
+  generos_musicais: z.string().max(255).optional(),
+  cache_minimo: z.number().nonnegative().optional(),
+  cache_maximo: z.number().nonnegative().optional(),
 });
 
-export const createBookingSchema = bookingBaseSchema.refine(
-  (data) => data.horario_fim > data.horario_inicio,
-  { message: 'horario_fim deve ser posterior ao horario_inicio', path: ['horario_fim'] }
-);
+// Converte "HH:MM" para minutos totais
+const toMinutes = (t: string) => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+export const createBookingSchema = bookingBaseSchema.superRefine((data, ctx) => {
+  const inicio = toMinutes(data.horario_inicio);
+  const fim = toMinutes(data.horario_fim);
+  // Permite shows que cruzam meia-noite: só rejeita se início === fim
+  if (inicio === fim) {
+    ctx.addIssue({ code: 'custom', message: 'horario_fim não pode ser igual ao horario_inicio', path: ['horario_fim'] });
+  }
+  if (data.cache_minimo !== undefined && data.cache_maximo !== undefined && data.cache_maximo < data.cache_minimo) {
+    ctx.addIssue({ code: 'custom', message: 'cache_maximo deve ser maior ou igual ao cache_minimo', path: ['cache_maximo'] });
+  }
+});
 
 export const updateBookingSchema = bookingBaseSchema.partial().superRefine((data, ctx) => {
-  if (data.horario_inicio && data.horario_fim && data.horario_fim <= data.horario_inicio) {
-    ctx.addIssue({ code: 'custom', message: 'horario_fim deve ser posterior ao horario_inicio', path: ['horario_fim'] });
+  if (data.horario_inicio && data.horario_fim) {
+    const inicio = toMinutes(data.horario_inicio);
+    const fim = toMinutes(data.horario_fim);
+    if (inicio === fim) {
+      ctx.addIssue({ code: 'custom', message: 'horario_fim não pode ser igual ao horario_inicio', path: ['horario_fim'] });
+    }
+  }
+  if (data.cache_minimo !== undefined && data.cache_maximo !== undefined && data.cache_maximo < data.cache_minimo) {
+    ctx.addIssue({ code: 'custom', message: 'cache_maximo deve ser maior ou igual ao cache_minimo', path: ['cache_maximo'] });
   }
 });
 

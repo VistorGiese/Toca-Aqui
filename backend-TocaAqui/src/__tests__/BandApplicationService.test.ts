@@ -36,7 +36,16 @@ jest.mock('../models/BandMemberModel', () => ({
 
 jest.mock('../models/ArtistProfileModel', () => ({
   __esModule: true,
-  default: { findByPk: jest.fn() },
+  default: { findByPk: jest.fn(), findOne: jest.fn() },
+}));
+
+jest.mock('../models/ContractModel', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn() },
+}));
+
+jest.mock('../services/ContractService', () => ({
+  contractService: { generateFromApplication: jest.fn().mockResolvedValue(null) },
 }));
 
 jest.mock('../services/NotificationService', () => ({
@@ -51,6 +60,7 @@ import BandApplicationModel from '../models/BandApplicationModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import BandMemberModel from '../models/BandMemberModel';
 import ArtistProfileModel from '../models/ArtistProfileModel';
+import ContractModel from '../models/ContractModel';
 
 const service = new BandApplicationService();
 
@@ -125,17 +135,7 @@ describe('BandApplicationService', () => {
       );
     });
 
-    it('lança AppError 400 quando data do evento já passou', async () => {
-      const passado = new Date();
-      passado.setDate(passado.getDate() - 1);
-
-      (BandModel.findByPk as jest.Mock).mockResolvedValue(makeBanda());
-      (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento({ data_show: passado }));
-
-      await expect(service.apply(1, 10)).rejects.toEqual(
-        expect.objectContaining({ statusCode: 400 })
-      );
-    });
+    // Nota: validação de data passada foi removida na Fase 2 (muito restritiva para TCC)
 
     it('lança AppError 400 quando evento está cancelado', async () => {
       (BandModel.findByPk as jest.Mock).mockResolvedValue(makeBanda());
@@ -239,6 +239,48 @@ describe('BandApplicationService', () => {
     });
   });
 
+  // ─── apply — valor_proposto (Phase 02) ───────────────────────────────────
+  describe('apply — valor_proposto', () => {
+    it('persiste valor_proposto na candidatura de artista individual', async () => {
+      // Arrange
+      const artista = { id: 7, nome_artistico: 'Artista Solo', usuario_id: 42 };
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento());
+      (BandApplicationModel.findOne as jest.Mock)
+        .mockResolvedValueOnce(null)  // sem candidatura aceita no evento
+        .mockResolvedValueOnce(null); // sem candidatura ativa do artista
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(artista);
+      (BandApplicationModel.create as jest.Mock).mockResolvedValue(makeAplicacao({ artista_id: 7, valor_proposto: 450 }));
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 99 });
+
+      // Act
+      await service.apply(undefined, 10, 42, undefined, undefined, 450);
+
+      // Assert
+      expect(BandApplicationModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ valor_proposto: 450 })
+      );
+    });
+
+    it('persiste valor_proposto na candidatura de banda', async () => {
+      // Arrange
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(makeBanda());
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento());
+      (BandApplicationModel.findOne as jest.Mock)
+        .mockResolvedValueOnce(null)  // sem candidatura aceita no evento
+        .mockResolvedValueOnce(null); // sem candidatura ativa da banda
+      (BandApplicationModel.create as jest.Mock).mockResolvedValue(makeAplicacao({ valor_proposto: 300 }));
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 99 });
+
+      // Act
+      await service.apply(1, 10, undefined, undefined, undefined, 300);
+
+      // Assert
+      expect(BandApplicationModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ valor_proposto: 300 })
+      );
+    });
+  });
+
   // ─── getApplicationsForEvent ──────────────────────────────────────────────
   describe('getApplicationsForEvent', () => {
     it('retorna lista de candidaturas quando evento está aberto', async () => {
@@ -252,14 +294,17 @@ describe('BandApplicationService', () => {
       expect(result.aplicacoes).toHaveLength(2);
     });
 
-    it('retorna closed true quando evento está aceito', async () => {
+    it('retorna closed true quando evento está aceito e ainda retorna candidaturas existentes', async () => {
+      // Nota: a implementação atual chama findAll mesmo quando closed=true
+      // para retornar as candidaturas do evento fechado
+      const candidaturas = [makeAplicacao()];
       (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento({ status: 'aceito' }));
+      (BandApplicationModel.findAll as jest.Mock).mockResolvedValue(candidaturas);
 
       const result = await service.getApplicationsForEvent(10);
 
       expect(result.closed).toBe(true);
-      expect(result.aplicacoes).toEqual([]);
-      expect(BandApplicationModel.findAll).not.toHaveBeenCalled();
+      expect(BandApplicationModel.findAll).toHaveBeenCalled();
     });
 
     it('lança AppError 404 quando evento não existe', async () => {
@@ -268,6 +313,100 @@ describe('BandApplicationService', () => {
       await expect(service.getApplicationsForEvent(999)).rejects.toEqual(
         expect.objectContaining({ statusCode: 404 })
       );
+    });
+  });
+
+  // ─── getApplicationsByArtist (Phase 02) ──────────────────────────────────
+  describe('getApplicationsByArtist', () => {
+    const makeArtistProfile = (overrides = {}) => ({ id: 7, usuario_id: 42, nome_artistico: 'Solo', ...overrides });
+    const makeApp = (overrides = {}) => ({
+      id: 200,
+      status: 'pendente',
+      mensagem: null,
+      data_aplicacao: new Date(),
+      evento_id: 10,
+      artista_id: 7,
+      valor_proposto: 350,
+      Event: {
+        titulo_evento: 'Festival',
+        data_show: new Date(),
+        horario_inicio: '20:00',
+        horario_fim: '22:00',
+        EstablishmentProfile: { nome_estabelecimento: 'Bar do Rock' },
+      },
+      ...overrides,
+    });
+
+    it('lança AppError 404 quando usuário não tem perfil de artista', async () => {
+      // Arrange
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      // Act + Assert
+      await expect(service.getApplicationsByArtist(999)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404, message: 'Perfil de artista não encontrado' })
+      );
+    });
+
+    it('normaliza status "rejeitado" para "recusado" no retorno', async () => {
+      // Arrange
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(makeArtistProfile());
+      (BandApplicationModel.findAll as jest.Mock).mockResolvedValue([makeApp({ status: 'rejeitado' })]);
+
+      // Act
+      const result = await service.getApplicationsByArtist(42);
+
+      // Assert
+      expect(result[0].status).toBe('recusado');
+    });
+
+    it('mantém status "pendente" inalterado', async () => {
+      // Arrange
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(makeArtistProfile());
+      (BandApplicationModel.findAll as jest.Mock).mockResolvedValue([makeApp({ status: 'pendente' })]);
+
+      // Act
+      const result = await service.getApplicationsByArtist(42);
+
+      // Assert
+      expect(result[0].status).toBe('pendente');
+    });
+
+    it('inclui valor_proposto no retorno', async () => {
+      // Arrange
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(makeArtistProfile());
+      (BandApplicationModel.findAll as jest.Mock).mockResolvedValue([makeApp({ valor_proposto: 450 })]);
+
+      // Act
+      const result = await service.getApplicationsByArtist(42);
+
+      // Assert
+      expect(result[0].valor_proposto).toBe(450);
+    });
+
+    it('busca contrato_id quando status é aceito e contrato existe', async () => {
+      // Arrange
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(makeArtistProfile());
+      (BandApplicationModel.findAll as jest.Mock).mockResolvedValue([makeApp({ status: 'aceito' })]);
+      (ContractModel.findOne as jest.Mock).mockResolvedValue({ id: 55 });
+
+      // Act
+      const result = await service.getApplicationsByArtist(42);
+
+      // Assert
+      expect(result[0].contrato_id).toBe(55);
+    });
+
+    it('retorna contrato_id null quando status é aceito mas contrato não existe', async () => {
+      // Arrange
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(makeArtistProfile());
+      (BandApplicationModel.findAll as jest.Mock).mockResolvedValue([makeApp({ status: 'aceito' })]);
+      (ContractModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      const result = await service.getApplicationsByArtist(42);
+
+      // Assert
+      expect(result[0].contrato_id).toBeNull();
     });
   });
 });

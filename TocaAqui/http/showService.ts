@@ -39,6 +39,7 @@ export interface ShowsParams {
   genero?: string;
   esta_semana?: boolean;
   fim_de_semana?: boolean;
+  esta_hoje?: boolean;
   page?: number;
   limit?: number;
 }

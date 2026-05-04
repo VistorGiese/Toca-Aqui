@@ -3,7 +3,16 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useContext, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import Button from "../components/Allcomponents/Button";
 import Fund from "../components/Allcomponents/Fund";
@@ -13,6 +22,7 @@ import {
   AccontFormContext,
   AccountProps,
 } from "../contexts/AccountFromContexto";
+import { cadastrarUsuarioSimples } from "../http/RegisterService";
 import { RootStackParamList } from "../navigation/Navigate";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -30,6 +40,9 @@ export default function InformationPersonResponsible() {
   const { accountFormData: formData, updateFormData } =
     useContext(AccontFormContext);
   const [showFullText, setShowFullText] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const userType = formData.tipo_usuario || "establishment_owner";
+  const isEstablishment = userType === "establishment_owner";
 
   const {
     control,
@@ -49,13 +62,36 @@ export default function InformationPersonResponsible() {
 
   const handleToggleText = () => setShowFullText((prev) => !prev);
 
-  function handleNext(data: AccountProps) {
+  async function handleNext(data: AccountProps) {
     const maskedPhone = data.celular_responsavel;
     const cleanedPhone = maskedPhone ? maskedPhone.replace(/\D/g, '') : "";
     const dataToSave = { ...data, celular_responsavel: cleanedPhone };
     updateFormData(dataToSave);
-    console.log("Dados salvos no contexto:", dataToSave);
-    navigation.navigate("AdditionalInformation");
+
+    if (isEstablishment) {
+      navigation.navigate("AdditionalInformation");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await cadastrarUsuarioSimples({
+        ...formData,
+        ...dataToSave,
+      });
+
+      Alert.alert("Sucesso!", "Cadastro realizado com sucesso!", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Nao foi possivel finalizar o cadastro.";
+      Alert.alert("Erro no cadastro", String(msg));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -71,8 +107,12 @@ export default function InformationPersonResponsible() {
 
         <Text style={styles.subtitle}>
           {showFullText
-            ? "Preencha as informações do proprietário do estabelecimento para facilitar o contato das bandas, caso haja necessidade de mais detalhes ou ajustes sobre a contratação."
-            : "Preencha as informações do proprietário... "}
+            ? isEstablishment
+              ? "Preencha as informacoes do proprietario do estabelecimento para facilitar o contato das bandas."
+              : "Preencha seus dados de contato para concluir o cadastro da conta."
+            : isEstablishment
+              ? "Preencha as informacoes do proprietario... "
+              : "Preencha seus dados para concluir... "}
           <Text style={styles.saibaMais} onPress={handleToggleText}>
             {showFullText ? " Ver menos" : " Saiba mais"}
           </Text>
@@ -85,7 +125,7 @@ export default function InformationPersonResponsible() {
           render={({ field: { onChange, onBlur, value, ref } }) => (
             <Input
               inputRef={ref}
-              label="Nome do responsável"
+              label={isEstablishment ? "Nome do responsavel" : "Seu nome"}
               iconName="account"
               placeholder="Nome completo"
               onBlur={onBlur}
@@ -114,7 +154,7 @@ export default function InformationPersonResponsible() {
                 ref(e);
                 emailRef.current = e;
               }}
-              label="E-mail do responsável"
+              label={isEstablishment ? "E-mail do responsavel" : "Seu e-mail"}
               iconName="email"
               placeholder="contato@email.com"
               onBlur={onBlur}
@@ -133,8 +173,11 @@ export default function InformationPersonResponsible() {
           control={control}
           name="celular_responsavel"
           rules={{
-            required: "O telefone é obrigatório",
-            validate: value => (value && value.replace(/\D/g, '').length === 11) || "Telefone inválido (11 dígitos)",
+            required: isEstablishment ? "O telefone e obrigatorio" : false,
+            validate: value =>
+              !value ||
+              value.replace(/\D/g, "").length === 11 ||
+              "Telefone invalido (11 digitos)",
           }}
           render={({ field: { onChange, onBlur, value, ref } }) => (
             <Input
@@ -142,7 +185,7 @@ export default function InformationPersonResponsible() {
                 ref(e);
                 phoneRef.current = e;
               }}
-              label="Telefone do responsável"
+              label={isEstablishment ? "Telefone do responsavel" : "Telefone (opcional)"}
               iconName="phone"
               placeholder="(XX) XXXXX-XXXX"
               onBlur={onBlur}
@@ -159,7 +202,13 @@ export default function InformationPersonResponsible() {
       </ScrollView>
 
       <Button style={styles.button} onPress={handleSubmit(handleNext)}>
-        <Text style={styles.buttonText}>Continuar</Text>
+        {isSubmitting ? (
+          <ActivityIndicator color={colors.purpleDark} />
+        ) : (
+          <Text style={styles.buttonText}>
+            {isEstablishment ? "Continuar" : "Finalizar cadastro"}
+          </Text>
+        )}
       </Button>
     </View>
   );

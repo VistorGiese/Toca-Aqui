@@ -1,8 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-//adicionar ip do seu computador, ao cancelar o projeto e rodar denovo o IP troca sozinho
-const baseURL = "http://192.168.224.1:3000";
+// Use the REACT_NATIVE_PACKAGER_HOSTNAME env var set by Expo (works on any machine/network).
+// Falls back to localhost for simulators. Override via EXPO_PUBLIC_API_URL if needed.
+const baseURL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  `http://${process.env.REACT_NATIVE_PACKAGER_HOSTNAME ?? "localhost"}:3000`;
 
 const api = axios.create({
   baseURL: baseURL,
@@ -22,16 +25,11 @@ api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem("token");
     if (token) {
-      if (config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
   }
-);
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => response,

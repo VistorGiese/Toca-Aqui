@@ -91,7 +91,10 @@ export default function EstNewGig() {
       Alert.alert("Sucesso", gigId ? "Data atualizada!" : "Data publicada!");
       navigation.goBack();
     } catch (e: any) {
-      Alert.alert("Erro", e?.response?.data?.message || "Não foi possível salvar.");
+      const data = e?.response?.data;
+      const detalhes = data?.detalhes?.map((d: any) => d.mensagem).join("\n");
+      const msg = detalhes || data?.message || data?.error || "Não foi possível salvar.";
+      Alert.alert("Erro", msg);
     } finally {
       setSaving(false);
     }

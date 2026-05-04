@@ -21,11 +21,7 @@ import {
   AccontFormContext,
   AccountProps,
 } from "../contexts/AccountFromContexto";
-import {
-  createEndereco,
-  createEstabelecimento,
-  deleteEndereco,
-} from "../http/RegisterService";
+import { cadastrarEstabelecimentoCompleto } from "../http/RegisterService";
 import { RootStackParamList } from "../navigation/Navigate";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -70,61 +66,23 @@ export default function AdditionalInformation() {
     updateFormData(data);
 
     const finalData = { ...accountFormData, ...data };
-    let createdEnderecoId: number | null = null;
 
     try {
-      const enderecoPayload = {
-        rua: finalData.rua,
-        numero: finalData.numero,
-        bairro: finalData.bairro,
-        cidade: finalData.cidade,
-        estado: finalData.estado,
-        cep: finalData.cep,
-      };
-
-      const enderecoCriado = await createEndereco(enderecoPayload);
-      createdEnderecoId = enderecoCriado.id;
-
-      if (!createdEnderecoId) {
-        throw new Error("O ID do endereço não foi retornado pelo backend.");
-      }
-
-      const estabelecimentoPayload = {
-        nome_estabelecimento: finalData.nome_estabelecimento,
-        nome_dono: finalData.nome_dono,
-        email_responsavel: finalData.email_responsavel,
-        celular_responsavel: finalData.celular_responsavel,
-        generos_musicais: finalData.generos_musicais,
+      await cadastrarEstabelecimentoCompleto({
+        ...finalData,
         horario_funcionamento_inicio: `${finalData.horario_funcionamento_inicio}:00`,
         horario_funcionamento_fim: `${finalData.horario_funcionamento_fim}:00`,
-        senha: finalData.password,
-        endereco_id: createdEnderecoId,
-      };
-
-      await createEstabelecimento(estabelecimentoPayload);
+      });
 
       Alert.alert("Sucesso!", "Sua conta foi criada com sucesso.", [
         { text: "OK", onPress: () => navigation.navigate("Login") },
       ]);
     } catch (error: any) {
       const errorMessage =
+        error.response?.data?.error ||
         error.response?.data?.message ||
         "Não foi possível criar sua conta. Verifique os dados.";
       setSubmissionError(errorMessage);
-
-      if (createdEnderecoId) {
-        try {
-          await deleteEndereco(createdEnderecoId);
-          console.log(
-            `Rollback: Endereço com ID ${createdEnderecoId} deletado com sucesso.`
-          );
-        } catch (deleteError) {
-          console.error(
-            "Erro Crítico: Falha ao deletar endereço após erro no cadastro.",
-            deleteError
-          );
-        }
-      }
 
       Alert.alert(
         "Erro no Cadastro",
@@ -346,4 +304,3 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Regular",
   },
 });
-

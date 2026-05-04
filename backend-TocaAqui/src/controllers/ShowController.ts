@@ -11,6 +11,7 @@ export const getPublicShows = asyncHandler(async (req: Request, res: Response) =
     data_fim,
     esta_semana,
     fim_de_semana,
+    esta_hoje,
     page,
     limit,
   } = req.query as Record<string, string>;
@@ -22,6 +23,7 @@ export const getPublicShows = asyncHandler(async (req: Request, res: Response) =
     data_fim,
     esta_semana: esta_semana === 'true',
     fim_de_semana: fim_de_semana === 'true',
+    esta_hoje: esta_hoje === 'true',
     page: page ? parseInt(page, 10) : undefined,
     limit: limit ? parseInt(limit, 10) : undefined,
   });

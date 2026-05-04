@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService, Gig, ArtistPublicProfile } from "@/http/establishmentService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,8 +29,10 @@ export default function EstHome() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const storedId = await AsyncStorage.getItem("estabelecimentoId");
+      const estId = storedId ? Number(storedId) : undefined;
       const [g, c, a, p] = await Promise.allSettled([
-        establishmentService.getMyGigs(),
+        establishmentService.getMyGigs(estId),
         establishmentService.getMyContracts(),
         establishmentService.searchArtists(),
         establishmentService.getMyEstablishmentProfile(),
@@ -66,7 +69,7 @@ export default function EstHome() {
           </TouchableOpacity>
         </View>
 
-        <Text style={s.greeting}>Olá, {user?.nome?.split(" ")[0] ?? "Gestor"}!</Text>
+        <Text style={s.greeting}>Olá, {user?.nome_completo?.split(" ")[0] ?? "Gestor"}!</Text>
         <Text style={s.greetingSub}>Sua agenda está movimentada esta semana.</Text>
 
         {/* Métricas */}

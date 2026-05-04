@@ -32,12 +32,6 @@ const DS = {
   bgSurface: "#1A1040",
 };
 
-const ANALYTICS_MOCK = {
-  profileVisibility: "24.8k",
-  visibilityGrowth: "+12.4%",
-  conversionRate: "18.5%",
-  barData: [60, 80, 45, 90, 70, 85, 55, 95, 65, 75, 88, 72],
-};
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -88,16 +82,16 @@ export default function ArtistHome() {
             <FontAwesome5 name="user" size={16} color={DS.accent} />
           </View>
           <Text style={styles.brandName}>TOCA AQUI</Text>
-          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => (navigation as any).navigate("UserNotifications")}>
             <FontAwesome5 name="bell" size={18} color={DS.white} />
           </TouchableOpacity>
         </View>
 
         {/* Greeting */}
         <View style={styles.greetingBlock}>
-          <Text style={styles.greetingText}>Welcome back,</Text>
+          <Text style={styles.greetingText}>Bem-vindo de volta,</Text>
           <Text style={styles.greetingName}>{getFirstName()}</Text>
-          <Text style={styles.greetingSub}>Your creative journey is scaling...</Text>
+          <Text style={styles.greetingSub}>Sua jornada musical está crescendo...</Text>
         </View>
 
         {/* Metric Cards */}
@@ -105,71 +99,37 @@ export default function ArtistHome() {
           <View style={[styles.metricCard, { borderLeftColor: DS.cyan }]}>
             <FontAwesome5 name="calendar-check" size={20} color={DS.cyan} />
             <Text style={styles.metricValue}>{confirmedCount}</Text>
-            <Text style={styles.metricLabel}>NEXT{"\n"}PERFORMANCES</Text>
+            <Text style={styles.metricLabel}>SHOWS{"\n"}CONFIRMADOS</Text>
           </View>
           <View style={[styles.metricCard, { borderLeftColor: DS.danger }]}>
             <FontAwesome5 name="clock" size={20} color={DS.danger} />
             <Text style={styles.metricValue}>{pendingCount}</Text>
-            <Text style={styles.metricLabel}>PENDING{"\n"}PROPOSALS</Text>
+            <Text style={styles.metricLabel}>PROPOSTAS{"\n"}PENDENTES</Text>
           </View>
         </View>
 
-        {/* Analytics Overview */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Analytics Overview</Text>
-          <TouchableOpacity>
-            <Text style={styles.sectionLink}>View Detailed Insights</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile Visibility Card */}
-        <View style={styles.analyticsCard}>
-          <View style={styles.analyticsCardHeader}>
-            <Text style={styles.analyticsCardTitle}>PROFILE VISIBILITY</Text>
-            <View style={styles.badgeMonthly}>
-              <Text style={styles.badgeMonthlyText}>MONTHLY</Text>
-            </View>
-          </View>
-          <Text style={styles.analyticsValue}>{ANALYTICS_MOCK.profileVisibility}</Text>
-          <Text style={styles.analyticsGrowth}>
-            {ANALYTICS_MOCK.visibilityGrowth} from last month
-          </Text>
-          <View style={styles.barChart}>
-            {ANALYTICS_MOCK.barData.map((h, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.bar,
-                  {
-                    height: (h / 100) * 50,
-                    backgroundColor:
-                      i === ANALYTICS_MOCK.barData.length - 1 ? DS.accent : DS.bgSurface,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-
+        {/* Resumo */}
         <View style={styles.analyticsSmallRow}>
           <View style={[styles.analyticsSmallCard, { flex: 1 }]}>
-            <Text style={styles.analyticsSmallTitle}>BOOKINGS{"\n"}CONFIRMED</Text>
+            <Text style={styles.analyticsSmallTitle}>CONTRATOS{"\n"}CONFIRMADOS</Text>
             <Text style={styles.analyticsSmallValue}>
               {String(confirmedCount).padStart(2, "0")}
             </Text>
-            <Text style={styles.analyticsSmallSub}>This cycle</Text>
+            <Text style={styles.analyticsSmallSub}>Neste ciclo</Text>
           </View>
           <View style={[styles.analyticsSmallCard, { flex: 1 }]}>
-            <Text style={styles.analyticsSmallTitle}>CONVERSION{"\n"}RATE</Text>
-            <Text style={styles.analyticsSmallValue}>{ANALYTICS_MOCK.conversionRate}</Text>
-            <Text style={styles.analyticsSmallSub}>Above average</Text>
+            <Text style={styles.analyticsSmallTitle}>TOTAL DE{"\n"}CONTRATOS</Text>
+            <Text style={styles.analyticsSmallValue}>
+              {String(contracts.length).padStart(2, "0")}
+            </Text>
+            <Text style={styles.analyticsSmallSub}>Todos os status</Text>
           </View>
         </View>
 
-        {/* Recently Sent Gigs */}
+        {/* Últimas Candidaturas */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recently Sent Gigs</Text>
-          <Text style={styles.sectionSub}>SHOWING LAST 3</Text>
+          <Text style={styles.sectionTitle}>Últimas Candidaturas</Text>
+          <Text style={styles.sectionSub}>ÚLTIMAS 3</Text>
         </View>
 
         {recentContracts.length === 0 ? (

@@ -44,36 +44,23 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       const response = await userService.login(data.email.trim(), data.senha);
-      await signInWithToken(response.token, { ...response.user });
+      const pags = await signInWithToken(response.token, { ...response.user });
 
-      const role = response.user.role;
+      // Sempre persiste estabelecimentoId se o usuário tiver estabelecimento
+      if (pags?.pagina_estabelecimento) {
+        await AsyncStorage.setItem('estabelecimentoId', String(pags.pagina_estabelecimento.id));
+      }
 
-      if (role === "artist") {
-        navigation.reset({ index: 0, routes: [{ name: "ArtistNavigator" }] });
-      } else if (role === "establishment_owner") {
-        // Busca o perfil real para verificar se o estabelecimento já existe no banco
-        try {
-          const profile = await userService.getProfile();
-          const estProfiles = profile.user.establishment_profiles ?? [];
-          const memberships = profile.user.establishment_memberships ?? [];
-
-          if (estProfiles.length > 0) {
-            await AsyncStorage.setItem("estabelecimentoId", String(estProfiles[0].id));
-            navigation.reset({ index: 0, routes: [{ name: "EstablishmentNavigator" }] });
-          } else if (memberships.length > 0) {
-            await AsyncStorage.setItem("estabelecimentoId", String(memberships[0].estabelecimento.id));
-            navigation.reset({ index: 0, routes: [{ name: "EstablishmentNavigator" }] });
-          } else {
-            await AsyncStorage.removeItem("estabelecimentoId");
-            navigation.reset({ index: 0, routes: [{ name: "OnboardingEstIdentidade" }] });
-          }
-        } catch {
-          // Fallback: usa o AsyncStorage caso a chamada de perfil falhe
-          const estId = await AsyncStorage.getItem("estabelecimentoId");
-          navigation.reset({ index: 0, routes: [{ name: estId ? "EstablishmentNavigator" : "OnboardingEstIdentidade" }] });
-        }
+      if (pags?.pagina_artista && pags?.pagina_estabelecimento) {
+        // Tem as duas páginas — vai para artista por padrão (pode mudar depois)
+        navigation.reset({ index: 0, routes: [{ name: 'ArtistNavigator' }] });
+      } else if (pags?.pagina_artista) {
+        navigation.reset({ index: 0, routes: [{ name: 'ArtistNavigator' }] });
+      } else if (pags?.pagina_estabelecimento) {
+        navigation.reset({ index: 0, routes: [{ name: 'EstablishmentNavigator' }] });
       } else {
-        navigation.reset({ index: 0, routes: [{ name: "UserNavigator" }] });
+        // Usuário sem páginas — fluxo de escolha ou UserNavigator
+        navigation.reset({ index: 0, routes: [{ name: 'UserNavigator' }] });
       }
     } catch (error: any) {
       const message =

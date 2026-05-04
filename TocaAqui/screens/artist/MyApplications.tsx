@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,10 +10,10 @@ import {
   RefreshControl,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { contractService, Contract } from "@/http/contractService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { bandApplicationService, BandApplication } from "@/http/bandApplicationService";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
   bg: "#09090F",
@@ -34,20 +34,20 @@ const DS = {
 const TABS = ["Em análise", "Aceitas", "Recusadas"] as const;
 type Tab = typeof TABS[number];
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 
 export default function MyApplications() {
   const navigation = useNavigation<NavProp>();
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [applications, setApplications] = useState<BandApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("Em análise");
 
-  const fetchContracts = useCallback(async (isRefresh = false) => {
+  const fetchApplications = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const data = await contractService.getMyContracts();
-      setContracts(data);
+      const data = await bandApplicationService.getMyApplications();
+      setApplications(data);
     } catch {
       Alert.alert("Erro", "Não foi possível carregar as candidaturas.");
     } finally {
@@ -56,29 +56,31 @@ export default function MyApplications() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchContracts();
-  }, [fetchContracts]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchApplications();
+    }, [fetchApplications])
+  );
 
-  const getFilteredContracts = (): Contract[] => {
+  const getFiltered = (): BandApplication[] => {
     switch (activeTab) {
       case "Em análise":
-        return contracts.filter((c) => c.status === "aguardando_aceite");
+        return applications.filter((a) => a.status === "pendente");
       case "Aceitas":
-        return contracts.filter((c) => c.status === "aceito" || c.status === "concluido");
+        return applications.filter((a) => a.status === "aceito");
       case "Recusadas":
-        return contracts.filter((c) => c.status === "cancelado" || c.status === "recusado");
+        return applications.filter((a) => a.status === "recusado");
       default:
         return [];
     }
   };
 
-  const filtered = getFilteredContracts();
+  const filtered = getFiltered();
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={DS.accent} />
+        <ActivityIndicator size="large" color="#A78BFA" />
       </View>
     );
   }
@@ -91,9 +93,9 @@ export default function MyApplications() {
           <FontAwesome5 name="arrow-left" size={16} color={DS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Minhas candidaturas</Text>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <View>
           <FontAwesome5 name="ellipsis-v" size={16} color={DS.white} />
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tabs */}
@@ -122,10 +124,8 @@ export default function MyApplications() {
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <ApplicationCard
-            contract={item}
-            onViewContract={() =>
-              (navigation as any).navigate("ContractDetail", { contractId: item.id })
-            }
+            application={item}
+            onViewContract={(contractId) => navigation.navigate("ContractDetail", { contractId })}
           />
         )}
         contentContainerStyle={styles.listContent}
@@ -133,7 +133,7 @@ export default function MyApplications() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => fetchContracts(true)}
+            onRefresh={() => fetchApplications(true)}
             tintColor={DS.accent}
           />
         }
@@ -154,24 +154,15 @@ export default function MyApplications() {
   );
 }
 
-function ApplicationCard({
-  contract,
-  onViewContract,
-}: {
-  contract: Contract;
-  onViewContract: () => void;
-}) {
-  const isAccepted = contract.status === "aceito" || contract.status === "concluido";
-  const isPending = contract.status === "aguardando_aceite";
-  const isRejected = contract.status === "cancelado" || contract.status === "recusado";
+function ApplicationCard({ application, onViewContract }: { application: BandApplication; onViewContract?: (contractId: number) => void }) {
+  const isPending = application.status === "pendente";
+  const isAccepted = application.status === "aceito";
 
-  const getStatusIcon = () => {
-    if (isAccepted) return { name: "check-circle", color: DS.success };
-    if (isPending) return { name: "clock", color: DS.accent };
-    return { name: "times-circle", color: DS.danger };
-  };
-
-  const statusIcon = getStatusIcon();
+  const statusIcon = isPending
+    ? { name: "clock", color: DS.accent }
+    : isAccepted
+    ? { name: "check-circle", color: DS.success }
+    : { name: "times-circle", color: DS.danger };
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "Data não informada";
@@ -188,52 +179,66 @@ function ApplicationCard({
 
   return (
     <View style={cardStyles.card}>
-      {/* Thumbnail */}
       <View style={cardStyles.thumbnail}>
         <FontAwesome5 name="music" size={20} color={DS.textDis} />
       </View>
 
-      {/* Info */}
       <View style={cardStyles.info}>
         <View style={cardStyles.nameRow}>
           <Text style={cardStyles.eventName} numberOfLines={1}>
-            {contract.nome_evento || `Contrato #${contract.id}`}
+            {application.nome_evento || `Vaga #${application.evento_id}`}
           </Text>
           <FontAwesome5 name={statusIcon.name as any} size={16} color={statusIcon.color} solid />
         </View>
 
-        <Text style={cardStyles.dateText}>{formatDate(contract.data_show)}</Text>
+        {application.nome_estabelecimento ? (
+          <Text style={cardStyles.venueText}>{application.nome_estabelecimento}</Text>
+        ) : null}
 
-        {contract.horario_inicio ? (
+        <Text style={cardStyles.dateText}>{formatDate(application.data_show)}</Text>
+
+        {application.horario_inicio ? (
           <Text style={cardStyles.timeText}>
-            {contract.horario_inicio} — {contract.horario_fim}
+            {application.horario_inicio} — {application.horario_fim}
           </Text>
         ) : null}
 
-        {contract.cache_acordado > 0 ? (
-          <View style={cardStyles.cacheRow}>
-            <Text style={cardStyles.cacheLabel}>CACHÊ ESTIMADO</Text>
-            <Text style={cardStyles.cacheValue}>
-              R${" "}
-              {Number(contract.cache_acordado).toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-              })}
-            </Text>
-          </View>
-        ) : null}
+        {application.valor_proposto != null && (
+          <Text style={{ color: DS.textSec, fontSize: 13, marginTop: 2 }}>
+            Valor proposto: R$ {Number(application.valor_proposto).toFixed(2).replace('.', ',')}
+          </Text>
+        )}
 
-        {/* Status Badge */}
-        {isAccepted ? (
-          <TouchableOpacity style={cardStyles.contractBtn} onPress={onViewContract}>
-            <Text style={cardStyles.contractBtnText}>VER CONTRATO</Text>
-          </TouchableOpacity>
-        ) : isPending ? (
+        {isPending ? (
           <View style={cardStyles.statusBadgePending}>
             <Text style={cardStyles.statusBadgePendingText}>Candidatura em análise...</Text>
           </View>
+        ) : isAccepted ? (
+          <>
+            <View style={cardStyles.statusBadgeAccepted}>
+              <Text style={cardStyles.statusBadgeAcceptedText}>ACEITA</Text>
+            </View>
+            {application.contrato_id != null && onViewContract && (
+              <TouchableOpacity
+                style={{
+                  marginTop: 8,
+                  backgroundColor: DS.accent,
+                  borderRadius: 10,
+                  paddingVertical: 10,
+                  alignItems: "center",
+                }}
+                onPress={() => onViewContract(application.contrato_id!)}
+                activeOpacity={0.85}
+              >
+                <Text style={{ fontFamily: "Montserrat-Bold", fontSize: 12, color: DS.white, letterSpacing: 1 }}>
+                  VER CONTRATO
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
         ) : (
           <View style={cardStyles.statusBadgeRejected}>
-            <Text style={cardStyles.statusBadgeRejectedText}>VAGA PREENCHIDA</Text>
+            <Text style={cardStyles.statusBadgeRejectedText}>RECUSADA</Text>
           </View>
         )}
       </View>
@@ -273,6 +278,12 @@ const cardStyles = StyleSheet.create({
     fontSize: 14,
     color: DS.white,
     marginRight: 8,
+  },
+  venueText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 12,
+    color: DS.accentLight,
+    marginBottom: 2,
   },
   dateText: {
     fontFamily: "Montserrat-Regular",
@@ -325,6 +336,22 @@ const cardStyles = StyleSheet.create({
     fontSize: 12,
     color: DS.textSec,
     fontStyle: "italic",
+  },
+  statusBadgeAccepted: {
+    backgroundColor: DS.success + "22",
+    borderWidth: 1,
+    borderColor: DS.success,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    alignSelf: "flex-start",
+    marginTop: 6,
+  },
+  statusBadgeAcceptedText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 10,
+    color: DS.success,
+    letterSpacing: 1,
   },
   statusBadgeRejected: {
     backgroundColor: DS.danger + "22",

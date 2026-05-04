@@ -1,16 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { User, UserRole } from "@/types";
+import { User, UserRole, MinhasPaginas } from "@/types";
 import { userService } from "@/http/userService";
 import api, { setOnUnauthorized } from "@/http/api";
 
 interface AuthContextData {
   user: User | null;
   token: string | null;
+  paginas: MinhasPaginas | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, senha: string) => Promise<void>;
-  signInWithToken: (tokenValue: string, userData: { id: number; nome_completo: string; email: string; role: string; perfil_artista_id?: number }) => Promise<void>;
+  signInWithToken: (tokenValue: string, userData: { id: number; nome_completo: string; email: string; role: string; perfil_artista_id?: number }) => Promise<MinhasPaginas | null>;
   signOut: () => Promise<void>;
   updateUser: () => Promise<void>;
 }
@@ -20,12 +21,14 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [paginas, setPaginas] = useState<MinhasPaginas | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isSigningOut = useRef(false);
 
   const clearAuth = useCallback(() => {
     setUser(null);
     setToken(null);
+    setPaginas(null);
   }, []);
 
   // Register 401 callback so api interceptor can trigger logout
@@ -41,48 +44,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const storedToken = await AsyncStorage.getItem("token");
       if (storedToken) {
+        // Inject token into api defaults so getProfile() is authenticated
         api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
         setToken(storedToken);
-
         try {
           const profile = await userService.getProfile();
           const u = profile.user;
-
-          // Usa o role retornado pelo backend; se ausente, busca o salvo no storage
-          let role = u.role as UserRole | undefined;
-          if (!role) {
-            const storedRole = await AsyncStorage.getItem("userRole");
-            role = (storedRole as UserRole) || undefined;
-          }
-
           setUser({
             id: u.id,
             nome_completo: u.nome_completo,
             email: u.email,
-            role: role as UserRole,
+            role: u.role as UserRole,
             perfilArtistaId: u.artist_profiles?.[0]?.id,
           });
-
           if (u.establishment_profiles && u.establishment_profiles.length > 0) {
-            await AsyncStorage.setItem(
-              "estabelecimentoId",
-              String(u.establishment_profiles[0].id)
-            );
+            await AsyncStorage.setItem("estabelecimentoId", String(u.establishment_profiles[0].id));
           } else if (u.establishment_memberships && u.establishment_memberships.length > 0) {
-            // Usuário é gerenciador de um estabelecimento (não owner)
-            await AsyncStorage.setItem(
-              "estabelecimentoId",
-              String(u.establishment_memberships[0].estabelecimento.id)
-            );
+            await AsyncStorage.setItem("estabelecimentoId", String(u.establishment_memberships[0].estabelecimento.id));
           }
+          try {
+            const p = await userService.getMinhasPaginas();
+            setPaginas(p);
+          } catch { /* ignore */ }
         } catch {
+          // Token expired or invalid — clear it
           await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
           delete api.defaults.headers.common["Authorization"];
           setToken(null);
         }
       }
-    } catch {
-      // storage read error
     } finally {
       setIsLoading(false);
     }
@@ -134,26 +124,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: u.role as UserRole,
       });
     }
+    try {
+      const p = await userService.getMinhasPaginas();
+      setPaginas(p);
+    } catch { /* ignore */ }
   }, []);
 
   const signInWithToken = useCallback(async (tokenValue: string, userData: { id: number; nome_completo: string; email: string; role: string; perfil_artista_id?: number }) => {
-    await AsyncStorage.setItem("token", tokenValue);
-    await AsyncStorage.setItem("userRole", userData.role);
     api.defaults.headers.common["Authorization"] = `Bearer ${tokenValue}`;
     setToken(tokenValue);
+
+    let perfilArtistaId: number | undefined = userData.perfil_artista_id;
+    try {
+      const profile = await userService.getProfile();
+      perfilArtistaId = profile.user.artist_profiles?.[0]?.id;
+    } catch { /* ignore */ }
+
     setUser({
       id: userData.id,
       nome_completo: userData.nome_completo,
       email: userData.email,
       role: userData.role as UserRole,
-      perfilArtistaId: userData.perfil_artista_id,
+      perfilArtistaId,
     });
+    try {
+      const p = await userService.getMinhasPaginas();
+      setPaginas(p);
+      return p;
+    } catch { return null; }
   }, []);
 
   const signOut = useCallback(async () => {
     isSigningOut.current = true;
     await userService.logout();
     await AsyncStorage.removeItem("userRole");
+    setPaginas(null);
     clearAuth();
     isSigningOut.current = false;
   }, [clearAuth]);
@@ -167,6 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         nome_completo: u.nome_completo,
         email: u.email,
         role: u.role as UserRole,
+        perfilArtistaId: u.artist_profiles?.[0]?.id,
       });
     } catch {
       // ignore
@@ -178,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
+        paginas,
         isLoading,
         isAuthenticated: !!user,
         signIn,

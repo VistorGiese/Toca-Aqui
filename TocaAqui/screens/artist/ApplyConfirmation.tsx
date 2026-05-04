@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bandApplicationService } from "@/http/bandApplicationService";
 import { useAuth } from "@/contexts/AuthContext";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
+import { artistaPublicoService } from "@/http/artistaPublicoService";
 
 const DS = {
   bg: "#09090F",
@@ -32,8 +33,8 @@ const DS = {
   bgSurface: "#1A1040",
 };
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
-type RouteType = RouteProp<RootStackParamList, "ApplyConfirmation">;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
+type RouteType = RouteProp<ArtistStackParamList, "ApplyConfirmation">;
 
 export default function ApplyConfirmation() {
   const navigation = useNavigation<NavProp>();
@@ -42,11 +43,33 @@ export default function ApplyConfirmation() {
   const { user } = useAuth();
 
   const [mensagem, setMensagem] = useState("");
+  const [valorProposto, setValorProposto] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mediaArtista, setMediaArtista] = useState<number>(0);
+  const [cidadeArtista, setCidadeArtista] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.perfilArtistaId) {
+      artistaPublicoService.getPerfilPublico(user.perfilArtistaId)
+        .then(p => {
+          setMediaArtista(p.media_nota ?? 0);
+          if (p.cidade) {
+            setCidadeArtista(p.estado ? `${p.cidade}, ${p.estado}` : p.cidade);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.perfilArtistaId]);
 
   const handleEnviar = async () => {
     if (!mensagem.trim()) {
       Alert.alert("Atenção", "Escreva uma mensagem de apresentação.");
+      return;
+    }
+
+    const valorNum = parseFloat(valorProposto);
+    if (!valorProposto.trim() || isNaN(valorNum) || valorNum <= 0) {
+      Alert.alert("Atencao", "Informe um valor proposto valido.");
       return;
     }
 
@@ -55,6 +78,7 @@ export default function ApplyConfirmation() {
       await bandApplicationService.applyToEvent({
         evento_id: eventId,
         mensagem: mensagem.trim(),
+        valor_proposto: valorNum,
       });
 
       Alert.alert(
@@ -63,12 +87,12 @@ export default function ApplyConfirmation() {
         [
           {
             text: "OK",
-            onPress: () => (navigation as any).navigate("BrowseEvents"),
+            onPress: () => navigation.popToTop(),
           },
         ]
       );
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Não foi possível enviar a candidatura.";
+      const msg = err?.response?.data?.error || err?.response?.data?.message || "Não foi possível enviar a candidatura.";
       Alert.alert("Erro", msg);
     } finally {
       setLoading(false);
@@ -88,7 +112,10 @@ export default function ApplyConfirmation() {
           <FontAwesome5 name="arrow-left" size={14} color={DS.white} />
           <Text style={styles.headerTitle}>Confirmar Candidatura</Text>
         </TouchableOpacity>
-        <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={() => Alert.alert("Ajuda", "Preencha sua mensagem de apresentação e envie sua candidatura para o evento.")}
+        >
           <FontAwesome5 name="ellipsis-v" size={16} color={DS.white} />
         </TouchableOpacity>
       </View>
@@ -130,6 +157,18 @@ export default function ApplyConfirmation() {
           textAlignVertical="top"
         />
 
+        {/* Valor Proposto */}
+        <Text style={styles.cardSectionTitle}>VALOR PROPOSTO</Text>
+        <Text style={styles.inputLabel}>Valor proposto (R$)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: 350"
+          placeholderTextColor={DS.textDis}
+          keyboardType="numeric"
+          value={valorProposto}
+          onChangeText={setValorProposto}
+        />
+
         {/* Preview do Perfil */}
         <Text style={styles.cardSectionTitle}>COMO O CONTRATANTE VERÁ SEU PERFIL</Text>
         <View style={styles.profilePreviewCard}>
@@ -147,16 +186,16 @@ export default function ApplyConfirmation() {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <FontAwesome
                     key={i}
-                    name={i < 4 ? "star" : "star-o"}
+                    name={i < Math.round(mediaArtista) ? "star" : "star-o"}
                     size={12}
-                    color={i < 4 ? DS.gold : DS.textDis}
+                    color={i < Math.round(mediaArtista) ? DS.gold : DS.textDis}
                   />
                 ))}
-                <Text style={styles.reviewsCount}>(4.0)</Text>
+                <Text style={styles.reviewsCount}>({mediaArtista > 0 ? mediaArtista.toFixed(1) : "Novo"})</Text>
               </View>
               <View style={styles.locationRow}>
                 <FontAwesome5 name="map-marker-alt" size={10} color={DS.textDis} />
-                <Text style={styles.previewLocation}> Brasil</Text>
+                <Text style={styles.previewLocation}> {cidadeArtista || "Brasil"}</Text>
               </View>
             </View>
           </View>
@@ -258,6 +297,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: DS.bgSurface,
     textAlignVertical: "top",
+  },
+  inputLabel: {
+    color: DS.white,
+    fontSize: 14,
+    marginBottom: 6,
+    fontWeight: '600' as const,
+    fontFamily: "Montserrat-SemiBold",
+  },
+  input: {
+    backgroundColor: DS.bgInput,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: DS.white,
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: DS.bgSurface,
   },
   profilePreviewCard: {
     backgroundColor: DS.bgCard,

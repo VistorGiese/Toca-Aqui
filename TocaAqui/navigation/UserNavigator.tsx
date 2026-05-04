@@ -17,6 +17,7 @@ import UserArtistProfile from "@/screens/user/UserArtistProfile";
 import UserRateShow from "@/screens/user/UserRateShow";
 import UserComments from "@/screens/user/UserComments";
 import UserSettings from "@/screens/user/UserSettings";
+import UserNotifications from "@/screens/user/UserNotifications";
 
 const DS = {
   bg: "#09090F",
@@ -62,6 +63,7 @@ export type UserStackParamList = {
   UserRateShow: { showId: number; showTitle: string; venueName: string };
   UserComments: { showId: number; showTitle: string };
   UserSettings: undefined;
+  UserNotifications: undefined;
 };
 
 const Tab = createBottomTabNavigator<UserTabParamList>();
@@ -155,6 +157,7 @@ export default function UserNavigator() {
       <Stack.Screen name="UserRateShow" component={UserRateShow} />
       <Stack.Screen name="UserComments" component={UserComments} />
       <Stack.Screen name="UserSettings" component={UserSettings} />
+      <Stack.Screen name="UserNotifications" component={UserNotifications} />
     </Stack.Navigator>
   );
 }

@@ -11,6 +11,7 @@ import redisService from '../config/redis';
 import { CACHE_KEYS } from '../config/cache';
 import ContractModel from '../models/ContractModel';
 import AvaliacaoShowModel from '../models/AvaliacaoShowModel';
+import ArtistProfileModel from '../models/ArtistProfileModel';
 
 export const getContract = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
@@ -150,20 +151,39 @@ export const getContractHistory = asyncHandler(async (req: AuthRequest, res: Res
 
 // Helper para obter o userId da outra parte do contrato
 async function getOtherPartyUserId(
-  contrato: { perfil_estabelecimento_id: number; banda_id: number },
+  contrato: { perfil_estabelecimento_id: number; banda_id?: number; artista_id?: number },
   targetRole: 'contratante' | 'contratado'
 ): Promise<number | null> {
   if (targetRole === 'contratante') {
     const estab = await EstablishmentProfileModel.findByPk(contrato.perfil_estabelecimento_id);
     return estab?.usuario_id ?? null;
   } else {
-    const lider = await BandMemberModel.findOne({
-      where: { banda_id: contrato.banda_id, e_lider: true },
-      include: [{ association: 'ArtistProfile', attributes: ['usuario_id'] }],
-    });
-    return (lider as any)?.ArtistProfile?.usuario_id ?? null;
+    // Artista individual
+    if (contrato.artista_id) {
+      const artista = await ArtistProfileModel.findByPk(contrato.artista_id);
+      return artista?.usuario_id ?? null;
+    }
+    // Banda — retorna userId do líder
+    if (contrato.banda_id) {
+      const lider = await BandMemberModel.findOne({
+        where: { banda_id: contrato.banda_id, e_lider: true },
+        include: [{ association: 'ArtistProfile', attributes: ['usuario_id'] }],
+      });
+      return (lider as any)?.ArtistProfile?.usuario_id ?? null;
+    }
+    return null;
   }
 }
+
+export const completeContractHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuario nao identificado', 401);
+  const contractId = parseInt(req.params.id as string);
+  const role = await contractService.getUserRole(contractId, req.user.id);
+  if (role !== 'contratante') throw new AppError('Apenas o contratante pode concluir o contrato', 403);
+  const contrato = await contractService.completeContract(contractId);
+  await redisService.invalidatePattern('contratos:*');
+  res.json(contrato);
+});
 
 export const avaliarEstabelecimento = asyncHandler(async (req: AuthRequest, res: Response) => {
   const usuario_id = req.user?.id;
@@ -180,13 +200,19 @@ export const avaliarEstabelecimento = asyncHandler(async (req: AuthRequest, res:
   if (!contract) throw new AppError('Contrato não encontrado', 404);
   if (contract.status !== 'concluido') throw new AppError('Só é possível avaliar contratos concluídos', 400);
 
-  // Verifica se o usuário é membro da banda do contrato
-  const lider = await BandMemberModel.findOne({
-    where: { banda_id: contract.banda_id, e_lider: true },
-    include: [{ association: 'ArtistProfile', attributes: ['usuario_id'] }],
-  });
-  const liderUserId = (lider as any)?.ArtistProfile?.usuario_id;
-  if (liderUserId !== usuario_id) throw new AppError('Acesso negado', 403);
+  // Verifica se o usuário é o contratado (artista individual ou líder de banda)
+  let contratadoUserId: number | null = null;
+  if (contract.artista_id) {
+    const artista = await ArtistProfileModel.findByPk(contract.artista_id);
+    contratadoUserId = artista?.usuario_id ?? null;
+  } else if (contract.banda_id) {
+    const lider = await BandMemberModel.findOne({
+      where: { banda_id: contract.banda_id, e_lider: true },
+      include: [{ association: 'ArtistProfile', attributes: ['usuario_id'] }],
+    });
+    contratadoUserId = (lider as any)?.ArtistProfile?.usuario_id ?? null;
+  }
+  if (contratadoUserId !== usuario_id) throw new AppError('Acesso negado', 403);
 
   const existing = await AvaliacaoShowModel.findOne({
     where: { usuario_id, agendamento_id: contract.evento_id },
@@ -204,4 +230,67 @@ export const avaliarEstabelecimento = asyncHandler(async (req: AuthRequest, res:
   });
 
   res.status(201).json({ message: 'Avaliação registrada com sucesso', avaliacao });
+});
+
+export const avaliarArtista = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw new AppError('Usuario nao identificado', 401);
+
+  const contrato_id = parseInt(req.params.id as string);
+  const { nota, comentario, tags } = req.body;
+
+  if (!nota || nota < 1 || nota > 5) {
+    throw new AppError('Nota deve ser entre 1 e 5', 400);
+  }
+
+  const contract = await ContractModel.findByPk(contrato_id);
+  if (!contract) throw new AppError('Contrato nao encontrado', 404);
+  if (contract.status !== 'concluido') throw new AppError('So e possivel avaliar contratos concluidos', 400);
+
+  // Verify caller is the contratante (establishment owner)
+  const estab = await EstablishmentProfileModel.findByPk(contract.perfil_estabelecimento_id);
+  if (!estab || estab.usuario_id !== usuario_id) throw new AppError('Acesso negado', 403);
+
+  // Check for duplicate rating
+  const existing = await AvaliacaoShowModel.findOne({
+    where: { usuario_id, agendamento_id: contract.evento_id },
+  });
+  if (existing) throw new AppError('Voce ja avaliou este artista', 400);
+
+  // Create evaluation record
+  const avaliacao = await AvaliacaoShowModel.create({
+    usuario_id,
+    agendamento_id: contract.evento_id,
+    nota_artista: nota,
+    nota_local: nota,
+    comentario: comentario || null,
+    tags_artista: tags || [],
+    tags_local: [],
+  });
+
+  // Recalculate nota_media for the artist
+  const artistId = contract.artista_id;
+  if (artistId) {
+    const artistContracts = await ContractModel.findAll({
+      where: { artista_id: artistId, status: 'concluido' },
+      attributes: ['evento_id'],
+    });
+    const eventoIds = artistContracts.map((c: any) => c.evento_id);
+
+    if (eventoIds.length > 0) {
+      const avaliacoes = await AvaliacaoShowModel.findAll({
+        where: { agendamento_id: eventoIds },
+        attributes: ['nota_artista'],
+      });
+      if (avaliacoes.length > 0) {
+        const avg = avaliacoes.reduce((sum: number, a: any) => sum + a.nota_artista, 0) / avaliacoes.length;
+        await ArtistProfileModel.update(
+          { nota_media: Math.round(avg * 10) / 10 },
+          { where: { id: artistId } }
+        );
+      }
+    }
+  }
+
+  res.status(201).json({ message: 'Avaliacao registrada com sucesso', avaliacao });
 });

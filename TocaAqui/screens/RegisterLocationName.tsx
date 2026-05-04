@@ -38,7 +38,10 @@ export default function RegisterLocationName() {
   const handleToggleText = () => setShowFullText((prev) => !prev);
 
   function handleNext(data: AccountProps) {
-    updateFormData({ nome_estabelecimento: data.nome_estabelecimento });
+    updateFormData({
+      nome_estabelecimento: data.nome_estabelecimento,
+      tipo_usuario: "establishment_owner",
+    });
     console.log({ nome_estabelecimento: data.nome_estabelecimento });
     navigation.navigate("RegisterLocationAndress");
   }

@@ -34,7 +34,7 @@ function formatShowDate(dateString: string): string {
 }
 
 function getShowTitle(show: Show): string {
-  return show.Contract?.Band?.nome_banda || show.titulo_evento;
+  return show.titulo_evento;
 }
 
 function getShowVenue(show: Show): string {
@@ -81,6 +81,8 @@ export default function UserFeed() {
         params.esta_semana = true;
       } else if (filter === "Fim de semana") {
         params.fim_de_semana = true;
+      } else if (filter === "Hoje") {
+        params.esta_hoje = true;
       }
       const response = await showService.getPublicShows(params);
       let result = response.shows;
@@ -130,7 +132,7 @@ export default function UserFeed() {
           <FontAwesome5 name="user" size={14} color="#A78BFA" />
         </View>
         <Text style={styles.headerBrand}>TOCA AQUI</Text>
-        <TouchableOpacity style={styles.bellBtn}>
+        <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate("UserNotifications")}>
           <FontAwesome5 name="bell" size={18} color="#A0A0B8" />
         </TouchableOpacity>
       </View>
@@ -172,9 +174,6 @@ export default function UserFeed() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Em Destaque</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAll}>VER TODOS</Text>
-          </TouchableOpacity>
         </View>
 
         {loadingFeatured ? (
@@ -229,7 +228,7 @@ export default function UserFeed() {
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Esta semana</Text>
+            <Text style={styles.sectionTitle}>{activeFilter}</Text>
             <Text style={styles.sectionSubtitle}>Eventos acontecendo perto de você</Text>
           </View>
         </View>

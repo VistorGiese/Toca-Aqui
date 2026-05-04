@@ -14,7 +14,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bookingService, Booking } from "@/http/bookingService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
   bg: "#09090F",
@@ -35,11 +35,13 @@ const DS = {
 const FILTER_TABS = ["TODOS", "ESTA SEMANA", "FIM DE SEMANA"] as const;
 type FilterTab = typeof FILTER_TABS[number];
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 
-function isThisWeek(dateStr: string): boolean {
+function isThisWeek(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
   const today = new Date();
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
@@ -49,8 +51,10 @@ function isThisWeek(dateStr: string): boolean {
   return date >= startOfWeek && date <= endOfWeek;
 }
 
-function isWeekend(dateStr: string): boolean {
+function isWeekend(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
   const day = date.getDay();
   return day === 0 || day === 6;
 }
@@ -66,7 +70,7 @@ export default function BrowseEvents() {
   const fetchBookings = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const data = await bookingService.getBookings();
+      const data = await bookingService.getBookings({ status: 'pendente' });
       setBookings(data);
     } catch {
       Alert.alert("Erro", "Não foi possível carregar as vagas.");
@@ -92,7 +96,9 @@ export default function BrowseEvents() {
         ? isThisWeek(b.data_show)
         : isWeekend(b.data_show);
 
-    return matchesSearch && matchesTab;
+    const isFuture = new Date(b.data_show) > new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    return matchesSearch && matchesTab && isFuture;
   });
 
   if (loading) {
@@ -110,7 +116,7 @@ export default function BrowseEvents() {
         <View style={styles.avatarSmall}>
           <FontAwesome5 name="user" size={14} color={DS.accent} />
         </View>
-        <Text style={styles.brandName}>THE TOCA AQUI</Text>
+        <Text style={styles.brandName}>TOCA AQUI</Text>
         <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <FontAwesome5 name="bell" size={18} color={DS.white} />
         </TouchableOpacity>
@@ -161,7 +167,7 @@ export default function BrowseEvents() {
           <BookingCard
             booking={item}
             onPress={() =>
-              (navigation as any).navigate("EventDetailArtist", { eventId: item.id })
+              navigation.navigate("EventDetailArtist", { eventId: item.id })
             }
           />
         )}
@@ -228,7 +234,7 @@ function BookingCard({ booking, onPress }: { booking: Booking; onPress: () => vo
         <View style={cardStyles.locationRow}>
           <FontAwesome5 name="map-marker-alt" size={11} color={DS.textDis} />
           <Text style={cardStyles.locationText}>
-            {booking.estabelecimento_id ? `Estab. #${booking.estabelecimento_id}` : "Local não informado"}
+            {booking.nome_estabelecimento ?? "Local não informado"}
           </Text>
         </View>
 
