@@ -75,13 +75,17 @@ export const userService = {
   },
 
   async logout(): Promise<void> {
+    // Limpa o token do AsyncStorage e do header ANTES da chamada de rede.
+    // Isso garante que mesmo que o app seja fechado durante o request de logout
+    // (rede lenta, timeout, backend indisponivel), o token nao persiste.
+    // A chamada ao backend e best-effort: falhas sao ignoradas.
+    await AsyncStorage.multiRemove(["token", "estabelecimentoId"]);
+    delete api.defaults.headers.common["Authorization"];
     try {
       await api.post("/usuarios/logout");
     } catch {
-      // ignore logout errors
+      // ignore logout errors — token already cleared locally
     }
-    await AsyncStorage.multiRemove(["token", "estabelecimentoId"]);
-    delete api.defaults.headers.common["Authorization"];
   },
 
   async redefinirSenha(email: string): Promise<void> {

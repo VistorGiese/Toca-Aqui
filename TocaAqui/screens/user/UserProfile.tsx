@@ -24,6 +24,12 @@ import api from "@/http/api";
 
 type NavProp = NativeStackNavigationProp<UserStackParamList>;
 
+function resolvePhotoUrl(fotoPerfil: string): string {
+  if (fotoPerfil.startsWith("http")) return fotoPerfil;
+  const base = api.defaults.baseURL ?? "";
+  return `${base}/${fotoPerfil}`;
+}
+
 function formatShowDate(dataShow: string): string {
   try {
     const date = new Date(dataShow);
@@ -60,7 +66,7 @@ export default function UserProfile() {
       if (artistas.status === "fulfilled") setArtistasSeguidos(artistas.value);
       if (ingressos.status === "fulfilled") setProximosShows(ingressos.value);
       if (perfil.status === "fulfilled" && perfil.value.user.foto_perfil) {
-        setFotoPerfil(`${api.defaults.baseURL?.replace("/api", "")}/${perfil.value.user.foto_perfil}`);
+        setFotoPerfil(resolvePhotoUrl(perfil.value.user.foto_perfil));
       }
       if (prefs.status === "fulfilled" && prefs.value?.cidade) {
         setLocalizacao(prefs.value.cidade);
@@ -92,7 +98,7 @@ export default function UserProfile() {
     setUploadingFoto(true);
     try {
       const data = await userService.uploadFoto(uri);
-      setFotoPerfil(`${api.defaults.baseURL?.replace("/api", "")}/${data.foto_perfil}`);
+      setFotoPerfil(resolvePhotoUrl(data.foto_perfil));
     } catch (e: any) {
       Alert.alert("Erro no upload", e?.message ?? "Não foi possível fazer o upload da foto.");
     } finally {
