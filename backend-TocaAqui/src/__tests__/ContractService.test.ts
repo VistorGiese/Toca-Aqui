@@ -56,12 +56,12 @@ jest.mock('../models/BandMemberModel', () => ({
 
 jest.mock('../models/ArtistProfileModel', () => ({
   __esModule: true,
-  default: { findByPk: jest.fn() },
+  default: { findByPk: jest.fn(), increment: jest.fn() },
 }));
 
 jest.mock('../models/EstablishmentProfileModel', () => ({
   __esModule: true,
-  default: { findByPk: jest.fn(), findAll: jest.fn() },
+  default: { findByPk: jest.fn(), findAll: jest.fn(), increment: jest.fn() },
 }));
 
 jest.mock('../models/AddressModel', () => ({
@@ -138,10 +138,56 @@ describe('ContractService', () => {
         expect.objectContaining({
           aplicacao_id: 10,
           banda_id: 5,
-          status: 'rascunho',
+          status: 'aguardando_aceite',
         })
       );
       expect(result).toBe(contrato);
+    });
+
+    it('usa valor_proposto como cache_total e calcula valor_sinal a 50%', async () => {
+      const aplicacao = { id: 10, evento_id: 20, banda_id: 5, valor_proposto: 600 };
+      const evento = { id: 20, perfil_estabelecimento_id: 3, data_show: '2026-07-01', horario_inicio: '20:00', horario_fim: '23:00' };
+      const estabelecimento = { id: 3, nome_estabelecimento: 'Bar', telefone_contato: '11999', endereco_id: 1, generos_musicais: 'rock' };
+      const endereco = { rua: 'Rua X', numero: '10', bairro: 'Centro', cidade: 'SP', estado: 'SP', cep: '01000' };
+      const banda = { id: 5, nome_banda: 'Rock Band' };
+
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(aplicacao);
+      (ContractModel.findOne as jest.Mock).mockResolvedValue(null);
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(evento);
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue(estabelecimento);
+      (AddressModel.findByPk as jest.Mock).mockResolvedValue(endereco);
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(banda);
+      (BandMemberModel.findOne as jest.Mock).mockResolvedValue(null);
+      (ContractModel.create as jest.Mock).mockResolvedValue(makeContrato({ cache_total: 600, valor_sinal: 300 }));
+
+      await service.generateFromApplication(10);
+
+      expect(ContractModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ cache_total: 600, valor_sinal: 300 })
+      );
+    });
+
+    it('usa 0 como cache_total quando valor_proposto é null', async () => {
+      const aplicacao = { id: 10, evento_id: 20, banda_id: 5, valor_proposto: null };
+      const evento = { id: 20, perfil_estabelecimento_id: 3, data_show: '2026-07-01', horario_inicio: '20:00', horario_fim: '23:00' };
+      const estabelecimento = { id: 3, nome_estabelecimento: 'Bar', telefone_contato: '11999', endereco_id: 1, generos_musicais: 'rock' };
+      const endereco = { rua: 'Rua X', numero: '10', bairro: 'Centro', cidade: 'SP', estado: 'SP', cep: '01000' };
+      const banda = { id: 5, nome_banda: 'Rock Band' };
+
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(aplicacao);
+      (ContractModel.findOne as jest.Mock).mockResolvedValue(null);
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(evento);
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue(estabelecimento);
+      (AddressModel.findByPk as jest.Mock).mockResolvedValue(endereco);
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(banda);
+      (BandMemberModel.findOne as jest.Mock).mockResolvedValue(null);
+      (ContractModel.create as jest.Mock).mockResolvedValue(makeContrato({ cache_total: 0, valor_sinal: 0 }));
+
+      await service.generateFromApplication(10);
+
+      expect(ContractModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ cache_total: 0, valor_sinal: 0 })
+      );
     });
 
     it('lança erro quando candidatura não encontrada', async () => {
@@ -209,8 +255,17 @@ describe('ContractService', () => {
       );
     });
 
-    it('lança erro quando cachê é zero', async () => {
+    it('aceita contrato quando cachê é zero (guard < 0, Phase 3)', async () => {
+      // Phase 3 relaxou o guard de cache_total <= 0 para < 0
+      // valor_proposto null gera cache_total = 0, que deve ser permitido
       const contrato = makeContrato({ cache_total: 0 });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+
+      await expect(service.acceptContract(1, 1, 'contratante')).resolves.toBe(contrato);
+    });
+
+    it('lança erro quando cachê é negativo', async () => {
+      const contrato = makeContrato({ cache_total: -1 });
       (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
 
       await expect(service.acceptContract(1, 1, 'contratante')).rejects.toEqual(
@@ -279,6 +334,8 @@ describe('ContractService', () => {
     it('conclui contrato aceito', async () => {
       const contrato = makeContrato({ status: 'aceito' });
       (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (BandMemberModel.findAll as jest.Mock).mockResolvedValue([]);
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(null);
 
       const result = await service.completeContract(1);
 

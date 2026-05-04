@@ -57,7 +57,7 @@ describe('BandApplicationController', () => {
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Banda aplicou ao evento com sucesso',
+          message: 'Candidatura enviada com sucesso',
           aplicacao,
         })
       );
@@ -90,9 +90,11 @@ describe('BandApplicationController', () => {
   });
 
   describe('acceptBandApplication', () => {
-    it('retorna 200 com aplicação aceita', async () => {
+    it('retorna 200 com aplicação aceita e contrato gerado', async () => {
+      // Phase 3: accept() retorna { aplicacao, contrato } — controller expõe ambos
       const aplicacao = makeAplicacao({ status: 'aceito' });
-      (bandApplicationService.accept as jest.Mock).mockResolvedValue(aplicacao);
+      const contrato = { id: 10, status: 'aguardando_aceite', cache_total: 500 };
+      (bandApplicationService.accept as jest.Mock).mockResolvedValue({ aplicacao, contrato });
 
       const req = makeAuthReq({ user: { id: 5 }, params: { id: '1' } });
       const res = mockRes();
@@ -101,7 +103,7 @@ describe('BandApplicationController', () => {
       await flushPromises();
 
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ aplicacao })
+        expect.objectContaining({ aplicacao, contrato })
       );
     });
 
@@ -162,7 +164,7 @@ describe('BandApplicationController', () => {
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Evento fechado - já possui banda confirmada',
+          message: 'Evento fechado - candidatura já aceita',
           candidaturas: [],
         })
       );

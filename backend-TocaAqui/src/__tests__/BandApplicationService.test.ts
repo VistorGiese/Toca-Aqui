@@ -182,13 +182,16 @@ describe('BandApplicationService', () => {
       (BandMemberModel.findOne as jest.Mock).mockResolvedValue(null);
       (BandApplicationModel.findAll as jest.Mock).mockResolvedValue([]);
 
-      await service.accept(100);
+      const result = await service.accept(100);
 
       expect(aplicacao.update).toHaveBeenCalledWith({ status: 'aceito' });
       expect(BookingModel.update).toHaveBeenCalledWith(
         { status: 'aceito' },
         expect.objectContaining({ where: { id: 10 } })
       );
+      // Phase 3: accept() deve retornar composite { aplicacao, contrato }
+      expect(result).toEqual(expect.objectContaining({ aplicacao }));
+      expect(result).toHaveProperty('contrato');
     });
 
     it('lança AppError 404 quando candidatura não existe', async () => {
