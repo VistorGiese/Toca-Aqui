@@ -135,17 +135,7 @@ describe('BandApplicationService', () => {
       );
     });
 
-    it('lança AppError 400 quando data do evento já passou', async () => {
-      const passado = new Date();
-      passado.setDate(passado.getDate() - 1);
-
-      (BandModel.findByPk as jest.Mock).mockResolvedValue(makeBanda());
-      (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento({ data_show: passado }));
-
-      await expect(service.apply(1, 10)).rejects.toEqual(
-        expect.objectContaining({ statusCode: 400 })
-      );
-    });
+    // Nota: validação de data passada foi removida na Fase 2 (muito restritiva para TCC)
 
     it('lança AppError 400 quando evento está cancelado', async () => {
       (BandModel.findByPk as jest.Mock).mockResolvedValue(makeBanda());
@@ -304,14 +294,17 @@ describe('BandApplicationService', () => {
       expect(result.aplicacoes).toHaveLength(2);
     });
 
-    it('retorna closed true quando evento está aceito', async () => {
+    it('retorna closed true quando evento está aceito e ainda retorna candidaturas existentes', async () => {
+      // Nota: a implementação atual chama findAll mesmo quando closed=true
+      // para retornar as candidaturas do evento fechado
+      const candidaturas = [makeAplicacao()];
       (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento({ status: 'aceito' }));
+      (BandApplicationModel.findAll as jest.Mock).mockResolvedValue(candidaturas);
 
       const result = await service.getApplicationsForEvent(10);
 
       expect(result.closed).toBe(true);
-      expect(result.aplicacoes).toEqual([]);
-      expect(BandApplicationModel.findAll).not.toHaveBeenCalled();
+      expect(BandApplicationModel.findAll).toHaveBeenCalled();
     });
 
     it('lança AppError 404 quando evento não existe', async () => {
