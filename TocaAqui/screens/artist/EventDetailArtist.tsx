@@ -13,7 +13,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bookingService, Booking } from "@/http/bookingService";
 import { avaliacaoService, Avaliacao } from "@/http/avaliacaoService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 import api from "@/http/api";
 
 const DS = {
@@ -33,8 +33,8 @@ const DS = {
   bgSurface: "#1A1040",
 };
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
-type RouteType = RouteProp<RootStackParamList, "EventDetailArtist">;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
+type RouteType = RouteProp<ArtistStackParamList, "EventDetailArtist">;
 
 export default function EventDetailArtist() {
   const navigation = useNavigation<NavProp>();
@@ -84,7 +84,7 @@ export default function EventDetailArtist() {
 
     const timeStr = `${booking.horario_inicio || ""} — ${booking.horario_fim || ""}`;
 
-    (navigation as any).navigate("ApplyConfirmation", {
+    navigation.navigate("ApplyConfirmation", {
       eventId: booking.id,
       eventName: booking.titulo_evento || `Vaga #${booking.id}`,
       date: formattedDate,

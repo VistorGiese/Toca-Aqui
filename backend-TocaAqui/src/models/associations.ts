@@ -24,6 +24,8 @@ import EstablishmentMemberModel from './EstablishmentMemberModel';
 UserModel.hasMany(EstablishmentProfileModel, {
   foreignKey: 'usuario_id',
   as: 'EstablishmentProfiles',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
 });
 
 EstablishmentProfileModel.belongsTo(UserModel, {
@@ -34,6 +36,8 @@ EstablishmentProfileModel.belongsTo(UserModel, {
 UserModel.hasMany(ArtistProfileModel, {
   foreignKey: 'usuario_id',
   as: 'ArtistProfiles',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
 });
 
 ArtistProfileModel.belongsTo(UserModel, {
@@ -82,6 +86,11 @@ BandApplicationModel.belongsTo(BookingModel, {
   as: 'Event',
 });
 
+BandApplicationModel.belongsTo(ArtistProfileModel, {
+  foreignKey: 'artista_id',
+  as: 'ArtistProfile',
+});
+
 // Associações do novo sistema de bandas
 BandModel.hasMany(BandMemberModel, {
   foreignKey: 'banda_id',
@@ -118,6 +127,16 @@ ContractModel.belongsTo(BookingModel, {
 ContractModel.belongsTo(BandModel, {
   foreignKey: 'banda_id',
   as: 'Band',
+});
+
+ContractModel.belongsTo(ArtistProfileModel, {
+  foreignKey: 'artista_id',
+  as: 'ArtistProfile',
+});
+
+ArtistProfileModel.hasMany(ContractModel, {
+  foreignKey: 'artista_id',
+  as: 'Contracts',
 });
 
 ContractModel.belongsTo(EstablishmentProfileModel, {

@@ -56,10 +56,14 @@ export interface ArtistPublicProfile {
   nome_artistico?: string;
   nome?: string;
   foto_url?: string;
+  foto_perfil?: string;
   tipo?: string;
+  tipo_atuacao?: string;
   generos?: string[];
   nota_media?: number;
   shows_realizados?: number;
+  cache_minimo?: number;
+  cache_maximo?: number;
   cache_medio?: number;
   biografia?: string;
   cidade?: string;
@@ -126,8 +130,10 @@ const searchArtists = async (params?: { q?: string; genero?: string }): Promise<
 };
 
 const getArtistPublicProfile = async (artistId: number): Promise<ArtistPublicProfile> => {
-  const r = await api.get<ArtistPublicProfile>(`/artistas/${artistId}/publico`);
-  return r.data;
+  const r = await api.get(`/artistas/${artistId}/publico`);
+  // Backend retorna { message, perfil } — extrair o perfil
+  const data = r.data as any;
+  return data?.perfil ?? data;
 };
 
 const getMyContracts = async (): Promise<any[]> => {

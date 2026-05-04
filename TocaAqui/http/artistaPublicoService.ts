@@ -10,6 +10,8 @@ export interface ArtistaPublico {
   total_seguidores: number;
   media_nota?: number;
   seguindo: boolean;
+  cidade?: string;
+  estado?: string;
   User?: { nome: string };
   ProximosShows?: Array<{
     id: number;

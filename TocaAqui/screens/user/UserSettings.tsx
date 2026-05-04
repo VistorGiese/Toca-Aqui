@@ -29,7 +29,7 @@ const GENRE_COLORS: Record<string, string> = {
 };
 
 export default function UserSettings({ navigation }: Props) {
-  const { user, signOut } = useAuth();
+  const { user, paginas, signOut } = useAuth();
   const [notifyShows, setNotifyShows] = useState(true);
   const [notifyReminders, setNotifyReminders] = useState(true);
   const [radius, setRadius] = useState(25);
@@ -39,9 +39,15 @@ export default function UserSettings({ navigation }: Props) {
   const [hasArtistProfile, setHasArtistProfile] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem("estabelecimentoId").then(id => {
-      setHasEstablishment(!!id);
-    });
+    // Usa paginas do AuthContext como fonte primária; fallback para AsyncStorage
+    if (paginas?.pagina_estabelecimento) {
+      AsyncStorage.setItem("estabelecimentoId", String(paginas.pagina_estabelecimento.id));
+      setHasEstablishment(true);
+    } else {
+      AsyncStorage.getItem("estabelecimentoId").then(id => {
+        setHasEstablishment(!!id);
+      });
+    }
     preferenciaService.buscar().then(prefs => {
       if (prefs?.generos_favoritos) setGenerosFavoritos(prefs.generos_favoritos);
       if (prefs?.raio_busca_km) setRadius(prefs.raio_busca_km);
@@ -49,7 +55,7 @@ export default function UserSettings({ navigation }: Props) {
     userService.getProfile().then(res => {
       setHasArtistProfile((res.user.artist_profiles?.length ?? 0) > 0);
     }).catch(() => {});
-  }, []);
+  }, [paginas]);
 
   async function handleSalvarPreferencias() {
     setSavingPrefs(true);
@@ -136,7 +142,7 @@ export default function UserSettings({ navigation }: Props) {
     }
   }
 
-  async function handleSignOut() {
+  function handleSignOut() {
     Alert.alert(
       "Sair da conta",
       "Tem certeza que deseja sair?",
@@ -145,7 +151,13 @@ export default function UserSettings({ navigation }: Props) {
         {
           text: "Sair",
           style: "destructive",
-          onPress: () => { signOut(); },
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch {
+              Alert.alert("Erro", "Não foi possível sair da conta. Tente novamente.");
+            }
+          },
         },
       ]
     );

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
+import { MinhasPaginas } from "@/types";
 
 interface LoginResponse {
   token: string;
@@ -93,6 +94,11 @@ export const userService = {
 
   async excluirConta(senha: string): Promise<void> {
     await api.delete("/usuarios/conta", { data: { senha } });
+  },
+
+  async getMinhasPaginas(): Promise<MinhasPaginas> {
+    const response = await api.get<MinhasPaginas>('/usuarios/minhas-paginas');
+    return response.data;
   },
 
   async uploadFoto(uri: string): Promise<{ foto_perfil: string }> {

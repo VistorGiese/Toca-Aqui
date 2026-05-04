@@ -36,3 +36,9 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+export interface MinhasPaginas {
+  usuario_id: number;
+  pagina_artista: { id: number; nome_artistico: string; foto_perfil: string | null } | null;
+  pagina_estabelecimento: { id: number; nome_estabelecimento: string; tipo_estabelecimento: string } | null;
+}

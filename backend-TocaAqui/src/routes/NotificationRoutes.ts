@@ -7,7 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', getNotifications);
-router.patch('/:id/lida', markAsRead);
 router.patch('/todas/lida', markAllAsRead);
+router.patch('/:id/lida', markAsRead);
 
 export default router;

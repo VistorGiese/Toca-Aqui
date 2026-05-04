@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "@/navigation/Navigate";
 
 const DS = {
@@ -27,6 +29,25 @@ export default function OnboardingEstIdentidade() {
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [fotoUri, setFotoUri] = useState<string | null>(null);
+
+  const handleSelecionarFoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão necessária", "Permita o acesso à galeria para adicionar a foto.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setFotoUri(result.assets[0].uri);
+      await AsyncStorage.setItem("tempEstFotoUri", result.assets[0].uri);
+    }
+  };
 
   const handleProximo = () => {
     if (!nome.trim()) { Alert.alert("Atenção", "Informe o nome do estabelecimento."); return; }
@@ -56,10 +77,16 @@ export default function OnboardingEstIdentidade() {
         <Text style={s.title}>Conte sobre o seu <Text style={s.titleAccent}>Espaço</Text></Text>
         <Text style={s.subtitle}>Vamos começar personalizando a presença digital do seu estabelecimento.</Text>
 
-        <TouchableOpacity style={s.uploadBox} activeOpacity={0.75}>
-          <FontAwesome5 name="camera" size={26} color={DS.cyan} />
-          <Text style={s.uploadLabel}>ADICIONAR FOTO DO LOCAL</Text>
-          <Text style={s.uploadSub}>Logo ou fachada (Recomendado: 1080x1080px)</Text>
+        <TouchableOpacity style={s.uploadBox} activeOpacity={0.75} onPress={handleSelecionarFoto}>
+          {fotoUri ? (
+            <Image source={{ uri: fotoUri }} style={s.uploadPreview} />
+          ) : (
+            <>
+              <FontAwesome5 name="camera" size={26} color={DS.cyan} />
+              <Text style={s.uploadLabel}>ADICIONAR FOTO DO LOCAL</Text>
+              <Text style={s.uploadSub}>Logo ou fachada (Recomendado: 1080x1080px)</Text>
+            </>
+          )}
         </TouchableOpacity>
 
         <Text style={s.fieldLabel}>NOME DO ESTABELECIMENTO</Text>
@@ -120,6 +147,7 @@ const s = StyleSheet.create({
   },
   uploadLabel: { fontFamily: "Montserrat-SemiBold", fontSize: 12, color: DS.cyan, letterSpacing: 2, marginTop: 4 },
   uploadSub: { fontFamily: "Montserrat-Regular", fontSize: 11, color: DS.textSecondary, textAlign: "center" },
+  uploadPreview: { width: "100%", height: 120, borderRadius: 12 },
   fieldLabel: { fontFamily: "Montserrat-SemiBold", fontSize: 11, color: DS.textSecondary, letterSpacing: 2, marginBottom: 8 },
   input: {
     backgroundColor: DS.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14,
