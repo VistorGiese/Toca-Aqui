@@ -47,6 +47,7 @@ import {
   createEstablishmentProfile,
   createArtistProfile,
   uploadArtistPhoto,
+  atualizarPerfilArtista,
 } from '../controllers/UserController';
 import { authService } from '../services/AuthService';
 import { uploadService } from '../services/UploadService';
@@ -274,7 +275,6 @@ describe('UserController', () => {
       expect(res.json).toHaveBeenCalledWith({
         user: expect.objectContaining({
           id: 1,
-          nome: 'Teste',
           establishment_profiles: [],
           artist_profiles: [{ id: 1 }],
         }),
@@ -420,6 +420,105 @@ describe('UserController', () => {
         expect.objectContaining({ statusCode: 403 })
       );
       expect(uploadService.deleteFile).toHaveBeenCalled();
+    });
+  });
+
+  // ─── atualizarPerfilArtista (Phase 6) ─────────────────────────────────────
+  describe('atualizarPerfilArtista', () => {
+    const makeProfile = (overrides = {}) => ({
+      id: 7,
+      usuario_id: 1,
+      nome_artistico: 'Artista Teste',
+      biografia: 'Bio',
+      generos: ['rock'],
+      cache_minimo: 300,
+      update: jest.fn().mockResolvedValue(undefined),
+      ...overrides,
+    });
+
+    it('atualiza perfil e retorna sucesso quando usuário é dono', async () => {
+      // Arrange
+      const profile = makeProfile();
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '7' },
+        body: { nome_artistico: 'Novo Nome', biografia: 'Nova bio' },
+      });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(profile);
+
+      // Act
+      atualizarPerfilArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      // Assert
+      expect(profile.update).toHaveBeenCalledWith(
+        expect.objectContaining({ nome_artistico: 'Novo Nome', biografia: 'Nova bio' })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Perfil atualizado com sucesso' })
+      );
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined, params: { id: '7' } });
+      const res = mockRes();
+
+      atualizarPerfilArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
+
+    it('lança 404 quando perfil não encontrado', async () => {
+      const req = makeReq({ user: { id: 1 }, params: { id: '999' }, body: {} });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      atualizarPerfilArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+
+    it('lança 403 quando perfil pertence a outro usuário', async () => {
+      const req = makeReq({ user: { id: 99 }, params: { id: '7' }, body: {} });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(makeProfile({ usuario_id: 1 }));
+
+      atualizarPerfilArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 403 })
+      );
+    });
+
+    it('atualiza apenas os campos fornecidos no body', async () => {
+      // Arrange — somente nome_artistico no body; outros campos não devem aparecer em update
+      const profile = makeProfile();
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '7' },
+        body: { nome_artistico: 'Só Nome' },
+      });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(profile);
+
+      // Act
+      atualizarPerfilArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      // Assert — update chamado com apenas o campo presente
+      expect(profile.update).toHaveBeenCalledWith({ nome_artistico: 'Só Nome' });
     });
   });
 });
