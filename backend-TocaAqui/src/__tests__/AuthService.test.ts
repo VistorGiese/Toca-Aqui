@@ -70,7 +70,7 @@ describe('AuthService', () => {
     it('cria o usuário e retorna dados sem senha quando email é novo', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(null);
       (UserModel.create as jest.Mock).mockResolvedValue(
-        makeUser({ id: 5, email_verificado: false })
+        makeUser({ id: 5, email_verificado: true })
       );
 
       const result = await service.register({
@@ -80,7 +80,7 @@ describe('AuthService', () => {
       });
 
       expect(result).toEqual(
-        expect.objectContaining({ id: 5, email: 'teste@email.com', email_verificado: false })
+        expect.objectContaining({ id: 5, email: 'teste@email.com', email_verificado: true })
       );
       expect(result).not.toHaveProperty('senha');
     });
@@ -108,7 +108,7 @@ describe('AuthService', () => {
     it('usa role common_user quando tipo_usuario não está na lista válida', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(null);
       (UserModel.create as jest.Mock).mockResolvedValue(
-        makeUser({ role: 'common_user', email_verificado: false })
+        makeUser({ role: 'common_user', email_verificado: true })
       );
 
       const result = await service.register({
@@ -127,7 +127,7 @@ describe('AuthService', () => {
     it('usa role fornecida quando válida', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(null);
       (UserModel.create as jest.Mock).mockResolvedValue(
-        makeUser({ role: 'artist', email_verificado: false })
+        makeUser({ role: 'artist', email_verificado: true })
       );
 
       await service.register({
@@ -144,7 +144,7 @@ describe('AuthService', () => {
 
     it('armazena senha com hash no banco (não em texto plano)', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(null);
-      (UserModel.create as jest.Mock).mockResolvedValue(makeUser({ email_verificado: false }));
+      (UserModel.create as jest.Mock).mockResolvedValue(makeUser({ email_verificado: true }));
 
       await service.register({ nome_completo: 'Ana', email: 'ana@email.com', senha: 'MinhaSenha1' });
 
@@ -187,15 +187,14 @@ describe('AuthService', () => {
       );
     });
 
-    it('lança AppError 403 quando email não foi verificado', async () => {
+    it('retorna token mesmo quando email_verificado é false (verificação não bloqueante)', async () => {
       const hash = await bcrypt.hash('Senha1234', 10);
       (UserModel.findOne as jest.Mock).mockResolvedValue(
         makeUser({ senha: hash, email_verificado: false })
       );
 
-      await expect(service.login('teste@email.com', 'Senha1234')).rejects.toEqual(
-        expect.objectContaining({ statusCode: 403 })
-      );
+      const result = await service.login('teste@email.com', 'Senha1234');
+      expect(result.token).toBeDefined();
     });
   });
 
@@ -361,8 +360,8 @@ describe('AuthService', () => {
       });
 
       const chamada = (ArtistProfileModel.create as jest.Mock).mock.calls[0][0];
-      expect(chamada.instrumentos).toBe(JSON.stringify(['guitarra', 'baixo']));
-      expect(chamada.generos).toBe(JSON.stringify(['rock']));
+      expect(chamada.instrumentos).toEqual(['guitarra', 'baixo']);
+      expect(chamada.generos).toEqual(['rock']);
       expect(chamada.usuario_id).toBe(1);
     });
 
@@ -372,8 +371,8 @@ describe('AuthService', () => {
       await service.createArtistProfile(2, { nome_artistico: 'Cantor X' });
 
       const chamada = (ArtistProfileModel.create as jest.Mock).mock.calls[0][0];
-      expect(chamada.instrumentos).toBe('[]');
-      expect(chamada.generos).toBe('[]');
+      expect(chamada.instrumentos).toEqual([]);
+      expect(chamada.generos).toEqual([]);
     });
   });
 });

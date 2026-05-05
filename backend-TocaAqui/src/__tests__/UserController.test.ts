@@ -76,8 +76,8 @@ describe('UserController', () => {
   // ─── registerUser ─────────────────────────────────────────────────────────
   describe('registerUser', () => {
     it('registra usuário e retorna 201', async () => {
-      const user = { id: 1, nome: 'Teste', email: 'teste@email.com' };
-      const req = makeReq({ body: { nome: 'Teste', email: 'teste@email.com', senha: 'Senha123' } });
+      const user = { id: 1, nome_completo: 'Teste', email: 'teste@email.com' };
+      const req = makeReq({ body: { nome_completo: 'Teste', email: 'teste@email.com', senha: 'Senha123' } });
       const res = mockRes();
 
       (authService.register as jest.Mock).mockResolvedValue(user);
@@ -95,7 +95,7 @@ describe('UserController', () => {
   // ─── loginUser ────────────────────────────────────────────────────────────
   describe('loginUser', () => {
     it('retorna token e dados do usuário', async () => {
-      const loginResult = { token: 'jwt-token', user: { id: 1, nome: 'Teste' } };
+      const loginResult = { token: 'jwt-token', user: { id: 1, nome_completo: 'Teste' } };
       const req = makeReq({ body: { email: 'teste@email.com', senha: 'Senha123' } });
       const res = mockRes();
 
@@ -258,7 +258,7 @@ describe('UserController', () => {
     it('retorna perfil formatado do usuário', async () => {
       const user = {
         id: 1,
-        nome: 'Teste',
+        nome_completo: 'Teste',
         email: 'teste@email.com',
         EstablishmentProfiles: [],
         ArtistProfiles: [{ id: 1 }],
@@ -274,7 +274,7 @@ describe('UserController', () => {
       expect(res.json).toHaveBeenCalledWith({
         user: expect.objectContaining({
           id: 1,
-          nome: 'Teste',
+          nome_completo: 'Teste',
           establishment_profiles: [],
           artist_profiles: [{ id: 1 }],
         }),

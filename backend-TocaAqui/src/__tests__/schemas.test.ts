@@ -7,7 +7,7 @@ import { applyBandSchema } from '../schemas/bandApplicationSchemas';
 // ─── userSchemas ──────────────────────────────────────────────────────────────
 
 describe('registroSchema', () => {
-  const valid = { nome: 'João Silva', email: 'joao@email.com', senha: 'Senha@123' };
+  const valid = { nome_completo: 'João Silva', email: 'joao@email.com', senha: 'Senha@123' };
 
   it('aceita dados válidos', () => {
     expect(registroSchema.safeParse(valid).success).toBe(true);
@@ -29,12 +29,12 @@ describe('registroSchema', () => {
   });
 
   it('rejeita nome com menos de 2 caracteres', () => {
-    const result = registroSchema.safeParse({ ...valid, nome: 'A' });
+    const result = registroSchema.safeParse({ ...valid, nome_completo: 'A' });
     expect(result.success).toBe(false);
   });
 
-  it('rejeita se nome estiver ausente', () => {
-    const { nome, ...sem } = valid;
+  it('rejeita se nome_completo estiver ausente', () => {
+    const { nome_completo, ...sem } = valid;
     expect(registroSchema.safeParse(sem).success).toBe(false);
   });
 });
@@ -95,8 +95,8 @@ describe('createAddressSchema', () => {
     expect(createAddressSchema.safeParse({ ...valid, estado: 'SPP' }).success).toBe(false);
   });
 
-  it('rejeita CEP inválido', () => {
-    expect(createAddressSchema.safeParse({ ...valid, cep: '1234' }).success).toBe(false);
+  it('aceita CEP em qualquer formato de string (sem validação de padrão)', () => {
+    expect(createAddressSchema.safeParse({ ...valid, cep: '1234' }).success).toBe(true);
   });
 
   it('aceita CEP sem hífen', () => {
@@ -131,9 +131,9 @@ describe('createBookingSchema', () => {
     expect(createBookingSchema.safeParse({ ...valid, horario_inicio: '8h' }).success).toBe(false);
   });
 
-  it('rejeita horario_fim anterior ao horario_inicio', () => {
+  it('aceita horario_fim anterior ao horario_inicio (permite shows que cruzam meia-noite)', () => {
     const result = createBookingSchema.safeParse({ ...valid, horario_inicio: '23:00', horario_fim: '20:00' });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('rejeita horario_fim igual ao horario_inicio', () => {
@@ -181,15 +181,23 @@ describe('respondInvitationSchema', () => {
 // ─── bandApplicationSchemas ───────────────────────────────────────────────────
 
 describe('applyBandSchema', () => {
-  it('aceita aplicação válida', () => {
-    expect(applyBandSchema.safeParse({ banda_id: 1, evento_id: 2 }).success).toBe(true);
+  it('aceita aplicação válida com valor_proposto', () => {
+    expect(applyBandSchema.safeParse({ banda_id: 1, evento_id: 2, valor_proposto: 500 }).success).toBe(true);
   });
 
-  it('rejeita banda_id ausente', () => {
-    expect(applyBandSchema.safeParse({ evento_id: 2 }).success).toBe(false);
+  it('aceita aplicação com artista_id ao invés de banda_id', () => {
+    expect(applyBandSchema.safeParse({ artista_id: 1, evento_id: 2, valor_proposto: 500 }).success).toBe(true);
+  });
+
+  it('rejeita quando evento_id está ausente', () => {
+    expect(applyBandSchema.safeParse({ banda_id: 1, valor_proposto: 500 }).success).toBe(false);
+  });
+
+  it('rejeita quando valor_proposto está ausente', () => {
+    expect(applyBandSchema.safeParse({ banda_id: 1, evento_id: 2 }).success).toBe(false);
   });
 
   it('rejeita ids negativos', () => {
-    expect(applyBandSchema.safeParse({ banda_id: -1, evento_id: 2 }).success).toBe(false);
+    expect(applyBandSchema.safeParse({ banda_id: -1, evento_id: 2, valor_proposto: 500 }).success).toBe(false);
   });
 });

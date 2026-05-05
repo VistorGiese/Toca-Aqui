@@ -1,7 +1,7 @@
 import { registroSchema, loginSchema, createEstablishmentProfileSchema, createArtistProfileSchema } from '../schemas/userSchemas';
 
 describe('registroSchema', () => {
-  const base = { nome: 'João Silva', email: 'joao@email.com', senha: 'Senha@123' };
+  const base = { nome_completo: 'João Silva', email: 'joao@email.com', senha: 'Senha@123' };
 
   it('aceita dados válidos', () => {
     expect(registroSchema.safeParse(base).success).toBe(true);
@@ -13,7 +13,7 @@ describe('registroSchema', () => {
   });
 
   it('rejeita nome com menos de 2 caracteres', () => {
-    const result = registroSchema.safeParse({ ...base, nome: 'J' });
+    const result = registroSchema.safeParse({ ...base, nome_completo: 'J' });
     expect(result.success).toBe(false);
   });
 

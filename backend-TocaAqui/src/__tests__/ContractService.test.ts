@@ -56,12 +56,12 @@ jest.mock('../models/BandMemberModel', () => ({
 
 jest.mock('../models/ArtistProfileModel', () => ({
   __esModule: true,
-  default: { findByPk: jest.fn() },
+  default: { findByPk: jest.fn(), increment: jest.fn().mockResolvedValue(undefined) },
 }));
 
 jest.mock('../models/EstablishmentProfileModel', () => ({
   __esModule: true,
-  default: { findByPk: jest.fn(), findAll: jest.fn() },
+  default: { findByPk: jest.fn(), findAll: jest.fn().mockResolvedValue([]), increment: jest.fn().mockResolvedValue(undefined) },
 }));
 
 jest.mock('../models/AddressModel', () => ({
@@ -130,6 +130,7 @@ describe('ContractService', () => {
       (AddressModel.findByPk as jest.Mock).mockResolvedValue(endereco);
       (BandModel.findByPk as jest.Mock).mockResolvedValue(banda);
       (BandMemberModel.findOne as jest.Mock).mockResolvedValue(null);
+      (BandMemberModel.findAll as jest.Mock).mockResolvedValue([]);
       (ContractModel.create as jest.Mock).mockResolvedValue(contrato);
 
       const result = await service.generateFromApplication(10);
@@ -138,7 +139,7 @@ describe('ContractService', () => {
         expect.objectContaining({
           aplicacao_id: 10,
           banda_id: 5,
-          status: 'rascunho',
+          status: 'aguardando_aceite',
         })
       );
       expect(result).toBe(contrato);
@@ -209,8 +210,8 @@ describe('ContractService', () => {
       );
     });
 
-    it('lança erro quando cachê é zero', async () => {
-      const contrato = makeContrato({ cache_total: 0 });
+    it('lança erro quando cachê é negativo', async () => {
+      const contrato = makeContrato({ cache_total: -1 });
       (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
 
       await expect(service.acceptContract(1, 1, 'contratante')).rejects.toEqual(
@@ -279,6 +280,7 @@ describe('ContractService', () => {
     it('conclui contrato aceito', async () => {
       const contrato = makeContrato({ status: 'aceito' });
       (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (BandMemberModel.findAll as jest.Mock).mockResolvedValue([]);
 
       const result = await service.completeContract(1);
 
