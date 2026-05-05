@@ -1,6 +1,7 @@
+import { env } from "./config/env"; // validate env vars at startup
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import helmet from "helmet";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
@@ -14,27 +15,68 @@ import UserRoutes from "./routes/UserRoutes";
 import BandManagementRoutes from "./routes/BandManagementRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
 import EstablishmentRoutes from "./routes/EstablishmentRoutes";
+import NotificationRoutes from "./routes/NotificationRoutes";
+import ContractRoutes from "./routes/ContractRoutes";
+import PaymentRoutes from "./routes/PaymentRoutes";
+import WebhookRoutes from "./routes/WebhookRoutes";
+import ShowRoutes from "./routes/ShowRoutes";
+import IngressoRoutes from "./routes/IngressoRoutes";
+import AvaliacaoShowRoutes from "./routes/AvaliacaoShowRoutes";
+import ComentarioShowRoutes from "./routes/ComentarioShowRoutes";
+import ArtistaPublicoRoutes from "./routes/ArtistaPublicoRoutes";
+import { errorHandler } from "./middleware/errorHandler";
 
 import './models/associations';
+import sequelize from "./config/database";
 import redisService from './config/redis';
 import pubSubService from './services/PubSubService';
-
-dotenv.config();
+import { generalLimiter } from './middleware/rateLimiter';
+import { initCronJobs } from './services/CronService';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
+if (env.NODE_ENV === 'production') {
+  // Necessary behind reverse proxy (Nginx) so rate limiter sees client IP.
+  app.set('trust proxy', 1);
+}
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Toca Aqui API Docs',
+app.disable('x-powered-by');
+
+// CORS — em desenvolvimento libera todas as origens (mobile app não envia origin)
+app.use(cors({
+  origin: true,
+  credentials: true,
 }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+    },
+  },
+}));
+// Stripe webhook precisa do body raw ANTES do express.json()
+app.use('/webhooks', express.raw({ type: 'application/json' }), WebhookRoutes);
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-console.log(`Pasta uploads disponível em: /uploads`);
+app.use(express.json());
+app.use(generalLimiter);
+
+// Swagger UI — apenas em desenvolvimento
+if (env.NODE_ENV !== 'production') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Toca Aqui API Docs',
+  }));
+}
+
+// Uploads estáticos com headers de segurança
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', 'inline');
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
 
 app.use("/enderecos", AddressRoutes);
 app.use("/bandas", BandRoutes);
@@ -45,39 +87,29 @@ app.use("/usuarios", UserRoutes);
 app.use("/gerenciamento-bandas", BandManagementRoutes);
 app.use("/admin", AdminRoutes);
 app.use("/estabelecimentos", EstablishmentRoutes);
+app.use("/notificacoes", NotificationRoutes);
+app.use("/contratos", ContractRoutes);
+app.use("/pagamentos", PaymentRoutes);
+app.use("/shows", ShowRoutes);
+app.use("/ingressos", IngressoRoutes);
+app.use("/avaliacoes", AvaliacaoShowRoutes);
+app.use("/comentarios", ComentarioShowRoutes);
+app.use("/artistas", ArtistaPublicoRoutes);
 
-import sequelize from "./config/database"; 
-
-
-sequelize
-  .authenticate()
-  .then(async () => {
-    console.log("Banco de dados conectado com sucesso!");
-    // Para criar as tabelas automaticamente 
-    await sequelize.sync();
-    console.log("Sincronização do banco concluída!");
-    
-    await pubSubService.initializeSubscribers();
-    console.log("Redis Pub/Sub subscribers inicializados");
-  })
-  .catch((error) => {
-    console.error("Erro ao conectar ao banco de dados:", error);
-  });
-
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.json({ message: "API funcionando!" });
 });
 
-app.get("/health", async (req, res) => {
+app.get("/health", async (_req, res) => {
   try {
-    const dbHealthy = sequelize.authenticate().then(() => true).catch(() => false);
+    const dbHealthy = await sequelize.authenticate().then(() => true).catch(() => false);
     const redisHealthy = await redisService.healthCheck();
-    
+
     const health = {
-      status: (await dbHealthy) && redisHealthy ? "healthy" : "unhealthy",
+      status: dbHealthy && redisHealthy ? "healthy" : "unhealthy",
       timestamp: new Date().toISOString(),
       services: {
-        database: await dbHealthy ? "up" : "down",
+        database: dbHealthy ? "up" : "down",
         redis: redisHealthy ? "up" : "down",
       },
     };
@@ -93,8 +125,26 @@ app.get("/health", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+// Handler de erros centralizado — deve vir após todas as rotas
+app.use(errorHandler);
+
+sequelize
+  .authenticate()
+  .then(async () => {
+    console.log("Banco de dados conectado com sucesso!");
+
+    await pubSubService.initializeSubscribers();
+    console.log("Redis Pub/Sub subscribers inicializados");
+
+    initCronJobs();
+
+    app.listen(env.PORT, () => {
+      console.log(`Servidor rodando na porta ${env.PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Erro ao conectar ao banco de dados:", error);
+    process.exit(1);
+  });
 
 export default app;

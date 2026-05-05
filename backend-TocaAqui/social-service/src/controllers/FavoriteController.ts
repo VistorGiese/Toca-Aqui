@@ -1,168 +1,137 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { asyncHandler, AppError } from "../middleware/errorHandler";
 import FavoriteModel from "../models/FavoriteModel";
 import redisService from "../config/redis";
 import pubSubService from "../services/PubSubService";
 
-export const addFavorite = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { favoritavel_tipo, favoritavel_id } = req.body;
+export const addFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { favoritavel_tipo, favoritavel_id } = req.body;
 
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
 
-    if (!favoritavel_tipo || !favoritavel_id) {
-      return res.status(400).json({ error: "Tipo e ID do favorito são obrigatórios" });
-    }
-
-    const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda'];
-    if (!tiposValidos.includes(favoritavel_tipo)) {
-      return res.status(400).json({ error: "Tipo de favorito inválido" });
-    }
-
-    const favoritoExistente = await FavoriteModel.findOne({
-      where: { usuario_id, favoritavel_tipo, favoritavel_id }
-    });
-
-    if (favoritoExistente) {
-      return res.status(400).json({ error: "Item já está nos seus favoritos" });
-    }
-
-    const favorito = await FavoriteModel.create({
-      usuario_id,
-      favoritavel_tipo,
-      favoritavel_id
-    });
-
-    await redisService.invalidate(`favoritos:usuario:${usuario_id}`);
-
-    await pubSubService.publishFavoritoAdicionado({
-      usuario_id,
-      favoritavel_tipo,
-      favoritavel_id
-    });
-
-    res.status(201).json({ 
-      message: "Item adicionado aos favoritos com sucesso",
-      favorito 
-    });
-  } catch (error) {
-    console.error("Erro ao adicionar favorito:", error);
-    res.status(500).json({ error: "Erro ao adicionar item aos favoritos" });
+  if (!favoritavel_tipo || !favoritavel_id) {
+    throw new AppError("Tipo e ID do favorito são obrigatórios", 400);
   }
-};
 
-export const removeFavorite = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { favoritavel_tipo, favoritavel_id } = req.params;
-
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
-
-    const favorito = await FavoriteModel.findOne({
-      where: { usuario_id, favoritavel_tipo, favoritavel_id }
-    });
-
-    if (!favorito) {
-      return res.status(404).json({ error: "Item não está nos seus favoritos" });
-    }
-
-    await favorito.destroy();
-
-    await redisService.invalidate(`favoritos:usuario:${usuario_id}`);
-
-    await pubSubService.publishFavoritoRemovido({
-      usuario_id,
-      favoritavel_tipo: favoritavel_tipo as string,
-      favoritavel_id: parseInt(favoritavel_id as string)
-    });
-
-    res.json({ message: "Item removido dos favoritos com sucesso" });
-  } catch (error) {
-    console.error("Erro ao remover favorito:", error);
-    res.status(500).json({ error: "Erro ao remover item dos favoritos" });
+  const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda'];
+  if (!tiposValidos.includes(favoritavel_tipo)) {
+    throw new AppError("Tipo de favorito inválido", 400);
   }
-};
 
-export const getFavorites = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { tipo } = req.query;
+  const favoritoExistente = await FavoriteModel.findOne({
+    where: { usuario_id, favoritavel_tipo, favoritavel_id }
+  });
 
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
-
-    const cacheKey = `favoritos:usuario:${usuario_id}${tipo ? `:tipo:${tipo}` : ''}`;
-
-    const cached = await redisService.get<any[]>(cacheKey);
-    if (cached) {
-      console.log(`Cache HIT: ${cacheKey}`);
-      return res.json({
-        message: "Lista de favoritos recuperada com sucesso",
-        total: cached.length,
-        favoritos: cached,
-        source: "cache"
-      });
-    }
-
-    console.log(`Cache MISS: ${cacheKey}`);
-
-    const whereClause: any = { usuario_id };
-    if (tipo && ['perfil_estabelecimento', 'perfil_artista', 'banda'].includes(tipo as string)) {
-      whereClause.favoritavel_tipo = tipo;
-    }
-
-    const favoritos = await FavoriteModel.findAll({
-      where: whereClause,
-      order: [['created_at', 'DESC']]
-    });
-
-    const favoritosSimplificados = favoritos.map(fav => ({
-      id: fav.id,
-      tipo: fav.favoritavel_tipo,
-      item_id: fav.favoritavel_id,
-      data_criacao: (fav as any).createdAt || fav.data_criacao
-    }));
-
-    await redisService.set(cacheKey, favoritosSimplificados, 600);
-
-    res.json({
-      message: "Lista de favoritos recuperada com sucesso",
-      total: favoritosSimplificados.length,
-      favoritos: favoritosSimplificados,
-      source: "database"
-    });
-  } catch (error) {
-    console.error("Erro ao buscar favoritos:", error);
-    res.status(500).json({ error: "Erro ao buscar favoritos" });
+  if (favoritoExistente) {
+    throw new AppError("Item já está nos seus favoritos", 400);
   }
-};
 
-export const checkFavorite = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { favoritavel_tipo, favoritavel_id } = req.params;
+  const favorito = await FavoriteModel.create({
+    usuario_id,
+    favoritavel_tipo,
+    favoritavel_id
+  });
 
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
+  await redisService.invalidatePattern(`favoritos:usuario:${usuario_id}*`);
 
-    const favorito = await FavoriteModel.findOne({
-      where: { usuario_id, favoritavel_tipo, favoritavel_id }
-    });
+  await pubSubService.publishFavoritoAdicionado({
+    usuario_id,
+    favoritavel_tipo,
+    favoritavel_id
+  });
 
-    res.json({
-      eh_favorito: !!favorito,
-      tipo: favoritavel_tipo,
-      item_id: Number(favoritavel_id)
-    });
-  } catch (error) {
-    console.error("Erro ao verificar favorito:", error);
-    res.status(500).json({ error: "Erro ao verificar favorito" });
+  res.status(201).json({
+    message: "Item adicionado aos favoritos com sucesso",
+    favorito
+  });
+});
+
+export const removeFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { favoritavel_tipo, favoritavel_id } = req.params;
+
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
+
+  const favorito = await FavoriteModel.findOne({
+    where: { usuario_id, favoritavel_tipo, favoritavel_id }
+  });
+
+  if (!favorito) throw new AppError("Item não está nos seus favoritos", 404);
+
+  await favorito.destroy();
+
+  await redisService.invalidatePattern(`favoritos:usuario:${usuario_id}*`);
+
+  await pubSubService.publishFavoritoRemovido({
+    usuario_id,
+    favoritavel_tipo: favoritavel_tipo as string,
+    favoritavel_id: parseInt(favoritavel_id as string)
+  });
+
+  res.json({ message: "Item removido dos favoritos com sucesso" });
+});
+
+export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { tipo } = req.query;
+
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
+
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const offset = (page - 1) * limit;
+
+  const cacheKey = `favoritos:usuario:${usuario_id}${tipo ? `:tipo:${tipo}` : ''}:p${page}:l${limit}`;
+
+  const cached = await redisService.get<any>(cacheKey);
+  if (cached) {
+    return res.json(cached);
   }
-};
+
+  const whereClause: any = { usuario_id };
+  if (tipo && ['perfil_estabelecimento', 'perfil_artista', 'banda'].includes(tipo as string)) {
+    whereClause.favoritavel_tipo = tipo;
+  }
+
+  const { count, rows } = await FavoriteModel.findAndCountAll({
+    where: whereClause,
+    order: [['created_at', 'DESC']],
+    limit,
+    offset,
+  });
+
+  const favoritosSimplificados = rows.map(fav => ({
+    id: fav.id,
+    tipo: fav.favoritavel_tipo,
+    item_id: fav.favoritavel_id,
+    data_criacao: fav.created_at
+  }));
+
+  const resultado = {
+    message: "Lista de favoritos recuperada com sucesso",
+    data: favoritosSimplificados,
+    pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) },
+  };
+
+  await redisService.set(cacheKey, resultado, 600);
+  res.json(resultado);
+});
+
+export const checkFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { favoritavel_tipo, favoritavel_id } = req.params;
+
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
+
+  const favorito = await FavoriteModel.findOne({
+    where: { usuario_id, favoritavel_tipo, favoritavel_id }
+  });
+
+  res.json({
+    eh_favorito: !!favorito,
+    tipo: favoritavel_tipo,
+    item_id: Number(favoritavel_id)
+  });
+});

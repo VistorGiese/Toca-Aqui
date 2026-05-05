@@ -6,8 +6,8 @@ export interface FavoriteAttributes {
   usuario_id: number;
   favoritavel_tipo: 'perfil_estabelecimento' | 'perfil_artista' | 'banda';
   favoritavel_id: number;
-  data_criacao?: Date;
-  data_atualizacao?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 class FavoriteModel extends Model<FavoriteAttributes> implements FavoriteAttributes {
@@ -15,8 +15,8 @@ class FavoriteModel extends Model<FavoriteAttributes> implements FavoriteAttribu
   public usuario_id!: number;
   public favoritavel_tipo!: 'perfil_estabelecimento' | 'perfil_artista' | 'banda';
   public favoritavel_id!: number;
-  public readonly data_criacao!: Date;
-  public readonly data_atualizacao!: Date;
+  public readonly created_at!: Date;
+  public readonly updated_at!: Date;
 }
 
 FavoriteModel.init({

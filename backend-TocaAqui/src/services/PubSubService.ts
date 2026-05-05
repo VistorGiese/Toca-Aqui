@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import redisService from "../config/redis";
+import { env } from "../config/env";
 
 
 class PubSubService {
@@ -10,8 +11,9 @@ class PubSubService {
   constructor() {
     // criar cliente Redis dedicado para subscription
     this.subscriber = new Redis({
-      host: process.env.REDIS_HOST || "localhost",
-      port: parseInt(process.env.REDIS_PORT || "6379"),
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD,
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);
         return delay;
@@ -95,7 +97,6 @@ class PubSubService {
       // invalidar caches relacionados
       if (data.favoritavel_tipo === "banda") {
         await redisService.invalidate(`banda:${data.favoritavel_id}`);
-        await redisService.invalidate(`bandas:list`);
         await redisService.invalidatePattern(`bandas:*`);
         console.log(` Cache invalidado para banda #${data.favoritavel_id}`);
       } else if (data.favoritavel_tipo === "perfil_estabelecimento") {
@@ -112,6 +113,9 @@ class PubSubService {
       if (data.favoritavel_tipo === "banda") {
         await redisService.invalidate(`banda:${data.favoritavel_id}`);
         await redisService.invalidatePattern(`bandas:*`);
+      } else if (data.favoritavel_tipo === "perfil_estabelecimento") {
+        await redisService.invalidate(`estabelecimento:${data.favoritavel_id}`);
+        await redisService.invalidatePattern(`estabelecimentos:*`);
       }
     });
 
@@ -120,7 +124,7 @@ class PubSubService {
       console.log(`Comentário criado: ${data.comentavel_tipo} #${data.comentavel_id} por usuário #${data.usuario_id}`);
       
       if (data.comentavel_tipo === "banda") {
-        await redisService.invalidate(`banda:${data.comentavel_id}:detalhes`);
+        await redisService.invalidate(`banda:${data.comentavel_id}`);
       } else if (data.comentavel_tipo === "agendamento") {
         await redisService.invalidate(`agendamento:${data.comentavel_id}`);
       }
@@ -132,28 +136,37 @@ class PubSubService {
       
 
       if (data.avaliavel_tipo === "banda") {
-        await redisService.invalidate(`banda:${data.avaliavel_id}:rating`);
-        await redisService.invalidate(`banda:${data.avaliavel_id}:detalhes`);
-        await redisService.invalidatePattern(`bandas:top*`);
+        await redisService.invalidate(`banda:${data.avaliavel_id}`);
+        await redisService.invalidatePattern(`bandas:*`);
         console.log(`Cache de avaliações invalidado para banda #${data.avaliavel_id}`);
       }
     });
 
     await this.subscribe("avaliacao.atualizada", async (data) => {
       console.log(`Avaliação atualizada: ${data.avaliavel_tipo} #${data.avaliavel_id} - Nova nota: ${data.nota_nova}`);
-      
+
       if (data.avaliavel_tipo === "banda") {
-        await redisService.invalidate(`banda:${data.avaliavel_id}:rating`);
-        await redisService.invalidatePattern(`bandas:top*`);
+        await redisService.invalidate(`banda:${data.avaliavel_id}`);
+        await redisService.invalidatePattern(`bandas:*`);
       }
     });
 
     await this.subscribe("avaliacao.deletada", async (data) => {
       console.log(`Avaliação deletada: ${data.avaliavel_tipo} #${data.avaliavel_id}`);
-      
+
       if (data.avaliavel_tipo === "banda") {
-        await redisService.invalidate(`banda:${data.avaliavel_id}:rating`);
-        await redisService.invalidatePattern(`bandas:top*`);
+        await redisService.invalidate(`banda:${data.avaliavel_id}`);
+        await redisService.invalidatePattern(`bandas:*`);
+      }
+    });
+
+    await this.subscribe("comentario.deletado", async (data) => {
+      console.log(`Comentário deletado: ${data.comentavel_tipo} #${data.comentavel_id}`);
+
+      if (data.comentavel_tipo === "banda") {
+        await redisService.invalidate(`banda:${data.comentavel_id}`);
+      } else if (data.comentavel_tipo === "agendamento") {
+        await redisService.invalidate(`agendamento:${data.comentavel_id}`);
       }
     });
 

@@ -1,0 +1,425 @@
+process.env.DB_NAME = 'test_db';
+process.env.DB_USER = 'root';
+process.env.DB_PASSWORD = '';
+process.env.JWT_SECRET = 'super-secret-key-for-tests-only-32chars';
+process.env.NODE_ENV = 'test';
+
+jest.mock('../services/AuthService', () => ({
+  authService: {
+    register: jest.fn(),
+    login: jest.fn(),
+    logout: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
+    verifyEmail: jest.fn(),
+    getUserProfile: jest.fn(),
+    createEstablishmentProfile: jest.fn(),
+    createArtistProfile: jest.fn(),
+  },
+}));
+
+jest.mock('../services/UploadService', () => ({
+  uploadService: {
+    getRelativePath: jest.fn().mockReturnValue('uploads/test.jpg'),
+    deleteFile: jest.fn(),
+  },
+}));
+
+jest.mock('../utils/jwt', () => ({
+  verifyToken: jest.fn(),
+}));
+
+jest.mock('../models/ArtistProfileModel', () => ({
+  __esModule: true,
+  default: { findByPk: jest.fn() },
+}));
+
+import { Request, Response, NextFunction } from 'express';
+import { AuthRequest } from '../middleware/authmiddleware';
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  getUserProfile,
+  createEstablishmentProfile,
+  createArtistProfile,
+  uploadArtistPhoto,
+} from '../controllers/UserController';
+import { authService } from '../services/AuthService';
+import { uploadService } from '../services/UploadService';
+import { verifyToken } from '../utils/jwt';
+import ArtistProfileModel from '../models/ArtistProfileModel';
+
+const flushPromises = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+const mockRes = () => {
+  const res = {} as Response;
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return res;
+};
+
+const makeReq = (overrides: Partial<AuthRequest> = {}): AuthRequest =>
+  ({ params: {}, query: {}, body: {}, ...overrides } as AuthRequest);
+
+describe('UserController', () => {
+  let mockNext: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockNext = jest.fn();
+  });
+
+  // ─── registerUser ─────────────────────────────────────────────────────────
+  describe('registerUser', () => {
+    it('registra usuário e retorna 201', async () => {
+      const user = { id: 1, nome_completo: 'Teste', email: 'teste@email.com' };
+      const req = makeReq({ body: { nome_completo: 'Teste', email: 'teste@email.com', senha: 'Senha123' } });
+      const res = mockRes();
+
+      (authService.register as jest.Mock).mockResolvedValue(user);
+
+      registerUser(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ user })
+      );
+    });
+  });
+
+  // ─── loginUser ────────────────────────────────────────────────────────────
+  describe('loginUser', () => {
+    it('retorna token e dados do usuário', async () => {
+      const loginResult = { token: 'jwt-token', user: { id: 1, nome_completo: 'Teste' } };
+      const req = makeReq({ body: { email: 'teste@email.com', senha: 'Senha123' } });
+      const res = mockRes();
+
+      (authService.login as jest.Mock).mockResolvedValue(loginResult);
+
+      loginUser(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ token: 'jwt-token', message: 'Login realizado com sucesso' })
+      );
+    });
+
+    it('passa AppError 400 quando email ou senha faltam', async () => {
+      const req = makeReq({ body: { email: 'teste@email.com' } });
+      const res = mockRes();
+
+      loginUser(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('passa AppError 400 quando ambos faltam', async () => {
+      const req = makeReq({ body: {} });
+      const res = mockRes();
+
+      loginUser(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+  });
+
+  // ─── logoutUser ───────────────────────────────────────────────────────────
+  describe('logoutUser', () => {
+    it('realiza logout com sucesso', async () => {
+      const req = makeReq({ user: { id: 1 }, token: 'meu-token' } as any);
+      const res = mockRes();
+
+      (verifyToken as jest.Mock).mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 });
+      (authService.logout as jest.Mock).mockResolvedValue(undefined);
+
+      logoutUser(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(authService.logout).toHaveBeenCalledWith('meu-token', expect.any(Number));
+      expect(res.json).toHaveBeenCalledWith({ message: 'Logout realizado com sucesso' });
+    });
+
+    it('passa AppError 400 quando token não encontrado', async () => {
+      const req = makeReq({ user: { id: 1 }, token: undefined } as any);
+      const res = mockRes();
+
+      logoutUser(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('passa AppError 400 quando token sem exp', async () => {
+      const req = makeReq({ user: { id: 1 }, token: 'token' } as any);
+      const res = mockRes();
+
+      (verifyToken as jest.Mock).mockReturnValue(null);
+
+      logoutUser(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+  });
+
+  // ─── forgotPassword ───────────────────────────────────────────────────────
+  describe('forgotPassword', () => {
+    it('envia resposta genérica sem revelar existência do email', async () => {
+      const req = makeReq({ body: { email: 'teste@email.com' } });
+      const res = mockRes();
+
+      (authService.forgotPassword as jest.Mock).mockResolvedValue(undefined);
+
+      forgotPassword(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.any(String) })
+      );
+    });
+  });
+
+  // ─── resetPassword ────────────────────────────────────────────────────────
+  describe('resetPassword', () => {
+    it('redefine senha com sucesso', async () => {
+      const req = makeReq({ body: { token: 'reset-token', nova_senha: 'NovaSenha123' } });
+      const res = mockRes();
+
+      (authService.resetPassword as jest.Mock).mockResolvedValue(undefined);
+
+      resetPassword(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(authService.resetPassword).toHaveBeenCalledWith('reset-token', 'NovaSenha123');
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Senha redefinida com sucesso.' })
+      );
+    });
+  });
+
+  // ─── verifyEmail ──────────────────────────────────────────────────────────
+  describe('verifyEmail', () => {
+    it('verifica email com sucesso', async () => {
+      const req = makeReq({ query: { token: 'verify-token' } });
+      const res = mockRes();
+
+      (authService.verifyEmail as jest.Mock).mockResolvedValue({ alreadyVerified: false });
+
+      verifyEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Email verificado com sucesso. Você já pode fazer login.' })
+      );
+    });
+
+    it('retorna mensagem quando email já verificado', async () => {
+      const req = makeReq({ query: { token: 'verify-token' } });
+      const res = mockRes();
+
+      (authService.verifyEmail as jest.Mock).mockResolvedValue({ alreadyVerified: true });
+
+      verifyEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith({ message: 'Email já verificado.' });
+    });
+
+    it('passa AppError 400 quando token ausente', async () => {
+      const req = makeReq({ query: {} });
+      const res = mockRes();
+
+      verifyEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+  });
+
+  // ─── getUserProfile ───────────────────────────────────────────────────────
+  describe('getUserProfile', () => {
+    it('retorna perfil formatado do usuário', async () => {
+      const user = {
+        id: 1,
+        nome_completo: 'Teste',
+        email: 'teste@email.com',
+        EstablishmentProfiles: [],
+        ArtistProfiles: [{ id: 1 }],
+      };
+      const req = makeReq({ user: { id: 1 } });
+      const res = mockRes();
+
+      (authService.getUserProfile as jest.Mock).mockResolvedValue(user);
+
+      getUserProfile(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith({
+        user: expect.objectContaining({
+          id: 1,
+          nome_completo: 'Teste',
+          establishment_profiles: [],
+          artist_profiles: [{ id: 1 }],
+        }),
+      });
+    });
+
+    it('passa AppError 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined });
+      const res = mockRes();
+
+      getUserProfile(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
+  });
+
+  // ─── createEstablishmentProfile ───────────────────────────────────────────
+  describe('createEstablishmentProfile', () => {
+    it('cria perfil de estabelecimento e retorna 201', async () => {
+      const profile = { id: 1, nome_estabelecimento: 'Bar' };
+      const req = makeReq({ user: { id: 1 }, body: { nome_estabelecimento: 'Bar' } });
+      const res = mockRes();
+
+      (authService.createEstablishmentProfile as jest.Mock).mockResolvedValue(profile);
+
+      createEstablishmentProfile(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ profile })
+      );
+    });
+
+    it('passa AppError 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined, body: {} });
+      const res = mockRes();
+
+      createEstablishmentProfile(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
+  });
+
+  // ─── createArtistProfile ─────────────────────────────────────────────────
+  describe('createArtistProfile', () => {
+    it('cria perfil de artista e retorna 201', async () => {
+      const profile = { id: 1, nome_artistico: 'DJ' };
+      const req = makeReq({ user: { id: 1 }, body: { nome_artistico: 'DJ' } });
+      const res = mockRes();
+
+      (authService.createArtistProfile as jest.Mock).mockResolvedValue(profile);
+
+      createArtistProfile(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ profile })
+      );
+    });
+  });
+
+  // ─── uploadArtistPhoto ────────────────────────────────────────────────────
+  describe('uploadArtistPhoto', () => {
+    it('faz upload da foto com sucesso', async () => {
+      const profile = {
+        id: 1,
+        usuario_id: 1,
+        foto_perfil: null,
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        file: { filename: 'test.jpg', size: 1024, mimetype: 'image/jpeg' } as any,
+      } as any);
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(profile);
+
+      uploadArtistPhoto(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(profile.update).toHaveBeenCalledWith({ foto_perfil: 'uploads/test.jpg' });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ foto_perfil: 'uploads/test.jpg' })
+      );
+    });
+
+    it('passa AppError 400 quando nenhuma imagem enviada', async () => {
+      const req = makeReq({ user: { id: 1 }, params: { id: '1' } });
+      const res = mockRes();
+
+      uploadArtistPhoto(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('passa AppError 404 quando perfil não encontrado', async () => {
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '999' },
+        file: { filename: 'test.jpg' } as any,
+      } as any);
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      uploadArtistPhoto(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
+      );
+      expect(uploadService.deleteFile).toHaveBeenCalled();
+    });
+
+    it('passa AppError 403 quando usuário não é dono nem admin', async () => {
+      const profile = { id: 1, usuario_id: 99, foto_perfil: null };
+      const req = makeReq({
+        user: { id: 1, role: 'artist' },
+        params: { id: '1' },
+        file: { filename: 'test.jpg' } as any,
+      } as any);
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(profile);
+
+      uploadArtistPhoto(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 403 })
+      );
+      expect(uploadService.deleteFile).toHaveBeenCalled();
+    });
+  });
+});

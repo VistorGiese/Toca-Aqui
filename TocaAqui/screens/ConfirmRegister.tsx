@@ -11,17 +11,39 @@ import {
 import Button from "../components/Allcomponents/Button";
 import ToBack from "../components/Allcomponents/ToBack";
 import { AccontFormContext } from "../contexts/AccountFromContexto";
-import { cadastrarEstabelecimentoCompleto } from "../http/RegisterService";
-import { router } from "expo-router";
+import {
+    createEndereco,
+    createEstabelecimento,
+} from "../http/RegisterService";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/Navigate";
 
 export default function ConfirmRegister() {
     const { accountFormData } = useContext(AccontFormContext);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     const handleFinalSubmit = async () => {
         setIsSubmitting(true);
         try {
-            await cadastrarEstabelecimentoCompleto({
+            const enderecoPayload = {
+                rua: accountFormData.rua,
+                numero: accountFormData.numero,
+                bairro: accountFormData.bairro,
+                cidade: accountFormData.cidade,
+                estado: accountFormData.estado,
+                cep: accountFormData.cep,
+            };
+
+            const enderecoCriado = await createEndereco(enderecoPayload);
+            const enderecoId = enderecoCriado.id;
+
+            if (!enderecoId) {
+                throw new Error("O ID do endereço não foi retornado.");
+            }
+
+            const estabelecimentoPayload = {
                 ...accountFormData,
                 horario_funcionamento_inicio: accountFormData.horario_funcionamento_inicio?.includes(":")
                     ? accountFormData.horario_funcionamento_inicio
@@ -32,7 +54,7 @@ export default function ConfirmRegister() {
             });
 
             Alert.alert("Sucesso!", "Cadastro realizado com sucesso!", [
-                { text: "OK", onPress: () => router.push("/login" as any) },
+                { text: "OK", onPress: () => navigation.reset({ index: 0, routes: [{ name: "HomePage" }] }) },
             ]);
         } catch (error: any) {
             console.error(error);

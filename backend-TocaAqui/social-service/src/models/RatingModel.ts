@@ -8,8 +8,8 @@ export interface RatingAttributes {
   avaliavel_id: number;
   nota: number; 
   comentario?: string;
-  data_criacao?: Date;
-  data_atualizacao?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 class RatingModel extends Model<RatingAttributes> implements RatingAttributes {
@@ -19,8 +19,8 @@ class RatingModel extends Model<RatingAttributes> implements RatingAttributes {
   public avaliavel_id!: number;
   public nota!: number;
   public comentario?: string;
-  public readonly data_criacao!: Date;
-  public readonly data_atualizacao!: Date;
+  public readonly created_at!: Date;
+  public readonly updated_at!: Date;
 }
 
 RatingModel.init({
