@@ -54,7 +54,7 @@ export default function EstAcceptContract() {
                 }]
               );
             } catch (err: any) {
-              const msg = err?.response?.data?.message || err?.response?.data?.error || "Erro ao aceitar candidatura.";
+              const msg = err?.response?.data?.error || err?.response?.data?.message || "Erro ao aceitar candidatura.";
               Alert.alert("Erro", msg);
             } finally {
               setLoading(false);
@@ -84,7 +84,7 @@ export default function EstAcceptContract() {
                 [{ text: "OK", onPress: () => navigation.goBack() }]
               );
             } catch (err: any) {
-              const msg = err?.response?.data?.message || err?.response?.data?.error || "Erro ao recusar candidatura.";
+              const msg = err?.response?.data?.error || err?.response?.data?.message || "Erro ao recusar candidatura.";
               Alert.alert("Erro", msg);
             } finally {
               setLoading(false);
