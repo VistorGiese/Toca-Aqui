@@ -130,6 +130,7 @@ describe('ContractService', () => {
       (AddressModel.findByPk as jest.Mock).mockResolvedValue(endereco);
       (BandModel.findByPk as jest.Mock).mockResolvedValue(banda);
       (BandMemberModel.findOne as jest.Mock).mockResolvedValue(null);
+      (BandMemberModel.findAll as jest.Mock).mockResolvedValue([]);
       (ContractModel.create as jest.Mock).mockResolvedValue(contrato);
 
       const result = await service.generateFromApplication(10);
@@ -138,6 +139,7 @@ describe('ContractService', () => {
         expect.objectContaining({
           aplicacao_id: 10,
           banda_id: 5,
+          status: 'aguardando_aceite',
           status: 'aguardando_aceite',
         })
       );

@@ -58,6 +58,7 @@ describe('BandApplicationController', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           message: 'Candidatura enviada com sucesso',
+          message: 'Candidatura enviada com sucesso',
           aplicacao,
         })
       );
@@ -164,6 +165,7 @@ describe('BandApplicationController', () => {
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
+          message: 'Evento fechado - candidatura já aceita',
           message: 'Evento fechado - candidatura já aceita',
           candidaturas: [],
         })

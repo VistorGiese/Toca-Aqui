@@ -38,8 +38,10 @@ export default function CreateEvent({ onClose }: Props) {
   const addTimeSlot = () =>
     timeSlots.length < 2 &&
     setTimeSlots((prev) => [...prev, { id: Date.now(), start: "", end: "" }]);
+
   const removeTimeSlot = (id: number) =>
     setTimeSlots((prev) => prev.filter((slot) => slot.id !== id));
+
   const updateTimeSlot = (
     id: number,
     field: "start" | "end",
@@ -64,13 +66,14 @@ export default function CreateEvent({ onClose }: Props) {
               data_show: selectedDate,
               horario_inicio: slot.start,
               horario_fim: slot.end,
-              estabelecimento_id: 1,
+              perfil_estabelecimento_id: 1, 
             })
           )
         );
         onClose();
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        console.error("❌ Status:", err.response?.status);
+        console.error("❌ Resposta do servidor:", JSON.stringify(err.response?.data));
       } finally {
         setIsLoading(false);
       }
