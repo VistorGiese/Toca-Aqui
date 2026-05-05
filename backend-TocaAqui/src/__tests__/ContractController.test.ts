@@ -14,7 +14,23 @@ jest.mock('../services/ContractService', () => ({
     acceptContract: jest.fn(),
     cancelContract: jest.fn(),
     getHistory: jest.fn(),
+    completeContract: jest.fn(),
   },
+}));
+
+jest.mock('../models/ContractModel', () => ({
+  __esModule: true,
+  default: { findByPk: jest.fn(), findAll: jest.fn() },
+}));
+
+jest.mock('../models/AvaliacaoShowModel', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn(), create: jest.fn(), findAll: jest.fn() },
+}));
+
+jest.mock('../models/ArtistProfileModel', () => ({
+  __esModule: true,
+  default: { findByPk: jest.fn(), update: jest.fn() },
 }));
 
 jest.mock('../services/NotificationService', () => ({
@@ -59,12 +75,17 @@ import {
   acceptContract,
   cancelContract,
   getContractHistory,
+  completeContractHandler,
+  avaliarArtista,
 } from '../controllers/ContractController';
 import { contractService } from '../services/ContractService';
 import { createNotification } from '../services/NotificationService';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import BandMemberModel from '../models/BandMemberModel';
 import redisService from '../config/redis';
+import ContractModel from '../models/ContractModel';
+import AvaliacaoShowModel from '../models/AvaliacaoShowModel';
+import ArtistProfileModel from '../models/ArtistProfileModel';
 
 const flushPromises = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -383,6 +404,207 @@ describe('ContractController', () => {
 
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({ statusCode: 401 })
+      );
+    });
+  });
+
+  // ─── completeContractHandler (Phase 5) ────────────────────────────────────
+  describe('completeContractHandler', () => {
+    it('retorna contrato concluído quando usuário é contratante', async () => {
+      const contrato = makeContrato({ status: 'concluido' });
+      const req = makeReq({ user: { id: 1 }, params: { id: '1' } });
+      const res = mockRes();
+
+      (contractService.getUserRole as jest.Mock).mockResolvedValue('contratante');
+      (contractService.completeContract as jest.Mock).mockResolvedValue(contrato);
+
+      completeContractHandler(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(contrato);
+      expect(redisService.invalidatePattern).toHaveBeenCalledWith('contratos:*');
+    });
+
+    it('lança 403 quando usuário não é contratante', async () => {
+      const req = makeReq({ user: { id: 1 }, params: { id: '1' } });
+      const res = mockRes();
+
+      (contractService.getUserRole as jest.Mock).mockResolvedValue('contratado');
+
+      completeContractHandler(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 403 })
+      );
+    });
+
+    it('lança 401 quando usuário não está identificado', async () => {
+      const req = makeReq({ user: undefined, params: { id: '1' } });
+      const res = mockRes();
+
+      completeContractHandler(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
+  });
+
+  // ─── avaliarArtista (Phase 5) ─────────────────────────────────────────────
+  describe('avaliarArtista', () => {
+    const makeContratoConcluido = (overrides = {}) =>
+      makeContrato({ status: 'concluido', artista_id: null, evento_id: 20, ...overrides });
+
+    it('retorna 201 com avaliação quando dados são válidos', async () => {
+      // Arrange
+      const contrato = makeContratoConcluido();
+      const avaliacao = { id: 5, nota_artista: 4 };
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { nota: 4, comentario: 'Ótimo show', tags: [] },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 1 });
+      (AvaliacaoShowModel.findOne as jest.Mock).mockResolvedValue(null);
+      (AvaliacaoShowModel.create as jest.Mock).mockResolvedValue(avaliacao);
+
+      // Act
+      avaliarArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ avaliacao })
+      );
+    });
+
+    it('lança 400 quando nota está fora do intervalo 1-5', async () => {
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { nota: 6 },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContratoConcluido());
+
+      avaliarArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('lança 404 quando contrato não encontrado', async () => {
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '999' },
+        body: { nota: 4 },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      avaliarArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+
+    it('lança 400 quando contrato não está concluído', async () => {
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { nota: 4 },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContrato({ status: 'aceito' }));
+
+      avaliarArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('lança 403 quando usuário não é dono do estabelecimento', async () => {
+      const req = makeReq({
+        user: { id: 99 },
+        params: { id: '1' },
+        body: { nota: 4 },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContratoConcluido());
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 1 });
+
+      avaliarArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 403 })
+      );
+    });
+
+    it('lança 400 quando avaliação duplicada', async () => {
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { nota: 4 },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContratoConcluido());
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 1 });
+      (AvaliacaoShowModel.findOne as jest.Mock).mockResolvedValue({ id: 3 });
+
+      avaliarArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('recalcula nota_media do artista com média arredondada a 1 decimal', async () => {
+      // Arrange — artista com 2 contratos concluídos, notas [4, 5] → média 4.5
+      const contrato = makeContratoConcluido({ artista_id: 7 });
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { nota: 5 },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 1 });
+      (AvaliacaoShowModel.findOne as jest.Mock).mockResolvedValue(null);
+      (AvaliacaoShowModel.create as jest.Mock).mockResolvedValue({ id: 5 });
+      (ContractModel.findAll as jest.Mock).mockResolvedValue([{ evento_id: 20 }, { evento_id: 21 }]);
+      (AvaliacaoShowModel.findAll as jest.Mock).mockResolvedValue([
+        { nota_artista: 4 },
+        { nota_artista: 5 },
+      ]);
+
+      // Act
+      avaliarArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      // Assert — Math.round((4+5)/2 * 10) / 10 = 4.5
+      expect(ArtistProfileModel.update).toHaveBeenCalledWith(
+        { nota_media: 4.5 },
+        expect.objectContaining({ where: { id: 7 } })
       );
     });
   });
