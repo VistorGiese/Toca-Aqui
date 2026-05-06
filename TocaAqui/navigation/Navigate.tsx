@@ -120,14 +120,17 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function getInitialRoute(role?: string): keyof RootStackParamList {
-  if (role === "artist") return "ArtistNavigator";
-  if (role === "establishment") return "EstablishmentNavigator";
+function getInitialRoute(user: import("@/types").User | null, paginas: import("@/types").MinhasPaginas | null): keyof RootStackParamList {
+  if (!user) return "UserNavigator";
+  const hasArtistProfile = user.role === "artist" || !!user.perfilArtistaId || !!paginas?.pagina_artista;
+  if (hasArtistProfile) return "ArtistNavigator";
+  const hasEstProfile = user.role === "establishment" || !!paginas?.pagina_estabelecimento;
+  if (hasEstProfile) return "EstablishmentNavigator";
   return "UserNavigator";
 }
 
 export default function Navigate() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, paginas } = useAuth();
 
   if (isLoading) {
     return (
@@ -137,7 +140,7 @@ export default function Navigate() {
     );
   }
 
-  const initialRoute = getInitialRoute(user?.role);
+  const initialRoute = getInitialRoute(user, paginas);
 
   return (
     <Stack.Navigator key={isAuthenticated ? "app" : "auth"} initialRouteName={isAuthenticated ? initialRoute : "Login"} screenOptions={{ headerShown: false }}>

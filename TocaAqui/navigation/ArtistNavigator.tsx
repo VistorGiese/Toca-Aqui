@@ -14,6 +14,7 @@ import EventDetailArtist from "@/screens/artist/EventDetailArtist";
 import ApplyConfirmation from "@/screens/artist/ApplyConfirmation";
 import ShowDetail from "@/screens/artist/ShowDetail";
 import ContractDetail from "@/screens/artist/ContractDetail";
+import MyContracts from "@/screens/artist/MyContracts";
 import RateEstablishment from "@/screens/artist/RateEstablishment";
 import Subscription from "@/screens/artist/Subscription";
 
@@ -46,6 +47,7 @@ export type ArtistStackParamList = {
   };
   ShowDetail: { contractId: number };
   ContractDetail: { contractId: number };
+  MyContracts: undefined;
   RateEstablishment: { contractId: number; venueName: string };
   Subscription: undefined;
 };
@@ -137,6 +139,7 @@ export default function ArtistNavigator() {
       <Stack.Screen name="ApplyConfirmation" component={ApplyConfirmation} />
       <Stack.Screen name="ShowDetail" component={ShowDetail} />
       <Stack.Screen name="ContractDetail" component={ContractDetail} />
+      <Stack.Screen name="MyContracts" component={MyContracts} />
       <Stack.Screen name="RateEstablishment" component={RateEstablishment} />
       <Stack.Screen name="Subscription" component={Subscription} />
     </Stack.Navigator>
