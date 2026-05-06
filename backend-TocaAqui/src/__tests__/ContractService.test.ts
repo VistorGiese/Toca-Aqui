@@ -140,7 +140,6 @@ describe('ContractService', () => {
           aplicacao_id: 10,
           banda_id: 5,
           status: 'aguardando_aceite',
-          status: 'aguardando_aceite',
         })
       );
       expect(result).toBe(contrato);

@@ -80,7 +80,7 @@ describe('AuthService', () => {
       });
 
       expect(result).toEqual(
-        expect.objectContaining({ id: 5, email: 'teste@email.com', email_verificado: true })
+        expect.objectContaining({ id: 5, email: 'teste@email.com', email_verificado: false })
       );
       expect(result).not.toHaveProperty('senha');
     });
@@ -187,14 +187,15 @@ describe('AuthService', () => {
       );
     });
 
-    it('retorna token mesmo quando email_verificado é false (verificação não bloqueante)', async () => {
+    it('lança AppError 403 quando email não foi verificado', async () => {
       const hash = await bcrypt.hash('Senha1234', 10);
       (UserModel.findOne as jest.Mock).mockResolvedValue(
         makeUser({ senha: hash, email_verificado: false })
       );
 
-      const result = await service.login('teste@email.com', 'Senha1234');
-      expect(result.token).toBeDefined();
+      await expect(service.login('teste@email.com', 'Senha1234')).rejects.toEqual(
+        expect.objectContaining({ statusCode: 403, message: 'Email não verificado. Verifique sua caixa de entrada.' })
+      );
     });
   });
 

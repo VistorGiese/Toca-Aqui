@@ -27,6 +27,16 @@ jest.mock('../models/BandApplicationModel', () => ({
   default: { count: jest.fn() },
 }));
 
+jest.mock('../models/EstablishmentProfileModel', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn(), findByPk: jest.fn() },
+}));
+
+jest.mock('../models/EstablishmentMemberModel', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn() },
+}));
+
 jest.mock('../config/redis', () => ({
   __esModule: true,
   default: {
@@ -58,6 +68,7 @@ import {
 } from '../controllers/BookingController';
 import BookingModel from '../models/BookingModel';
 import BandApplicationModel from '../models/BandApplicationModel';
+import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import redisService from '../config/redis';
 
 // asyncHandler retorna void — a promise interna é criada via Promise.resolve().catch(next).
@@ -74,18 +85,25 @@ const mockRes = () => {
 const makeReq = (overrides: Partial<AuthRequest> = {}): AuthRequest =>
   ({ params: {}, query: {}, body: {}, ...overrides } as AuthRequest);
 
-const makeBooking = (overrides = {}) => ({
-  id: 1,
-  titulo_evento: 'Show de Rock',
-  data_show: '2026-06-15',
-  perfil_estabelecimento_id: 2,
-  horario_inicio: '20:00',
-  horario_fim: '23:00',
-  status: 'pendente',
-  update: jest.fn().mockResolvedValue(undefined),
-  destroy: jest.fn().mockResolvedValue(undefined),
-  ...overrides,
-});
+const makeBooking = (overrides = {}) => {
+  const data = {
+    id: 1,
+    titulo_evento: 'Show de Rock',
+    data_show: '2026-06-15',
+    perfil_estabelecimento_id: 2,
+    horario_inicio: '20:00',
+    horario_fim: '23:00',
+    status: 'pendente',
+    EstablishmentProfile: { nome_estabelecimento: 'Bar Teste' },
+    ...overrides,
+  };
+  return {
+    ...data,
+    update: jest.fn().mockResolvedValue(undefined),
+    destroy: jest.fn().mockResolvedValue(undefined),
+    toJSON: jest.fn().mockReturnValue(data),
+  };
+};
 
 describe('BookingController', () => {
   let mockNext: jest.Mock;
@@ -104,13 +122,13 @@ describe('BookingController', () => {
         body: {
           titulo_evento: 'Show de Rock',
           data_show: '2026-06-15',
-          perfil_estabelecimento_id: 2,
           horario_inicio: '20:00',
           horario_fim: '23:00',
         },
       });
       const res = mockRes();
 
+      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 1 });
       (BookingModel.findOne as jest.Mock).mockResolvedValue(null);
       (BookingModel.create as jest.Mock).mockResolvedValue(booking);
 
@@ -127,13 +145,13 @@ describe('BookingController', () => {
         body: {
           titulo_evento: 'Conflito',
           data_show: '2026-06-15',
-          perfil_estabelecimento_id: 2,
           horario_inicio: '20:00',
           horario_fim: '23:00',
         },
       });
       const res = mockRes();
 
+      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 1 });
       (BookingModel.findOne as jest.Mock).mockResolvedValue(makeBooking());
 
       createBooking(req, res, mockNext as unknown as NextFunction);
