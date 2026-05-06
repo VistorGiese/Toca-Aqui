@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Toca Aqui - API Completa",
-    "description": "Coleção completa de endpoints do backend Toca Aqui.\n\n**Main API**: http://localhost:3000\n**Social Service**: http://localhost:3001\n\n**Como usar:**\n1. Faça login em POST /usuarios/login\n2. Copie o token da resposta\n3. Cole na variável de coleção `token`\n4. Ajuste os IDs nas variáveis conforme necessário",
+    "description": "Coleção completa de endpoints do backend Toca Aqui.\n\n**Main API**: http://localhost:3000\n**Social Service**: http://localhost:3001\n\n**Como usar:**\n1. Faça login em POST /usuarios/login\n2. Copie o token da resposta\n3. Cole na variável de coleção `token`\n4. Ajuste os IDs nas variáveis conforme necessário\n\n**Roles necessárias por fluxo:**\n- Criar agendamento/estabelecimento: token de establishment_owner\n- Criar banda/artista: token de artist\n- Aceitar candidatura: token de establishment_owner\n- Aceitar contrato (artista): token de artist\n- Aceitar contrato (estab): token de establishment_owner\n- Avaliar estabelecimento (POST /contratos/:id/avaliar): token de artist\n- Avaliar artista (POST /contratos/:id/avaliar-artista): token de establishment_owner\n- Admin: token de admin",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -166,7 +166,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome_estabelecimento\": \"Bar do João\",\n  \"descricao\": \"Bar com música ao vivo\",\n  \"capacidade\": 200,\n  \"cnpj\": \"12.345.678/0001-90\",\n  \"telefone\": \"(11) 99999-9999\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
+              "raw": "{\n  \"nome_estabelecimento\": \"Bar do João\",\n  \"tipo_estabelecimento\": \"bar\",\n  \"descricao\": \"Bar com música ao vivo\",\n  \"generos_musicais\": \"rock,mpb,samba\",\n  \"horario_abertura\": \"18:00\",\n  \"horario_fechamento\": \"02:00\",\n  \"telefone_contato\": \"(11) 99999-9999\"\n}"
             }
           }
         },
@@ -178,7 +178,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome_artistico\": \"João & Banda\",\n  \"tipo_atuacao\": \"banda\",\n  \"generos\": \"rock,mpb\",\n  \"cache_minimo\": 500,\n  \"cache_maximo\": 2000,\n  \"descricao\": \"Banda de rock e MPB\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
+              "raw": "{\n  \"nome_artistico\": \"João & Banda\",\n  \"tipo_atuacao\": \"banda\",\n  \"generos\": [\"rock\", \"mpb\"],\n  \"cache_minimo\": 500,\n  \"cache_maximo\": 2000,\n  \"descricao\": \"Banda de rock e MPB\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
             }
           }
         },
@@ -224,7 +224,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"indisponibilidades\": [\"2026-12-25\", \"2026-12-31\"]\n}"
+              "raw": "{\n  \"datas_indisponiveis\": [\"2026-12-25\", \"2026-12-31\"]\n}"
             }
           }
         },
@@ -247,7 +247,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"generos\": [\"rock\", \"mpb\"],\n  \"tipos_evento\": [\"show\", \"festival\"]\n}"
+              "raw": "{\n  \"generos_favoritos\": [\"rock\", \"mpb\"],\n  \"cidade\": \"São Paulo\",\n  \"raio_busca_km\": 50\n}"
             }
           }
         },
@@ -266,7 +266,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"novo@email.com\",\n  \"senha\": \"Senha@123\"\n}"
+              "raw": "{\n  \"novo_email\": \"novo@email.com\",\n  \"senha\": \"Senha@123\"\n}"
             }
           }
         },
@@ -316,7 +316,7 @@
           }
         },
         {
-          "name": "POST / - Criar banda",
+          "name": "POST / - Criar banda (requer role: artist)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/bandas",
@@ -332,7 +332,7 @@
           }
         },
         {
-          "name": "PUT /:id - Atualizar",
+          "name": "PUT /:id - Atualizar (requer role: artist + líder da banda)",
           "request": {
             "method": "PUT",
             "url": "{{baseUrl}}/bandas/{{bandaId}}",
@@ -346,7 +346,7 @@
           }
         },
         {
-          "name": "DELETE /:id - Excluir",
+          "name": "DELETE /:id - Excluir (requer role: artist + líder da banda)",
           "request": {
             "method": "DELETE",
             "url": "{{baseUrl}}/bandas/{{bandaId}}"
@@ -358,14 +358,14 @@
       "name": "Gerenciamento de Bandas",
       "item": [
         {
-          "name": "POST / - Criar banda",
+          "name": "POST / - Criar banda (requer role: artist)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/gerenciamento-bandas",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"Banda Teste\",\n  \"genero\": \"rock\",\n  \"descricao\": \"Descrição da banda\"\n}"
+              "raw": "{\n  \"nome_banda\": \"Banda Teste\",\n  \"generos_musicais\": [\"rock\", \"mpb\"],\n  \"descricao\": \"Descrição da banda\",\n  \"perfil_artista_id\": {{artistaId}}\n}"
             }
           }
         },
@@ -384,14 +384,14 @@
           }
         },
         {
-          "name": "POST /convidar - Convidar membro",
+          "name": "POST /convidar - Convidar membro (requer role: artist)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/gerenciamento-bandas/convidar",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"banda_id\": {{bandaId}},\n  \"artista_id\": {{artistaId}},\n  \"instrumento\": \"guitarra\"\n}"
+              "raw": "{\n  \"banda_id\": {{bandaId}},\n  \"perfil_artista_id\": {{artistaId}},\n  \"funcao\": \"guitarra\"\n}"
             }
           }
         },
@@ -403,7 +403,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"convite_id\": 1,\n  \"aceitar\": true\n}"
+              "raw": "{\n  \"invitation_id\": 1,\n  \"action\": \"accept\"\n}"
             }
           }
         }
@@ -413,14 +413,14 @@
       "name": "Agendamentos (Eventos)",
       "item": [
         {
-          "name": "POST / - Criar agendamento",
+          "name": "POST / - Criar agendamento (requer perfil de estabelecimento)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/agendamentos",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Show de Rock\",\n  \"descricao\": \"Evento de rock ao vivo\",\n  \"data_evento\": \"2026-06-15\",\n  \"hora_inicio\": \"20:00\",\n  \"hora_fim\": \"23:00\",\n  \"cache_ofertado\": 1000,\n  \"generos_desejados\": \"rock\",\n  \"perfil_estabelecimento_id\": {{estabelecimentoId}}\n}"
+              "raw": "{\n  \"titulo_evento\": \"Show de Rock\",\n  \"descricao_evento\": \"Evento de rock ao vivo\",\n  \"data_show\": \"2026-06-15\",\n  \"horario_inicio\": \"20:00\",\n  \"horario_fim\": \"23:00\",\n  \"genero_musical\": \"rock\",\n  \"esta_publico\": false,\n  \"preco_ingresso_inteira\": 50.00,\n  \"preco_ingresso_meia\": 25.00,\n  \"capacidade_maxima\": 200\n}"
             }
           }
         },
@@ -446,7 +446,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Show de Rock Atualizado\",\n  \"cache_ofertado\": 1200\n}"
+              "raw": "{\n  \"titulo_evento\": \"Show de Rock Atualizado\",\n  \"genero_musical\": \"rock,blues\"\n}"
             }
           }
         },
@@ -463,14 +463,26 @@
       "name": "Candidaturas de Bandas",
       "item": [
         {
-          "name": "POST / - Candidatar banda",
+          "name": "POST / - Candidatar (artista individual — sem banda_id)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/eventos",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"evento_id\": {{agendamentoId}},\n  \"artista_id\": {{artistaId}},\n  \"mensagem\": \"Gostaríamos de participar do evento!\",\n  \"valor_proposto\": 1000\n}"
+              "raw": "{\n  \"evento_id\": {{agendamentoId}},\n  \"mensagem\": \"Gostaríamos de participar do evento!\",\n  \"valor_proposto\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "POST / - Candidatar (banda — com banda_id)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/eventos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"evento_id\": {{agendamentoId}},\n  \"banda_id\": {{bandaId}},\n  \"mensagem\": \"Nossa banda quer participar!\",\n  \"valor_proposto\": 1500\n}"
             }
           }
         },
@@ -482,21 +494,21 @@
           }
         },
         {
-          "name": "GET /:evento_id - Por evento",
+          "name": "GET /:evento_id - Por evento (requer token de establishment_owner)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/eventos/{{agendamentoId}}"
           }
         },
         {
-          "name": "PUT /:id/aceitar - Aceitar candidatura",
+          "name": "PUT /:id/aceitar - Aceitar candidatura (requer token de establishment_owner)",
           "request": {
             "method": "PUT",
             "url": "{{baseUrl}}/eventos/{{eventoId}}/aceitar"
           }
         },
         {
-          "name": "PUT /:id/recusar - Recusar candidatura",
+          "name": "PUT /:id/recusar - Recusar candidatura (requer token de establishment_owner)",
           "request": {
             "method": "PUT",
             "url": "{{baseUrl}}/eventos/{{eventoId}}/recusar"
@@ -541,7 +553,7 @@
           }
         },
         {
-          "name": "PUT /:id/aceitar - Aceitar",
+          "name": "PUT /:id/aceitar - Aceitar (artista ou estabelecimento, cada um aceita uma vez)",
           "request": {
             "method": "PUT",
             "url": "{{baseUrl}}/contratos/{{contratoId}}/aceitar"
@@ -567,14 +579,14 @@
           }
         },
         {
-          "name": "PUT /:id/concluir - Concluir",
+          "name": "PUT /:id/concluir - Concluir (requer token de establishment_owner e contrato aceito)",
           "request": {
             "method": "PUT",
             "url": "{{baseUrl}}/contratos/{{contratoId}}/concluir"
           }
         },
         {
-          "name": "POST /:id/avaliar - Avaliar estabelecimento",
+          "name": "POST /:id/avaliar - Artista avalia estabelecimento (requer token de artist e contrato concluído)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/contratos/{{contratoId}}/avaliar",
@@ -586,7 +598,7 @@
           }
         },
         {
-          "name": "POST /:id/avaliar-artista - Avaliar artista",
+          "name": "POST /:id/avaliar-artista - Estabelecimento avalia artista (requer token de establishment_owner e contrato concluído)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/contratos/{{contratoId}}/avaliar-artista",
@@ -610,7 +622,7 @@
           }
         },
         {
-          "name": "POST /contrato/:id/sinal - Criar sinal",
+          "name": "POST /contrato/:id/sinal - Criar sinal (requer Stripe configurado)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/pagamentos/contrato/{{contratoId}}/sinal"
@@ -624,7 +636,7 @@
           }
         },
         {
-          "name": "POST /:id/iniciar - Iniciar pagamento",
+          "name": "POST /:id/iniciar - Iniciar pagamento (requer Stripe configurado)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/pagamentos/{{pagamentoId}}/iniciar"
@@ -659,7 +671,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome_estabelecimento\": \"Bar Atualizado\",\n  \"descricao\": \"Nova descrição\",\n  \"capacidade\": 300\n}"
+              "raw": "{\n  \"nome_estabelecimento\": \"Bar Atualizado\",\n  \"descricao\": \"Nova descrição\"\n}"
             }
           }
         },
@@ -732,7 +744,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cep\": \"01310-100\",\n  \"logradouro\": \"Av. Paulista\",\n  \"numero\": \"1000\",\n  \"bairro\": \"Bela Vista\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
+              "raw": "{\n  \"rua\": \"Av. Paulista\",\n  \"numero\": \"1000\",\n  \"bairro\": \"Bela Vista\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\",\n  \"cep\": \"01310-100\"\n}"
             }
           }
         },
@@ -758,7 +770,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"numero\": \"1001\",\n  \"complemento\": \"Sala 5\"\n}"
+              "raw": "{\n  \"numero\": \"1001\",\n  \"rua\": \"Av. Paulista\"\n}"
             }
           }
         },
@@ -782,7 +794,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"favoritavel_tipo\": \"artista\",\n  \"favoritavel_id\": {{artistaId}}\n}"
+              "raw": "{\n  \"favoritavel_tipo\": \"perfil_artista\",\n  \"favoritavel_id\": {{artistaId}}\n}"
             }
           }
         },
@@ -790,7 +802,7 @@
           "name": "DELETE /:tipo/:id - Remover",
           "request": {
             "method": "DELETE",
-            "url": "{{baseUrl}}/favoritos/artista/{{artistaId}}"
+            "url": "{{baseUrl}}/favoritos/perfil_artista/{{artistaId}}"
           }
         },
         {
@@ -804,7 +816,7 @@
           "name": "GET /:tipo/:id - Verificar favorito",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/favoritos/artista/{{artistaId}}"
+            "url": "{{baseUrl}}/favoritos/perfil_artista/{{artistaId}}"
           }
         }
       ]
@@ -858,14 +870,14 @@
       "name": "Ingressos",
       "item": [
         {
-          "name": "POST / - Comprar ingresso",
+          "name": "POST / - Comprar ingresso (requer agendamento público com preço definido)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/ingressos",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"agendamento_id\": {{agendamentoId}},\n  \"quantidade\": 2\n}"
+              "raw": "{\n  \"agendamento_id\": {{agendamentoId}},\n  \"tipo\": \"inteira\",\n  \"nome_comprador\": \"João Silva\",\n  \"cpf\": \"123.456.789-09\",\n  \"telefone\": \"(11) 99999-9999\"\n}"
             }
           }
         },
@@ -896,7 +908,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"agendamento_id\": {{agendamentoId}},\n  \"nota\": 5,\n  \"comentario\": \"Show incrível!\"\n}"
+              "raw": "{\n  \"agendamento_id\": {{agendamentoId}},\n  \"nota_artista\": 5,\n  \"nota_local\": 4,\n  \"comentario\": \"Show incrível!\"\n}"
             }
           }
         },
@@ -1003,7 +1015,7 @@
           }
         },
         {
-          "name": "PATCH /:id/lida - Marcar como lida",
+          "name": "PATCH /:id/lida - Marcar como lida (use ID de notificação do próprio usuário)",
           "request": {
             "method": "PATCH",
             "url": "{{baseUrl}}/notificacoes/{{notificacaoId}}/lida"
@@ -1015,49 +1027,49 @@
       "name": "Admin",
       "item": [
         {
-          "name": "GET /dashboard",
+          "name": "GET /dashboard (requer role: admin)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/dashboard"
           }
         },
         {
-          "name": "GET /usuarios - Listar usuários",
+          "name": "GET /usuarios - Listar usuários (requer role: admin)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/usuarios"
           }
         },
         {
-          "name": "GET /usuarios/estatisticas",
+          "name": "GET /usuarios/estatisticas (requer role: admin)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/usuarios/estatisticas"
           }
         },
         {
-          "name": "GET /usuarios/:id - Por ID",
+          "name": "GET /usuarios/:id - Por ID (requer role: admin)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/usuarios/{{userId}}"
           }
         },
         {
-          "name": "GET /eventos/estatisticas",
+          "name": "GET /eventos/estatisticas (requer role: admin)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/eventos/estatisticas"
           }
         },
         {
-          "name": "GET /eventos/estabelecimento/:id",
+          "name": "GET /eventos/estabelecimento/:id (requer role: admin)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/eventos/estabelecimento/{{estabelecimentoId}}"
           }
         },
         {
-          "name": "GET /bandas/estatisticas",
+          "name": "GET /bandas/estatisticas (requer role: admin)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/bandas/estatisticas"
@@ -1097,7 +1109,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"favoritavel_tipo\": \"artista\",\n  \"favoritavel_id\": {{artistaId}}\n}"
+              "raw": "{\n  \"favoritavel_tipo\": \"perfil_artista\",\n  \"favoritavel_id\": {{artistaId}}\n}"
             }
           }
         },
@@ -1112,14 +1124,14 @@
           "name": "GET /check/:tipo/:id - Verificar",
           "request": {
             "method": "GET",
-            "url": "{{socialUrl}}/favoritos/check/artista/{{artistaId}}"
+            "url": "{{socialUrl}}/favoritos/check/perfil_artista/{{artistaId}}"
           }
         },
         {
           "name": "DELETE /:tipo/:id - Remover",
           "request": {
             "method": "DELETE",
-            "url": "{{socialUrl}}/favoritos/artista/{{artistaId}}"
+            "url": "{{socialUrl}}/favoritos/perfil_artista/{{artistaId}}"
           }
         }
       ]
@@ -1135,7 +1147,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"comentavel_tipo\": \"show\",\n  \"comentavel_id\": {{showId}},\n  \"texto\": \"Ótimo show!\"\n}"
+              "raw": "{\n  \"comentavel_tipo\": \"agendamento\",\n  \"comentavel_id\": {{agendamentoId}},\n  \"texto\": \"Ótimo show!\"\n}"
             }
           }
         },
@@ -1144,7 +1156,7 @@
           "request": {
             "method": "GET",
             "auth": { "type": "noauth" },
-            "url": "{{socialUrl}}/comentarios/show/{{showId}}"
+            "url": "{{socialUrl}}/comentarios/agendamento/{{agendamentoId}}"
           }
         },
         {
@@ -1167,7 +1179,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"avaliavel_tipo\": \"artista\",\n  \"avaliavel_id\": {{artistaId}},\n  \"nota\": 5,\n  \"comentario\": \"Artista incrível!\"\n}"
+              "raw": "{\n  \"avaliavel_tipo\": \"perfil_artista\",\n  \"avaliavel_id\": {{artistaId}},\n  \"nota\": 5,\n  \"comentario\": \"Artista incrível!\"\n}"
             }
           }
         },
@@ -1176,7 +1188,7 @@
           "request": {
             "method": "GET",
             "auth": { "type": "noauth" },
-            "url": "{{socialUrl}}/avaliacoes/artista/{{artistaId}}"
+            "url": "{{socialUrl}}/avaliacoes/perfil_artista/{{artistaId}}"
           }
         },
         {

@@ -73,7 +73,11 @@ export class AuthService {
 
     const token = crypto.randomBytes(32).toString('hex');
     await redisService.getClient().setex(`reset:${token}`, 60 * 60, String(user.id));
-    await sendPasswordResetEmail(email, token);
+    try {
+      await sendPasswordResetEmail(email, token);
+    } catch (err) {
+      console.error('[AuthService] Falha ao enviar email de redefinição de senha:', err);
+    }
   }
 
   async resetPassword(token: string, nova_senha: string) {
