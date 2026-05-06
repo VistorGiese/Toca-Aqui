@@ -7,6 +7,7 @@ import BandModel from "../models/BandModel";
 import BookingModel from "../models/BookingModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
 import EstablishmentMemberModel from "../models/EstablishmentMemberModel";
+import ArtistProfileModel from "../models/ArtistProfileModel";
 
 const modelRegistry: Record<string, ModelStatic<Model>> = {
   Address: AddressModel,
@@ -250,6 +251,62 @@ export const checkRolesOrAdmin = (...allowedRoles: UserRole[]) => {
     if (!allowedRoles.includes(user.role as UserRole)) {
       return res.status(403).json({
         error: 'Você não tem permissão para acessar este recurso'
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Verifica se o usuário autenticado possui ao menos um perfil de artista cadastrado.
+ * Substitui checkRolesOrAdmin(UserRole.ARTIST) permitindo múltiplos perfis por login.
+ */
+export const checkHasArtistProfile = () => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (user.role === UserRole.ADMIN) {
+      return next();
+    }
+
+    const profile = await ArtistProfileModel.findOne({ where: { usuario_id: user.id } });
+    if (!profile) {
+      return res.status(403).json({
+        error: 'Acesso negado',
+        message: 'Você precisa ter um perfil de artista para realizar esta ação',
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Verifica se o usuário autenticado possui ao menos um perfil de estabelecimento cadastrado.
+ * Substitui checkRolesOrAdmin(UserRole.ESTABLISHMENT_OWNER) permitindo múltiplos perfis por login.
+ */
+export const checkHasEstablishmentProfile = () => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (user.role === UserRole.ADMIN) {
+      return next();
+    }
+
+    const profile = await EstablishmentProfileModel.findOne({ where: { usuario_id: user.id } });
+    if (!profile) {
+      return res.status(403).json({
+        error: 'Acesso negado',
+        message: 'Você precisa ter um perfil de estabelecimento para realizar esta ação',
       });
     }
 

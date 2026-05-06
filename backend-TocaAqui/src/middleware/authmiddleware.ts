@@ -29,7 +29,7 @@ export const authMiddleware = async (
       return res.status(401).json({ error: "Token inválido" });
     }
 
-    if (typeof decoded.id !== 'number' || !decoded.role) {
+    if (typeof decoded.id !== 'number') {
       return res.status(401).json({ error: "Token com estrutura inválida" });
     }
 

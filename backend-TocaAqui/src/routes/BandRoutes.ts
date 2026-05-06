@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  createBand,
   getBands,
   getBandById,
   updateBand,
@@ -8,8 +7,7 @@ import {
 } from "../controllers/BandController";
 import { uploadService } from "../services/UploadService";
 import { authMiddleware } from "../middleware/authmiddleware";
-import { checkRolesOrAdmin, checkOwnership } from "../middleware/authorizationMiddleware";
-import { UserRole } from "../models/UserModel";
+import { checkHasArtistProfile, checkOwnership } from "../middleware/authorizationMiddleware";
 import BandMemberModel from "../models/BandMemberModel";
 import ArtistProfileModel from "../models/ArtistProfileModel";
 import { AuthRequest } from "../middleware/authmiddleware";
@@ -30,10 +28,8 @@ router.get("/:id", getBandById);
 
 router.use(authMiddleware);
 
-router.post("/", checkRolesOrAdmin(UserRole.ARTIST), uploadService.uploadSingle, createBand);
+router.put("/:id", checkHasArtistProfile(), checkOwnership(resolveBandLeaderUserId), uploadService.uploadSingle, updateBand);
 
-router.put("/:id", checkRolesOrAdmin(UserRole.ARTIST), checkOwnership(resolveBandLeaderUserId), uploadService.uploadSingle, updateBand);
-
-router.delete("/:id", checkRolesOrAdmin(UserRole.ARTIST), checkOwnership(resolveBandLeaderUserId), deleteBand);
+router.delete("/:id", checkHasArtistProfile(), checkOwnership(resolveBandLeaderUserId), deleteBand);
 
 export default router;
