@@ -109,7 +109,7 @@ describe('authMiddleware', () => {
     expect(mockNext).not.toHaveBeenCalled();
   });
 
-  it('retorna 401 quando token não tem role', async () => {
+  it('aceita token sem role e popula req.user com role undefined', async () => {
     const jwt = require('jsonwebtoken');
     const token = jwt.sign({ id: 5, email: 'x@y.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
     const req = makeReq(`Bearer ${token}`);
@@ -119,7 +119,8 @@ describe('authMiddleware', () => {
 
     await authMiddleware(req, res, mockNext);
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(mockNext).not.toHaveBeenCalled();
+    expect(mockNext).toHaveBeenCalledTimes(1);
+    expect(req.user).toEqual(expect.objectContaining({ id: 5, email: 'x@y.com' }));
+    expect(res.status).not.toHaveBeenCalled();
   });
 });
