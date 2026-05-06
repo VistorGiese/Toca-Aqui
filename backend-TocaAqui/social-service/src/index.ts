@@ -78,6 +78,10 @@ sequelize
   .authenticate()
   .then(() => {
     console.log("[Social Service] Banco de dados conectado com sucesso!");
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => {
+    console.log("[Social Service] Tabelas sincronizadas com sucesso!");
     app.listen(PORT, () => {
       console.log(`[Social Service] Servidor rodando na porta ${PORT}`);
     });

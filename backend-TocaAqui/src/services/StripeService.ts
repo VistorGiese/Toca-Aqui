@@ -14,7 +14,7 @@ export class StripeService {
    * Cria o pagamento do sinal quando o contrato é aceito por ambas as partes.
    */
   async createSignalPayment(contractId: number): Promise<{ paymentId: number; clientSecret: string }> {
-    if (!isStripeConfigured()) throw new AppError('Stripe não configurado', 500);
+    if (!isStripeConfigured()) throw new AppError('Stripe não configurado. Configure STRIPE_SECRET_KEY para habilitar pagamentos.', 503);
 
     const contrato = await ContractModel.findByPk(contractId);
     if (!contrato) throw new AppError('Contrato não encontrado', 404);
@@ -54,7 +54,7 @@ export class StripeService {
    * Cria o pagamento do restante após o sinal ser confirmado.
    */
   async createBalancePayment(contractId: number): Promise<{ paymentId: number; clientSecret: string }> {
-    if (!isStripeConfigured()) throw new AppError('Stripe não configurado', 500);
+    if (!isStripeConfigured()) throw new AppError('Stripe não configurado. Configure STRIPE_SECRET_KEY para habilitar pagamentos.', 503);
 
     const contrato = await ContractModel.findByPk(contractId);
     if (!contrato) throw new AppError('Contrato não encontrado', 404);
@@ -92,7 +92,7 @@ export class StripeService {
    * Retorna o client_secret de um PaymentIntent existente para o frontend confirmar.
    */
   async getPaymentClientSecret(paymentId: number): Promise<string> {
-    if (!isStripeConfigured()) throw new AppError('Stripe não configurado', 500);
+    if (!isStripeConfigured()) throw new AppError('Stripe não configurado. Configure STRIPE_SECRET_KEY para habilitar pagamentos.', 503);
 
     const payment = await paymentService.getById(paymentId);
     if (!payment.stripe_payment_intent_id) {
@@ -113,7 +113,7 @@ export class StripeService {
    * Processa webhook do Stripe para atualizar status dos pagamentos.
    */
   async handleWebhook(payload: Buffer, signature: string): Promise<void> {
-    if (!isStripeConfigured()) throw new AppError('Stripe não configurado', 500);
+    if (!isStripeConfigured()) throw new AppError('Stripe não configurado. Configure STRIPE_SECRET_KEY para habilitar pagamentos.', 503);
 
     const stripe = getStripe();
 
@@ -199,7 +199,7 @@ export class StripeService {
    * Cria um reembolso total ou parcial.
    */
   async refundPayment(paymentId: number, amount?: number): Promise<void> {
-    if (!isStripeConfigured()) throw new AppError('Stripe não configurado', 500);
+    if (!isStripeConfigured()) throw new AppError('Stripe não configurado. Configure STRIPE_SECRET_KEY para habilitar pagamentos.', 503);
 
     const payment = await paymentService.getById(paymentId);
     if (payment.status !== PaymentStatus.PAGO) {

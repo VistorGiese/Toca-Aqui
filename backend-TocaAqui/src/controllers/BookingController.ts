@@ -13,7 +13,7 @@ import { AuthRequest } from '../middleware/authmiddleware';
 export const createBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, cache_minimo, generos_musicais } = req.body;
+  const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, generos_musicais, genero_musical, esta_publico, preco_ingresso_inteira, preco_ingresso_meia, capacidade_maxima, classificacao_etaria } = req.body;
 
   // Sempre derivar o estabelecimento do token — nunca confiar no body
   let perfil = await EstablishmentProfileModel.findOne({ where: { usuario_id: req.user.id } });
@@ -51,8 +51,12 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
     horario_inicio,
     horario_fim,
     status: BookingStatus.PENDENTE,
-    preco_ingresso_inteira: cache_minimo ?? undefined,
-    genero_musical: generos_musicais ?? undefined,
+    genero_musical: genero_musical ?? generos_musicais ?? undefined,
+    esta_publico: esta_publico ?? undefined,
+    preco_ingresso_inteira: preco_ingresso_inteira ?? undefined,
+    preco_ingresso_meia: preco_ingresso_meia ?? undefined,
+    capacidade_maxima: capacidade_maxima ?? undefined,
+    classificacao_etaria: classificacao_etaria ?? undefined,
   });
 
   await redisService.invalidatePattern('agendamentos:*');

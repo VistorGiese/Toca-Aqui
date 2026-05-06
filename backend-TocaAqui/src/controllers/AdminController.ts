@@ -128,7 +128,7 @@ export const getEventStatistics = asyncHandler(async (req: Request, res: Respons
   const eventsByEstablishment = await BookingModel.findAll({
     attributes: [
       'perfil_estabelecimento_id',
-      [BookingModel.sequelize!.fn('COUNT', BookingModel.sequelize!.col('id')), 'total_eventos'],
+      [BookingModel.sequelize!.fn('COUNT', BookingModel.sequelize!.literal('`Booking`.`id`')), 'total_eventos'],
     ],
     include: [
       {
@@ -176,7 +176,7 @@ export const getBandStatistics = asyncHandler(async (req: Request, res: Response
   const topBands = await BandApplicationModel.findAll({
     attributes: [
       'banda_id',
-      [BandApplicationModel.sequelize!.fn('COUNT', BandApplicationModel.sequelize!.col('id')), 'total_aplicacoes'],
+      [BandApplicationModel.sequelize!.fn('COUNT', BandApplicationModel.sequelize!.literal('`BandApplication`.`id`')), 'total_aplicacoes'],
     ],
     include: [
       {

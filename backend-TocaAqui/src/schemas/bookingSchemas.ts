@@ -10,8 +10,14 @@ const bookingBaseSchema = z.object({
   horario_inicio: z.string().regex(timeRegex, 'horario_inicio deve estar no formato HH:MM'),
   horario_fim: z.string().regex(timeRegex, 'horario_fim deve estar no formato HH:MM'),
   generos_musicais: z.string().max(255).optional(),
+  genero_musical: z.string().max(100).optional(),
   cache_minimo: z.number().nonnegative().optional(),
   cache_maximo: z.number().nonnegative().optional(),
+  esta_publico: z.boolean().optional(),
+  preco_ingresso_inteira: z.number().nonnegative().optional(),
+  preco_ingresso_meia: z.number().nonnegative().optional(),
+  capacidade_maxima: z.number().int().positive().optional(),
+  classificacao_etaria: z.number().int().nonnegative().optional(),
 });
 
 // Converte "HH:MM" para minutos totais
