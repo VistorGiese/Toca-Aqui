@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 import { colors } from "@/utils/colors";
 import { contractService, Contract } from "@/http/contractService";
 import NavBar from "@/components/Allcomponents/NavBar";
@@ -32,7 +32,7 @@ const DS = {
   success: "#10B981",
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<ArtistStackParamList>;
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   rascunho: { color: "#6B7280", label: "Rascunho" },

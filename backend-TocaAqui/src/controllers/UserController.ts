@@ -48,6 +48,11 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   res.json({ message: 'Senha redefinida com sucesso.' });
 });
 
+export const resendVerificationEmail = asyncHandler(async (req: Request, res: Response) => {
+  await authService.resendVerificationEmail(req.body.email);
+  res.json({ message: 'Se este email estiver cadastrado e não verificado, você receberá um novo link em breve.' });
+});
+
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   const { token } = req.query as { token: string };
   if (!token) throw new AppError('Token é obrigatório.', 400);

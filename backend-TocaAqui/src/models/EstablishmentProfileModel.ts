@@ -16,6 +16,8 @@ export interface EstablishmentProfileAttributes {
   esta_ativo?: boolean;
   shows_realizados?: number;
   nota_media?: number;
+  latitude?: number;
+  longitude?: number;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -35,6 +37,8 @@ class EstablishmentProfileModel extends Model<EstablishmentProfileAttributes> im
   public esta_ativo!: boolean;
   public shows_realizados!: number;
   public nota_media?: number;
+  public latitude?: number;
+  public longitude?: number;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -105,6 +109,14 @@ EstablishmentProfileModel.init(
     },
     nota_media: {
       type: DataTypes.DECIMAL(3, 2),
+      allowNull: true,
+    },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 8),
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(11, 8),
       allowNull: true,
     },
   },

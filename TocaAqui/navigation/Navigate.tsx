@@ -1,10 +1,13 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { LinkingOptions } from "@react-navigation/native";
 import React from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { Booking } from "@/http/bookingService";
 import Register from "../screens/Register";
+import VerifyEmail from "../screens/VerifyEmail";
+import ResetPassword from "../screens/ResetPassword";
 import ArtistProfile from "../screens/ArtistProfile";
 import CreateEvent from "../screens/CreateEvent";
 import EventDetail from "../screens/EventDetail";
@@ -50,6 +53,8 @@ export type RootStackParamList = {
   Register: undefined;
   ForgotPassword: undefined;
   RoleSelection: undefined;
+  VerifyEmail: { token: string };
+  ResetPassword: { token: string };
 
   // Estabelecimento — onboarding
   OnboardingEstIdentidade: undefined;
@@ -120,14 +125,27 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function getInitialRoute(role?: string): keyof RootStackParamList {
-  if (role === "artist") return "ArtistNavigator";
-  if (role === "establishment") return "EstablishmentNavigator";
+export const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ["tocaaqui://"],
+  config: {
+    screens: {
+      VerifyEmail: "verificar-email",
+      ResetPassword: "redefinir-senha",
+    },
+  },
+};
+
+function getInitialRoute(user: import("@/types").User | null, paginas: import("@/types").MinhasPaginas | null): keyof RootStackParamList {
+  if (!user) return "UserNavigator";
+  const hasArtistProfile = user.role === "artist" || !!user.perfilArtistaId || !!paginas?.pagina_artista;
+  if (hasArtistProfile) return "ArtistNavigator";
+  const hasEstProfile = user.role === "establishment" || !!paginas?.pagina_estabelecimento;
+  if (hasEstProfile) return "EstablishmentNavigator";
   return "UserNavigator";
 }
 
 export default function Navigate() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, paginas } = useAuth();
 
   if (isLoading) {
     return (
@@ -137,7 +155,7 @@ export default function Navigate() {
     );
   }
 
-  const initialRoute = getInitialRoute(user?.role);
+  const initialRoute = getInitialRoute(user, paginas);
 
   return (
     <Stack.Navigator key={isAuthenticated ? "app" : "auth"} initialRouteName={isAuthenticated ? initialRoute : "Login"} screenOptions={{ headerShown: false }}>
@@ -149,6 +167,8 @@ export default function Navigate() {
           <Stack.Screen name="Register" component={Register} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
           <Stack.Screen name="RoleSelection" component={RoleSelection} />
+          <Stack.Screen name="VerifyEmail" component={VerifyEmail} />
+          <Stack.Screen name="ResetPassword" component={ResetPassword} />
         </>
       ) : (
         <>

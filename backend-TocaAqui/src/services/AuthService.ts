@@ -40,9 +40,17 @@ export class AuthService {
     if (existingUser) throw new AppError('Email já está em uso', 400);
 
     const hashedPassword = await bcrypt.hash(senha, 10);
-    const user = await UserModel.create({ nome_completo, email, senha: hashedPassword, role: role as any, email_verificado: true });
+    const user = await UserModel.create({ nome_completo, email, senha: hashedPassword, role: role as any, email_verificado: false });
 
-    return { id: user.id, nome_completo: user.nome_completo, email: user.email, role: user.role, email_verificado: true };
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    await redisService.getClient().setex(`verify:${verifyToken}`, 60 * 60 * 24, String(user.id));
+    try {
+      await sendVerificationEmail(email, verifyToken);
+    } catch (err) {
+      console.error('[AuthService] Falha ao enviar email de verificação:', err);
+    }
+
+    return { id: user.id, nome_completo: user.nome_completo, email: user.email, role: user.role, email_verificado: false };
   }
 
   async login(email: string, senha: string): Promise<LoginResult> {
@@ -51,6 +59,8 @@ export class AuthService {
 
     const isValid = await bcrypt.compare(senha, user.senha);
     if (!isValid) throw new AppError('Credenciais inválidas', 401);
+
+    if (!user.email_verificado) throw new AppError('Email não verificado. Verifique sua caixa de entrada.', 403);
 
     const token = generateToken({ id: user.id, email: user.email, role: user.role });
     return { token, user: { id: user.id!, nome_completo: user.nome_completo, email: user.email, role: user.role } };
@@ -90,6 +100,23 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(nova_senha, 10);
     await user.update({ senha: hashedPassword });
     await redisService.getClient().del(`reset:${token}`);
+  }
+
+  async resendVerificationEmail(email: string) {
+    const user = await UserModel.findOne({ where: { email } });
+    if (!user) {
+      await new Promise(r => setTimeout(r, 200 + Math.random() * 100));
+      return;
+    }
+    if (user.email_verificado) return;
+
+    const token = crypto.randomBytes(32).toString('hex');
+    await redisService.getClient().setex(`verify:${token}`, 60 * 60 * 24, String(user.id));
+    try {
+      await sendVerificationEmail(email, token);
+    } catch (err) {
+      console.error('[AuthService] Falha ao reenviar email de verificação:', err);
+    }
   }
 
   async verifyEmail(token: string) {

@@ -4,10 +4,10 @@ import React, { useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { NavigationIndependentTree } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { AccountProvider } from '../contexts/AccountFromContexto';
 import { AuthProvider } from '../contexts/AuthContext';
-import Navigate from "../navigation/Navigate";
+import Navigate, { linking } from "../navigation/Navigate";
 import { customFonts } from "../assets/fonts/fonts";
 
 SplashScreen.preventAutoHideAsync();
@@ -105,13 +105,13 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <NavigationIndependentTree>
+      <NavigationContainer linking={linking}>
         <AuthProvider>
           <AccountProvider>
             <Navigate />
           </AccountProvider>
         </AuthProvider>
-      </NavigationIndependentTree>
+      </NavigationContainer>
     </ErrorBoundary>
   );
 }
