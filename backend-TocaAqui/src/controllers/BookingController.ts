@@ -1,5 +1,5 @@
-import { Response } from "express";
-import { Op } from "sequelize";
+import { Request, Response } from "express";
+import { Op, QueryTypes } from "sequelize";
 import BookingModel, { BookingStatus } from "../models/BookingModel";
 import BandApplicationModel from "../models/BandApplicationModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
@@ -8,6 +8,7 @@ import redisService from "../config/redis";
 import { CACHE_TTL, CACHE_KEYS } from "../config/cache";
 import { asyncHandler } from "../middleware/errorHandler";
 import { AppError } from "../errors/AppError";
+import sequelize from "../config/database";
 import { AuthRequest } from '../middleware/authmiddleware';
 
 export const createBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -192,4 +193,57 @@ export const deleteBooking = asyncHandler(async (req: AuthRequest, res: Response
   await redisService.invalidatePattern('agendamentos:*');
 
   res.json({ message: "Agendamento removido com sucesso" });
+});
+
+export const getByProximidade = asyncHandler(async (req: Request, res: Response) => {
+  const { lat, lng, raio } = req.query;
+
+  if (!lat || !lng) {
+    throw new AppError('Os parâmetros lat e lng são obrigatórios', 400);
+  }
+
+  const userLat = parseFloat(lat as string);
+  const userLng = parseFloat(lng as string);
+  const raioKm = parseFloat((raio as string) || '50');
+
+  if (isNaN(userLat) || isNaN(userLng)) {
+    throw new AppError('lat e lng devem ser números válidos', 400);
+  }
+
+  const results = await sequelize.query(
+    `SELECT
+      a.id,
+      a.titulo_evento,
+      a.descricao_evento,
+      a.data_show,
+      a.horario_inicio,
+      a.horario_fim,
+      a.genero_musical,
+      a.preco_ingresso_inteira,
+      a.preco_ingresso_meia,
+      a.classificacao_etaria,
+      a.imagem_capa,
+      e.id AS estabelecimento_id,
+      e.nome_estabelecimento,
+      e.latitude,
+      e.longitude,
+      (6371 * ACOS(
+        COS(RADIANS(:userLat)) * COS(RADIANS(e.latitude)) *
+        COS(RADIANS(e.longitude) - RADIANS(:userLng)) +
+        SIN(RADIANS(:userLat)) * SIN(RADIANS(e.latitude))
+      )) AS distancia_km
+    FROM agendamentos a
+    INNER JOIN perfis_estabelecimentos e ON a.perfil_estabelecimento_id = e.id
+    WHERE a.status = 'pendente'
+      AND e.latitude IS NOT NULL
+      AND e.longitude IS NOT NULL
+    HAVING distancia_km <= :raioKm
+    ORDER BY distancia_km ASC`,
+    {
+      replacements: { userLat, userLng, raioKm },
+      type: QueryTypes.SELECT,
+    }
+  );
+
+  res.json({ data: results, total: (results as any[]).length });
 });

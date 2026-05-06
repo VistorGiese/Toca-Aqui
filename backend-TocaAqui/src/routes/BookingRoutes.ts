@@ -5,6 +5,7 @@ import {
   getBookingById,
   updateBooking,
   deleteBooking,
+  getByProximidade,
 } from "../controllers/BookingController";
 import { authMiddleware } from "../middleware/authmiddleware";
 import { checkOwnership } from "../middleware/authorizationMiddleware";
@@ -21,6 +22,8 @@ const resolveBookingOwner = async (req: any): Promise<number | undefined> => {
 };
 
 const router = Router();
+
+router.get("/proximidade", getByProximidade);
 
 router.post("/", authMiddleware, validate(createBookingSchema), createBooking);
 
