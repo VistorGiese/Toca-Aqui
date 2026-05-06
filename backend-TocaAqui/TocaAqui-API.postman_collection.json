@@ -1,0 +1,1204 @@
+{
+  "info": {
+    "name": "Toca Aqui - API Completa",
+    "description": "Coleção completa de endpoints do backend Toca Aqui.\n\n**Main API**: http://localhost:3000\n**Social Service**: http://localhost:3001\n\n**Como usar:**\n1. Faça login em POST /usuarios/login\n2. Copie o token da resposta\n3. Cole na variável de coleção `token`\n4. Ajuste os IDs nas variáveis conforme necessário",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "socialUrl", "value": "http://localhost:3001", "type": "string" },
+    { "key": "token", "value": "SEU_JWT_AQUI", "type": "string" },
+    { "key": "userId", "value": "1", "type": "string" },
+    { "key": "artistaId", "value": "1", "type": "string" },
+    { "key": "estabelecimentoId", "value": "1", "type": "string" },
+    { "key": "bandaId", "value": "1", "type": "string" },
+    { "key": "agendamentoId", "value": "1", "type": "string" },
+    { "key": "eventoId", "value": "1", "type": "string" },
+    { "key": "contratoId", "value": "1", "type": "string" },
+    { "key": "pagamentoId", "value": "1", "type": "string" },
+    { "key": "notificacaoId", "value": "1", "type": "string" },
+    { "key": "enderecoId", "value": "1", "type": "string" },
+    { "key": "ingressoId", "value": "1", "type": "string" },
+    { "key": "showId", "value": "1", "type": "string" },
+    { "key": "comentarioId", "value": "1", "type": "string" },
+    { "key": "avaliacaoId", "value": "1", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET / - Root",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/",
+            "auth": { "type": "noauth" }
+          }
+        },
+        {
+          "name": "GET /health - Main API",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health",
+            "auth": { "type": "noauth" }
+          }
+        },
+        {
+          "name": "GET /health - Social Service",
+          "request": {
+            "method": "GET",
+            "url": "{{socialUrl}}/health",
+            "auth": { "type": "noauth" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "POST /registro",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/usuarios/registro",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome_completo\": \"João Silva\",\n  \"email\": \"joao@email.com\",\n  \"senha\": \"Senha@123\",\n  \"tipo_usuario\": \"common_user\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) pm.collectionVariables.set('token', res.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/usuarios/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao@email.com\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/usuarios/logout"
+          }
+        },
+        {
+          "name": "POST /esqueci-senha",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/usuarios/esqueci-senha",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao@email.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /redefinir-senha",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/usuarios/redefinir-senha",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"TOKEN_DO_EMAIL\",\n  \"nova_senha\": \"NovaSenha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /verificar-email",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/verificar-email?token=TOKEN_DO_EMAIL",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "verificar-email"],
+              "query": [{ "key": "token", "value": "TOKEN_DO_EMAIL" }]
+            }
+          }
+        },
+        {
+          "name": "GET /perfil",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/usuarios/perfil"
+          }
+        },
+        {
+          "name": "GET /minhas-paginas",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/usuarios/minhas-paginas"
+          }
+        },
+        {
+          "name": "POST /perfil-estabelecimento",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/usuarios/perfil-estabelecimento",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome_estabelecimento\": \"Bar do João\",\n  \"descricao\": \"Bar com música ao vivo\",\n  \"capacidade\": 200,\n  \"cnpj\": \"12.345.678/0001-90\",\n  \"telefone\": \"(11) 99999-9999\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /perfil-artista",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/usuarios/perfil-artista",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome_artistico\": \"João & Banda\",\n  \"tipo_atuacao\": \"banda\",\n  \"generos\": \"rock,mpb\",\n  \"cache_minimo\": 500,\n  \"cache_maximo\": 2000,\n  \"descricao\": \"Banda de rock e MPB\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH /perfil-artista/:id",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/usuarios/perfil-artista/{{artistaId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descricao\": \"Nova descrição do artista\",\n  \"cache_minimo\": 600\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH /perfil-artista/:id/foto",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/usuarios/perfil-artista/{{artistaId}}/foto",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            }
+          }
+        },
+        {
+          "name": "PATCH /perfil-artista/:id/press-kit",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/usuarios/perfil-artista/{{artistaId}}/press-kit",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "files", "type": "file", "src": "" }]
+            }
+          }
+        },
+        {
+          "name": "PATCH /perfil-artista/:id/indisponibilidades",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/usuarios/perfil-artista/{{artistaId}}/indisponibilidades",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"indisponibilidades\": [\"2026-12-25\", \"2026-12-31\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH /foto",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/usuarios/foto",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            }
+          }
+        },
+        {
+          "name": "POST /preferencias",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/usuarios/preferencias",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"generos\": [\"rock\", \"mpb\"],\n  \"tipos_evento\": [\"show\", \"festival\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /preferencias",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/usuarios/preferencias"
+          }
+        },
+        {
+          "name": "PUT /email",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/usuarios/email",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"novo@email.com\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /nome",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/usuarios/nome",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome_completo\": \"João da Silva Santos\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /conta",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/usuarios/conta",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bandas",
+      "item": [
+        {
+          "name": "GET / - Listar",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/bandas"
+          }
+        },
+        {
+          "name": "GET /:id - Buscar por ID",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/bandas/{{bandaId}}"
+          }
+        },
+        {
+          "name": "POST / - Criar banda",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/bandas",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "nome", "value": "Os Rocks", "type": "text" },
+                { "key": "genero", "value": "rock", "type": "text" },
+                { "key": "descricao", "value": "Banda de rock clássico", "type": "text" },
+                { "key": "file", "type": "file", "src": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /:id - Atualizar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/bandas/{{bandaId}}",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "nome", "value": "Os Rocks Atualizados", "type": "text" },
+                { "key": "descricao", "value": "Nova descrição", "type": "text" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id - Excluir",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/bandas/{{bandaId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gerenciamento de Bandas",
+      "item": [
+        {
+          "name": "POST / - Criar banda",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/gerenciamento-bandas",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Banda Teste\",\n  \"genero\": \"rock\",\n  \"descricao\": \"Descrição da banda\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /minhas-bandas",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/gerenciamento-bandas/minhas-bandas"
+          }
+        },
+        {
+          "name": "GET /:id - Detalhes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/gerenciamento-bandas/{{bandaId}}"
+          }
+        },
+        {
+          "name": "POST /convidar - Convidar membro",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/gerenciamento-bandas/convidar",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"banda_id\": {{bandaId}},\n  \"artista_id\": {{artistaId}},\n  \"instrumento\": \"guitarra\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /convite/responder",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/gerenciamento-bandas/convite/responder",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"convite_id\": 1,\n  \"aceitar\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agendamentos (Eventos)",
+      "item": [
+        {
+          "name": "POST / - Criar agendamento",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/agendamentos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Show de Rock\",\n  \"descricao\": \"Evento de rock ao vivo\",\n  \"data_evento\": \"2026-06-15\",\n  \"hora_inicio\": \"20:00\",\n  \"hora_fim\": \"23:00\",\n  \"cache_ofertado\": 1000,\n  \"generos_desejados\": \"rock\",\n  \"perfil_estabelecimento_id\": {{estabelecimentoId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "GET / - Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/agendamentos"
+          }
+        },
+        {
+          "name": "GET /:id - Buscar por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/agendamentos/{{agendamentoId}}"
+          }
+        },
+        {
+          "name": "PUT /:id - Atualizar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/agendamentos/{{agendamentoId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Show de Rock Atualizado\",\n  \"cache_ofertado\": 1200\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id - Excluir",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/agendamentos/{{agendamentoId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Candidaturas de Bandas",
+      "item": [
+        {
+          "name": "POST / - Candidatar banda",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/eventos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"evento_id\": {{agendamentoId}},\n  \"artista_id\": {{artistaId}},\n  \"mensagem\": \"Gostaríamos de participar do evento!\",\n  \"valor_proposto\": 1000\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /minhas - Minhas candidaturas",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/eventos/minhas"
+          }
+        },
+        {
+          "name": "GET /:evento_id - Por evento",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/eventos/{{agendamentoId}}"
+          }
+        },
+        {
+          "name": "PUT /:id/aceitar - Aceitar candidatura",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/eventos/{{eventoId}}/aceitar"
+          }
+        },
+        {
+          "name": "PUT /:id/recusar - Recusar candidatura",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/eventos/{{eventoId}}/recusar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contratos",
+      "item": [
+        {
+          "name": "GET /meus - Meus contratos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/contratos/meus"
+          }
+        },
+        {
+          "name": "GET /evento/:evento_id - Por evento",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/contratos/evento/{{agendamentoId}}"
+          }
+        },
+        {
+          "name": "GET /:id - Por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}"
+          }
+        },
+        {
+          "name": "PUT /:id/editar - Editar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}/editar",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cache\": 1500,\n  \"observacoes\": \"Inclui equipamento de som\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /:id/aceitar - Aceitar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}/aceitar"
+          }
+        },
+        {
+          "name": "PUT /:id/cancelar - Cancelar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}/cancelar",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Conflito de agenda\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /:id/historico - Histórico",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}/historico"
+          }
+        },
+        {
+          "name": "PUT /:id/concluir - Concluir",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}/concluir"
+          }
+        },
+        {
+          "name": "POST /:id/avaliar - Avaliar estabelecimento",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}/avaliar",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nota\": 5,\n  \"comentario\": \"Ótimo estabelecimento!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/avaliar-artista - Avaliar artista",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/contratos/{{contratoId}}/avaliar-artista",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nota\": 5,\n  \"comentario\": \"Artista incrível!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagamentos",
+      "item": [
+        {
+          "name": "GET /contrato/:id - Por contrato",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pagamentos/contrato/{{contratoId}}"
+          }
+        },
+        {
+          "name": "POST /contrato/:id/sinal - Criar sinal",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/pagamentos/contrato/{{contratoId}}/sinal"
+          }
+        },
+        {
+          "name": "GET /:id - Por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pagamentos/{{pagamentoId}}"
+          }
+        },
+        {
+          "name": "POST /:id/iniciar - Iniciar pagamento",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/pagamentos/{{pagamentoId}}/iniciar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Estabelecimentos",
+      "item": [
+        {
+          "name": "GET / - Listar",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/estabelecimentos"
+          }
+        },
+        {
+          "name": "GET /:id - Buscar por ID",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}"
+          }
+        },
+        {
+          "name": "PUT /:id - Atualizar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome_estabelecimento\": \"Bar Atualizado\",\n  \"descricao\": \"Nova descrição\",\n  \"capacidade\": 300\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id - Excluir",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}"
+          }
+        },
+        {
+          "name": "PATCH /:id/fotos - Upload fotos",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}/fotos",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "files", "type": "file", "src": "" }]
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id/fotos - Remover foto",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}/fotos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foto_url\": \"uploads/foto.jpg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /:id/membros - Listar membros",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}/membros"
+          }
+        },
+        {
+          "name": "POST /:id/membros - Adicionar membro",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}/membros",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id/membros/:usuarioId - Remover membro",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/estabelecimentos/{{estabelecimentoId}}/membros/2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enderecos",
+      "item": [
+        {
+          "name": "POST / - Criar",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/enderecos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cep\": \"01310-100\",\n  \"logradouro\": \"Av. Paulista\",\n  \"numero\": \"1000\",\n  \"bairro\": \"Bela Vista\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET / - Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/enderecos"
+          }
+        },
+        {
+          "name": "GET /:id - Buscar por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/enderecos/{{enderecoId}}"
+          }
+        },
+        {
+          "name": "PUT /:id - Atualizar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/enderecos/{{enderecoId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": \"1001\",\n  \"complemento\": \"Sala 5\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id - Excluir",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/enderecos/{{enderecoId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Favoritos",
+      "item": [
+        {
+          "name": "POST / - Adicionar",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/favoritos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"favoritavel_tipo\": \"artista\",\n  \"favoritavel_id\": {{artistaId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:tipo/:id - Remover",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/favoritos/artista/{{artistaId}}"
+          }
+        },
+        {
+          "name": "GET / - Listar meus favoritos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos"
+          }
+        },
+        {
+          "name": "GET /:tipo/:id - Verificar favorito",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos/artista/{{artistaId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shows",
+      "item": [
+        {
+          "name": "GET /destaque - Em destaque",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/shows/destaque"
+          }
+        },
+        {
+          "name": "GET /buscar - Busca",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/shows/buscar?q=rock&cidade=São Paulo",
+              "host": ["{{baseUrl}}"],
+              "path": ["shows", "buscar"],
+              "query": [
+                { "key": "q", "value": "rock" },
+                { "key": "cidade", "value": "São Paulo" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET / - Listar públicos",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/shows"
+          }
+        },
+        {
+          "name": "GET /:id - Buscar por ID",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/shows/{{showId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ingressos",
+      "item": [
+        {
+          "name": "POST / - Comprar ingresso",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/ingressos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendamento_id\": {{agendamentoId}},\n  \"quantidade\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /meus - Meus ingressos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ingressos/meus"
+          }
+        },
+        {
+          "name": "GET /:id - Por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ingressos/{{ingressoId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Avaliacoes de Show",
+      "item": [
+        {
+          "name": "POST / - Criar avaliação",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/avaliacoes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendamento_id\": {{agendamentoId}},\n  \"nota\": 5,\n  \"comentario\": \"Show incrível!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /show/:id - Por show",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/avaliacoes/show/{{agendamentoId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comentarios de Show",
+      "item": [
+        {
+          "name": "GET /show/:id - Por show",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/comentarios/show/{{agendamentoId}}"
+          }
+        },
+        {
+          "name": "POST / - Criar comentário",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/comentarios",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendamento_id\": {{agendamentoId}},\n  \"texto\": \"Que show incrível!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /:id/curtir - Curtir comentário",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/comentarios/{{comentarioId}}/curtir"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Artistas (Publico)",
+      "item": [
+        {
+          "name": "GET /busca - Buscar artistas",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/artistas/busca?q=nome&genero=rock",
+              "host": ["{{baseUrl}}"],
+              "path": ["artistas", "busca"],
+              "query": [
+                { "key": "q", "value": "nome" },
+                { "key": "genero", "value": "rock" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /seguindo - Artistas que sigo",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/artistas/seguindo"
+          }
+        },
+        {
+          "name": "GET /:id/publico - Perfil público",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/artistas/{{artistaId}}/publico"
+          }
+        },
+        {
+          "name": "POST /:id/seguir - Seguir/Desseguir",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/artistas/{{artistaId}}/seguir"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notificacoes",
+      "item": [
+        {
+          "name": "GET / - Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notificacoes"
+          }
+        },
+        {
+          "name": "PATCH /todas/lida - Marcar todas como lidas",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/notificacoes/todas/lida"
+          }
+        },
+        {
+          "name": "PATCH /:id/lida - Marcar como lida",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/notificacoes/{{notificacaoId}}/lida"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "GET /dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/dashboard"
+          }
+        },
+        {
+          "name": "GET /usuarios - Listar usuários",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/usuarios"
+          }
+        },
+        {
+          "name": "GET /usuarios/estatisticas",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/usuarios/estatisticas"
+          }
+        },
+        {
+          "name": "GET /usuarios/:id - Por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/usuarios/{{userId}}"
+          }
+        },
+        {
+          "name": "GET /eventos/estatisticas",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/eventos/estatisticas"
+          }
+        },
+        {
+          "name": "GET /eventos/estabelecimento/:id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/eventos/estabelecimento/{{estabelecimentoId}}"
+          }
+        },
+        {
+          "name": "GET /bandas/estatisticas",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/bandas/estatisticas"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "POST /stripe - Stripe Webhook",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/webhooks/stripe",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "stripe-signature", "value": "t=timestamp,v1=signature" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {}\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "[Social Service] Favoritos",
+      "item": [
+        {
+          "name": "POST / - Adicionar",
+          "request": {
+            "method": "POST",
+            "url": "{{socialUrl}}/favoritos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"favoritavel_tipo\": \"artista\",\n  \"favoritavel_id\": {{artistaId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "GET / - Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{socialUrl}}/favoritos"
+          }
+        },
+        {
+          "name": "GET /check/:tipo/:id - Verificar",
+          "request": {
+            "method": "GET",
+            "url": "{{socialUrl}}/favoritos/check/artista/{{artistaId}}"
+          }
+        },
+        {
+          "name": "DELETE /:tipo/:id - Remover",
+          "request": {
+            "method": "DELETE",
+            "url": "{{socialUrl}}/favoritos/artista/{{artistaId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[Social Service] Comentarios",
+      "item": [
+        {
+          "name": "POST / - Criar",
+          "request": {
+            "method": "POST",
+            "url": "{{socialUrl}}/comentarios",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comentavel_tipo\": \"show\",\n  \"comentavel_id\": {{showId}},\n  \"texto\": \"Ótimo show!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /:tipo/:id - Listar por entidade",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{socialUrl}}/comentarios/show/{{showId}}"
+          }
+        },
+        {
+          "name": "DELETE /:id - Excluir",
+          "request": {
+            "method": "DELETE",
+            "url": "{{socialUrl}}/comentarios/{{comentarioId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[Social Service] Avaliacoes",
+      "item": [
+        {
+          "name": "POST / - Criar",
+          "request": {
+            "method": "POST",
+            "url": "{{socialUrl}}/avaliacoes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avaliavel_tipo\": \"artista\",\n  \"avaliavel_id\": {{artistaId}},\n  \"nota\": 5,\n  \"comentario\": \"Artista incrível!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /:tipo/:id - Por entidade",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{socialUrl}}/avaliacoes/artista/{{artistaId}}"
+          }
+        },
+        {
+          "name": "PUT /:id - Atualizar",
+          "request": {
+            "method": "PUT",
+            "url": "{{socialUrl}}/avaliacoes/{{avaliacaoId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nota\": 4,\n  \"comentario\": \"Muito bom!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /:id - Excluir",
+          "request": {
+            "method": "DELETE",
+            "url": "{{socialUrl}}/avaliacoes/{{avaliacaoId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

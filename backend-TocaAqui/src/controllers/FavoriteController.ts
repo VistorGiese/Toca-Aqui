@@ -102,7 +102,7 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
 
   const favoritos = await FavoriteModel.findAll({
     where: whereClause,
-    order: [['data_criacao', 'DESC']]
+    order: [['createdAt', 'DESC']]
   });
 
   const estabelecimentoIds = favoritos.filter(f => f.favoritavel_tipo === 'perfil_estabelecimento').map(f => f.favoritavel_id);
@@ -134,7 +134,7 @@ export const getFavorites = asyncHandler(async (req: AuthRequest, res: Response)
   const favoritosComDetalhes = favoritos.map(favorito => ({
     id: favorito.id,
     tipo: favorito.favoritavel_tipo,
-    data_criacao: favorito.data_criacao,
+    data_criacao: (favorito as any).createdAt,
     item: detalhesMap.get(`${favorito.favoritavel_tipo}:${favorito.favoritavel_id}`) || null,
   }));
 
