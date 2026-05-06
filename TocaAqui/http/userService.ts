@@ -92,6 +92,10 @@ export const userService = {
     await api.post("/usuarios/esqueci-senha", { email });
   },
 
+  async confirmarRedefinicaoSenha(token: string, nova_senha: string): Promise<void> {
+    await api.post("/usuarios/redefinir-senha", { token, nova_senha });
+  },
+
   async alterarEmail(novo_email: string, senha: string): Promise<void> {
     await api.put("/usuarios/email", { novo_email, senha });
   },

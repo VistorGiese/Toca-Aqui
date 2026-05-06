@@ -25,7 +25,7 @@ const envSchema = z.object({
   REDIS_PASSWORD: z.string().optional(),
 
   // Email / SMTP
-  SMTP_HOST: z.string().default('smtp.mailtrap.io'),
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
   SMTP_PORT: z.coerce.number().int().default(587),
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),

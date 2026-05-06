@@ -9,6 +9,7 @@ import {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  resendVerificationEmail,
   uploadArtistPhoto,
   uploadArtistPressKit,
   uploadUserPhoto,
@@ -42,6 +43,7 @@ router.post('/logout', authMiddleware, logoutUser);
 router.post('/esqueci-senha', passwordResetLimiter, validate(forgotPasswordSchema), forgotPassword);
 router.post('/redefinir-senha', validate(resetPasswordSchema), resetPassword);
 router.get('/verificar-email', verifyEmail);
+router.post('/reenviar-verificacao', passwordResetLimiter, validate(forgotPasswordSchema), resendVerificationEmail);
 router.get('/perfil', authMiddleware, getUserProfile);
 router.get('/minhas-paginas', authMiddleware, getMinhasPaginas);
 router.post('/perfil-estabelecimento', authMiddleware, validate(createEstablishmentProfileSchema), createEstablishmentProfile);
