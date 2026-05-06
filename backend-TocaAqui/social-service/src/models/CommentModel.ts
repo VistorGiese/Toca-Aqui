@@ -7,8 +7,8 @@ export interface CommentAttributes {
   comentavel_tipo: 'perfil_estabelecimento' | 'perfil_artista' | 'banda' | 'agendamento';
   comentavel_id: number;
   texto: string;
-  data_criacao?: Date;
-  data_atualizacao?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 class CommentModel extends Model<CommentAttributes> implements CommentAttributes {
@@ -17,8 +17,8 @@ class CommentModel extends Model<CommentAttributes> implements CommentAttributes
   public comentavel_tipo!: 'perfil_estabelecimento' | 'perfil_artista' | 'banda' | 'agendamento';
   public comentavel_id!: number;
   public texto!: string;
-  public readonly data_criacao!: Date;
-  public readonly data_atualizacao!: Date;
+  public readonly created_at!: Date;
+  public readonly updated_at!: Date;
 }
 
 CommentModel.init({

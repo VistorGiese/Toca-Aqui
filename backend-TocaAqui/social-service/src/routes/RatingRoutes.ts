@@ -11,7 +11,7 @@ router.post("/", authMiddleware, RatingController.createRating);
 router.put("/:id", 
   authMiddleware, 
   checkOwnership(async (req: AuthRequest) => {
-    const rating = await Rating.findByPk(req.params.id);
+    const rating = await Rating.findByPk(req.params.id as string);
     return rating?.usuario_id || null;
   }),
   RatingController.updateRating
@@ -22,7 +22,7 @@ router.get("/:avaliavel_tipo/:avaliavel_id", RatingController.getRatings);
 router.delete("/:id", 
   authMiddleware, 
   checkOwnership(async (req: AuthRequest) => {
-    const rating = await Rating.findByPk(req.params.id);
+    const rating = await Rating.findByPk(req.params.id as string);
     return rating?.usuario_id || null;
   }),
   RatingController.deleteRating

@@ -1,16 +1,18 @@
 import { NextFunction, Request, Response } from "express";
 import { verifyToken } from "../utils/jwt";
 import { UserRole } from "../models/UserModel";
+import redisService from "../config/redis";
 
 export interface AuthRequest extends Request {
-  user?: { 
-    id: number; 
+  user?: {
+    id: number;
     email?: string;
     role?: UserRole;
   };
+  token?: string;
 }
 
-export const authMiddleware = (
+export const authMiddleware = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -26,7 +28,18 @@ export const authMiddleware = (
     if (!decoded) {
       return res.status(401).json({ error: "Token inválido" });
     }
-    req.user = decoded;
+
+    if (typeof decoded.id !== 'number' || !decoded.role) {
+      return res.status(401).json({ error: "Token com estrutura inválida" });
+    }
+
+    const isBlacklisted = await redisService.exists(`blacklist:${token}`);
+    if (isBlacklisted) {
+      return res.status(401).json({ error: "Token revogado. Faça login novamente." });
+    }
+
+    req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
+    req.token = token;
     next();
   } catch (error) {
     return res.status(401).json({ error: "Token inválido" });

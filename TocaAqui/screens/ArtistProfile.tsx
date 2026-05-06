@@ -1,7 +1,8 @@
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import React, { useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     Dimensions,
     ImageBackground,
@@ -13,11 +14,28 @@ import {
     View,
 } from "react-native";
 
+import api from "@/http/api";
+import { userService } from "@/http/userService";
 import { colors } from "@/utils/colors";
-import EventLocationCard from "../components/Allcomponents/EventLocationCard"; // Importa o novo componente
-import { Artist, DEFAULT_ARTIST } from "../utils/ArtistProfileMock";
 
 const { width, height } = Dimensions.get('window');
+
+const BASE_URL = (api.defaults.baseURL as string) ?? "";
+
+interface ArtistData {
+    id: number;
+    nome_artistico: string;
+    biografia?: string;
+    generos: string[];
+    estrutura_som: string[];
+    tipo_atuacao?: string;
+    foto_perfil?: string;
+    cidade?: string;
+    estado?: string;
+    cache_minimo?: number;
+    cache_maximo?: number;
+    links_sociais?: string[];
+}
 
 interface UserReview {
     id: string;
@@ -27,50 +45,56 @@ interface UserReview {
     submissionDate: string;
 }
 
+function parseJson<T>(value: unknown, fallback: T): T {
+    if (Array.isArray(value)) return value as unknown as T;
+    if (typeof value === "string") {
+        try { return JSON.parse(value) as T; } catch { return fallback; }
+    }
+    return fallback;
+}
+
 export default function ArtistProfile() {
     const navigation = useNavigation();
-    const route = useRoute();
+
+    const [artist, setArtist] = useState<ArtistData | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const [currentCommentText, setCurrentCommentText] = useState("");
     const [currentRatingStars, setCurrentRatingStars] = useState(0);
-    const [artistReviewsList, setArtistReviewsList] = useState<UserReview[]>([
-        {
-            id: "mock-review-1",
-            userName: "Fã do Sertanejo",
-            commentText: "Show inesquecível, lotou a casa.",
-            ratingScore: 5,
-            submissionDate: "01/01/2023",
-        },
-    ]);
+    const [artistReviewsList, setArtistReviewsList] = useState<UserReview[]>([]);
 
-    const routeParams = route.params as { artist: Artist } | undefined;
-    const selectedArtist = routeParams?.artist || DEFAULT_ARTIST;
+    useEffect(() => {
+        userService.getProfile().then((res) => {
+            const raw = res.user.artist_profiles?.[0];
+            if (!raw) return;
+            setArtist({
+                id: raw.id,
+                nome_artistico: raw.nome_artistico,
+                biografia: raw.biografia,
+                generos: parseJson<string[]>(raw.generos, []),
+                estrutura_som: parseJson<string[]>(raw.estrutura_som, []),
+                tipo_atuacao: raw.tipo_atuacao,
+                foto_perfil: raw.foto_perfil,
+                cidade: raw.cidade,
+                estado: raw.estado,
+                cache_minimo: raw.cache_minimo,
+                cache_maximo: raw.cache_maximo,
+                links_sociais: parseJson<string[]>(raw.links_sociais, []),
+            });
+        }).catch(() => {
+            Alert.alert("Erro", "Não foi possível carregar o perfil.");
+        }).finally(() => setLoading(false));
+    }, []);
 
     const getInstrumentIcon = (instrument: string) => {
-        switch (instrument.toLowerCase()) {
-            case "dj controller":
-                return "headphones";
-            case "synthesizer":
-                return "keyboard";
-            case "piano":
-                return "piano";
-            case "mixer":
-                return "sliders-h";
-            case "guitar":
-                return "guitar";
-            case "microphone":
-                return "microphone";
-            case "violão":
-                return "guitar";
-            case "teclado":
-                return "keyboard";
-            case "bateria eletrônica":
-                return "drum";
-            case "sistema de in-ear":
-                return "ear-muffs";
-            default:
-                return "music"; // Ícone padrão
-        }
+        const lower = instrument.toLowerCase();
+        if (lower.includes("dj") || lower.includes("controller")) return "headphones";
+        if (lower.includes("piano") || lower.includes("teclado")) return "keyboard";
+        if (lower.includes("mixer")) return "sliders-h";
+        if (lower.includes("guitarra") || lower.includes("violão") || lower.includes("guitar")) return "guitar";
+        if (lower.includes("micro")) return "microphone";
+        if (lower.includes("bateria") || lower.includes("drum")) return "drum";
+        return "music";
     };
 
     const renderStarsDisplay = (ratingValue: number, iconSize: number = width * 0.035) => {
@@ -91,7 +115,7 @@ export default function ArtistProfile() {
         }
         for (let i = 0; i < emptyStarsCount; i++) {
             starsComponents.push(
-                <FontAwesome5 key={`empty_${i}`} name="star" regular size={iconSize} color="#999" style={styles.starIconSpacing} />
+                <FontAwesome5 key={`empty_${i}`} name="star" size={iconSize} color="#999" style={styles.starIconSpacing} />
             );
         }
         return starsComponents;
@@ -101,15 +125,10 @@ export default function ArtistProfile() {
         const interactiveStars = [];
         for (let i = 1; i <= 5; i++) {
             interactiveStars.push(
-                <TouchableOpacity
-                    key={i}
-                    onPress={() => setCurrentRatingStars(i)}
-                    activeOpacity={0.7}
-                >
+                <TouchableOpacity key={i} onPress={() => setCurrentRatingStars(i)} activeOpacity={0.7}>
                     <FontAwesome5
                         name="star"
                         solid={i <= currentRatingStars}
-                        regular={i > currentRatingStars}
                         size={width * 0.08}
                         color={i <= currentRatingStars ? "#FFE600" : "#555"}
                         style={styles.interactiveStarIconSpacing}
@@ -120,19 +139,11 @@ export default function ArtistProfile() {
         return interactiveStars;
     };
 
-    const handleHireArtist = () => {
-        Alert.alert(
-            "Contratar Artista",
-            `Você iniciou o processo de contratação de ${selectedArtist.name}.`
-        );
-    };
-
     const handleSubmitReview = () => {
         if (currentCommentText.trim() === "" || currentRatingStars === 0) {
             Alert.alert("Atenção", "Por favor, escreva um comentário e selecione uma nota de 1 a 5 estrelas.");
             return;
         }
-
         const newReview: UserReview = {
             id: Date.now().toString(),
             userName: "Você",
@@ -140,79 +151,107 @@ export default function ArtistProfile() {
             ratingScore: currentRatingStars,
             submissionDate: new Date().toLocaleDateString("pt-BR"),
         };
-
         setArtistReviewsList([newReview, ...artistReviewsList]);
         setCurrentCommentText("");
         setCurrentRatingStars(0);
     };
 
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+                <ActivityIndicator size="large" color={colors.purple} />
+            </View>
+        );
+    }
+
+    if (!artist) {
+        return (
+            <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+                <Text style={{ color: "#fff", fontFamily: "Montserrat-Regular" }}>Perfil não encontrado.</Text>
+            </View>
+        );
+    }
+
+    const fotoUrl = artist.foto_perfil ? `${BASE_URL}/${artist.foto_perfil}` : undefined;
+
     return (
         <View style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 <ImageBackground
-                    source={{ uri: selectedArtist.imageUrl }}
+                    source={fotoUrl ? { uri: fotoUrl } : require('../assets/images/Login/Arrow.png')}
                     style={styles.artistImageBackground}
                 >
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <FontAwesome5 name="arrow-left" size={width * 0.05} color="#ffffffff" />
                     </TouchableOpacity>
                 </ImageBackground>
 
                 <View style={styles.artistDetailsContainer}>
                     <View style={styles.nameAndRatingRow}>
-                        <Text style={styles.artistName}>{selectedArtist.name}</Text>
-                        <View style={styles.artistRatingDisplay}>
-                            <Text style={styles.artistRatingText}>5</Text>
-                            <FontAwesome5 name="star" solid size={width * 0.04} color="#FFE600" />
-                        </View>
+                        <Text style={styles.artistName}>{artist.nome_artistico}</Text>
                     </View>
 
                     <View style={styles.artistTagsAndTypeRow}>
-                        <View style={styles.tagBadge}>
-                            <Text style={styles.tagText}>Sertanejo</Text>
-                        </View>
-                        <View style={styles.artistTypeContainer}>
-                            <FontAwesome5 name="microphone" solid size={width * 0.04} color="#888" />
-                            <Text style={styles.artistTypeText}>Solo</Text>
-                        </View>
-                    </View>
-
-                    <Text style={styles.artistDescription}>{selectedArtist.description}</Text>
-
-                    <Text style={styles.sectionTitle}>Instrumentos Próprios</Text>
-                    <View style={styles.instrumentsListSection}>
-                        {selectedArtist.instruments.map((instrument: string, index: number) => (
-                            <View style={styles.instrumentItemRow} key={index}>
-                                <FontAwesome5 name={getInstrumentIcon(instrument)} size={width * 0.04} color={colors.purple} />
-                                <Text style={styles.instrumentText}>{instrument}</Text>
+                        {artist.generos.slice(0, 2).map((g) => (
+                            <View key={g} style={styles.tagBadge}>
+                                <Text style={styles.tagText}>{g}</Text>
                             </View>
                         ))}
+                        {artist.tipo_atuacao && (
+                            <View style={styles.artistTypeContainer}>
+                                <FontAwesome5 name="microphone" size={width * 0.04} color="#888" />
+                                <Text style={styles.artistTypeText}>{artist.tipo_atuacao}</Text>
+                            </View>
+                        )}
                     </View>
 
-                    <TouchableOpacity style={styles.hireArtistButton} onPress={handleHireArtist}>
-                        <Text style={styles.hireArtistButtonText}>Contratar</Text>
-                    </TouchableOpacity>
+                    {artist.cidade || artist.estado ? (
+                        <View style={styles.locationRow}>
+                            <FontAwesome5 name="map-marker-alt" size={width * 0.035} color="#888" />
+                            <Text style={styles.locationText}>
+                                {[artist.cidade, artist.estado].filter(Boolean).join(", ")}
+                            </Text>
+                        </View>
+                    ) : null}
 
-                    {/* Card de Local/Evento */}
-                    <EventLocationCard
-                        locationName="Bar do Zé"
-                        locationDetails="Campinas, São Paulo"
-                        eventType="Sábado do Sertanejo"
-                        imageUrl={require('../assets/images/Login/Arrow.png')} // Caminho para a imagem mock
-                        rating={4.5}
-                    />
+                    {artist.biografia ? (
+                        <Text style={styles.artistDescription}>{artist.biografia}</Text>
+                    ) : null}
 
-                    {/* Seção de Avaliações e Comentários do Usuário */}
+                    {artist.estrutura_som.length > 0 && (
+                        <>
+                            <Text style={styles.sectionTitle}>Estrutura de Som</Text>
+                            <View style={styles.instrumentsListSection}>
+                                {artist.estrutura_som.map((item: string, index: number) => (
+                                    <View style={styles.instrumentItemRow} key={index}>
+                                        <FontAwesome5 name={getInstrumentIcon(item)} size={width * 0.04} color={colors.purple} />
+                                        <Text style={styles.instrumentText}>{item}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </>
+                    )}
+
+                    {(artist.cache_minimo || artist.cache_maximo) && (
+                        <View style={styles.cacheRow}>
+                            <FontAwesome5 name="dollar-sign" size={width * 0.035} color={colors.purple} />
+                            <Text style={styles.cacheText}>
+                                Cache:{" "}
+                                {artist.cache_minimo && artist.cache_maximo
+                                    ? `R$ ${Number(artist.cache_minimo).toLocaleString("pt-BR")} – R$ ${Number(artist.cache_maximo).toLocaleString("pt-BR")}`
+                                    : artist.cache_minimo
+                                    ? `A partir de R$ ${Number(artist.cache_minimo).toLocaleString("pt-BR")}`
+                                    : `Até R$ ${Number(artist.cache_maximo).toLocaleString("pt-BR")}`}
+                            </Text>
+                        </View>
+                    )}
+
                     <Text style={styles.sectionTitle}>Deixe sua avaliação</Text>
                     <View style={styles.userReviewInputCard}>
                         <Text style={styles.inputFieldLabel}>Sua nota:</Text>
                         <View style={styles.userInteractiveStarsContainer}>
                             {renderInteractiveStars()}
                         </View>
-
                         <Text style={styles.inputFieldLabel}>Seu comentário:</Text>
                         <TextInput
                             style={styles.commentInputField}
@@ -223,13 +262,11 @@ export default function ArtistProfile() {
                             value={currentCommentText}
                             onChangeText={setCurrentCommentText}
                         />
-
                         <TouchableOpacity style={styles.submitCommentButton} onPress={handleSubmitReview}>
                             <Text style={styles.submitCommentButtonText}>Enviar Comentário</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Lista de Comentários Anteriores (se houver) */}
                     {artistReviewsList.length > 0 && (
                         <View style={styles.allReviewsContainer}>
                             <Text style={styles.sectionTitle}>Todos os comentários</Text>
@@ -289,22 +326,14 @@ const styles = StyleSheet.create({
         fontSize: width * 0.07,
         color: "#fff",
         fontFamily: "AkiraExpanded-Superbold",
-    },
-    artistRatingDisplay: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: width * 0.01,
-    },
-    artistRatingText: {
-        color: "#fff",
-        fontSize: width * 0.045,
-        fontFamily: "Montserrat-Bold",
+        flex: 1,
     },
     artistTagsAndTypeRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: height * 0.02,
-        gap: width * 0.04,
+        marginBottom: height * 0.01,
+        flexWrap: "wrap",
+        gap: width * 0.02,
     },
     tagBadge: {
         backgroundColor: colors.purple,
@@ -327,11 +356,22 @@ const styles = StyleSheet.create({
         fontSize: width * 0.038,
         fontFamily: "Montserrat-Medium",
     },
+    locationRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: width * 0.02,
+        marginBottom: height * 0.015,
+    },
+    locationText: {
+        color: "#888",
+        fontSize: width * 0.035,
+        fontFamily: "Montserrat-Regular",
+    },
     artistDescription: {
         color: "#ccc",
         fontSize: width * 0.038,
         lineHeight: height * 0.03,
-        marginBottom: height * 0.04,
+        marginBottom: height * 0.02,
         fontFamily: "Montserrat-Medium",
     },
     sectionTitle: {
@@ -355,43 +395,17 @@ const styles = StyleSheet.create({
         fontSize: width * 0.04,
         fontFamily: "Montserrat-Regular",
     },
-    hireArtistButton: {
-        backgroundColor: colors.purple,
-        paddingVertical: height * 0.02,
-        borderRadius: width * 0.03,
+    cacheRow: {
+        flexDirection: "row",
         alignItems: "center",
-        marginTop: height * 0.04,
+        gap: width * 0.02,
+        marginTop: height * 0.01,
     },
-    hireArtistButtonText: {
-        color: "#fff",
-        fontSize: width * 0.045,
-        fontFamily: "AkiraExpanded-Superbold",
+    cacheText: {
+        color: "#ccc",
+        fontSize: width * 0.038,
+        fontFamily: "Montserrat-Medium",
     },
-    commentHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    singleReviewText: {
-        flex: 1,
-        color: '#ccc',
-        fontSize: width * 0.04,
-        fontFamily: 'Montserrat-Regular',
-        marginLeft: width * 0.03,
-    },
-    singleReviewRating: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginLeft: width * 0.03,
-    },
-    singleReviewRatingText: {
-        color: '#fff',
-        fontSize: width * 0.04,
-        fontFamily: 'Montserrat-Bold',
-        marginRight: width * 0.01,
-    },
-
-    // Estilos para o formulário de avaliação do usuário
     userReviewInputCard: {
         backgroundColor: "#1C1C29",
         padding: width * 0.05,
@@ -438,8 +452,6 @@ const styles = StyleSheet.create({
         fontSize: width * 0.035,
         fontFamily: "AkiraExpanded-Superbold",
     },
-
-    // Estilos para a lista de comentários
     allReviewsContainer: {
         marginTop: height * 0.03,
     },
@@ -449,7 +461,7 @@ const styles = StyleSheet.create({
         borderRadius: width * 0.03,
         marginBottom: height * 0.02,
         borderLeftWidth: 2,
-        borderLeftColor: "#4A00E0", // Cor de destaque para o comentário
+        borderLeftColor: "#4A00E0",
     },
     reviewDisplayHeader: {
         flexDirection: "row",

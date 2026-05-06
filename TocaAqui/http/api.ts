@@ -1,8 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-//adicionar ip do seu computador, ao cancelar o projeto e rodar denovo o IP troca sozinho
-const baseURL = "http://192.168.3.24:3000";
+// Use the REACT_NATIVE_PACKAGER_HOSTNAME env var set by Expo (works on any machine/network).
+// Falls back to localhost for simulators. Override via EXPO_PUBLIC_API_URL if needed.
+const baseURL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  `http://${process.env.REACT_NATIVE_PACKAGER_HOSTNAME ?? "localhost"}:3000`;
 
 const api = axios.create({
   baseURL: baseURL,
@@ -11,17 +14,29 @@ const api = axios.create({
   },
 });
 
+// Callback opcional para tratar respostas 401 (usado pelo AuthContext)
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export function setOnUnauthorized(callback: () => void) {
+  onUnauthorizedCallback = callback;
+}
+
 api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem("token");
     if (token) {
-      if (config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
-  },
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+    if (error?.response?.status === 401 && onUnauthorizedCallback) {
+      onUnauthorizedCallback();
+    }
     return Promise.reject(error);
   }
 );

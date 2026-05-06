@@ -10,11 +10,12 @@ import {
 } from '../controllers/AdminController';
 import { authMiddleware } from '../middleware/authmiddleware';
 import { checkAdmin } from '../middleware/authorizationMiddleware';
+import { adminLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
 
-router.use(authMiddleware, checkAdmin());
+router.use(authMiddleware, checkAdmin(), adminLimiter);
 
 router.get('/dashboard', getDashboardMetrics);
 

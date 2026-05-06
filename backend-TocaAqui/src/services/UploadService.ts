@@ -31,7 +31,6 @@ class UploadService {
       const ext = path.extname(file.originalname).toLowerCase();
       const filename = `${uniqueId}-${timestamp}${ext}`;
       
-      console.log(`Upload: ${file.originalname} → ${filename}`);
       cb(null, filename);
     }
   });
@@ -43,13 +42,20 @@ class UploadService {
     cb: multer.FileFilterCallback
   ): void => {
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const ext = path.extname(file.originalname).toLowerCase();
 
-    if (allowedExtensions.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Tipo de arquivo não permitido: ${ext}. Use: ${allowedExtensions.join(', ')}`));
+    if (!allowedExtensions.includes(ext)) {
+      cb(new Error(`Extensão não permitida: ${ext}. Use: ${allowedExtensions.join(', ')}`));
+      return;
     }
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      cb(new Error(`Tipo MIME não permitido: ${file.mimetype}. Use: ${allowedMimeTypes.join(', ')}`));
+      return;
+    }
+
+    cb(null, true);
   };
 
 
@@ -80,7 +86,7 @@ class UploadService {
 
       if (fs.existsSync(absolutePath)) {
         fs.unlinkSync(absolutePath);
-        console.log(`Arquivo deletado: ${filepath}`);
+        // arquivo deletado com sucesso
         return true;
       } else {
         console.warn(`Arquivo não encontrado para deletar: ${filepath}`);

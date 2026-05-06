@@ -10,10 +10,13 @@ export enum ApplicationStatus {
 
 class BandApplicationModel extends Model {
   id!: number;
-  banda_id!: number;
+  banda_id?: number;
+  artista_id?: number;
+  mensagem?: string;
   evento_id!: number;
-  status!: ApplicationStatus; 
+  status!: ApplicationStatus;
   data_aplicacao!: Date;
+  valor_proposto?: number;
 }
 
 BandApplicationModel.init({
@@ -24,11 +27,23 @@ BandApplicationModel.init({
   },
   banda_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'bandas',
       key: 'id',
     },
+  },
+  artista_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'perfis_artistas',
+      key: 'id',
+    },
+  },
+  mensagem: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
   evento_id: {
     type: DataTypes.INTEGER,
@@ -46,6 +61,10 @@ BandApplicationModel.init({
   data_aplicacao: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
+  },
+  valor_proposto: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
   },
 }, {
   sequelize,

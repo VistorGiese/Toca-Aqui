@@ -1,204 +1,172 @@
 import { Request, Response } from "express";
+import { Sequelize } from "sequelize";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { asyncHandler, AppError } from "../middleware/errorHandler";
 import RatingModel from "../models/RatingModel";
 import redisService from "../config/redis";
 import pubSubService from "../services/PubSubService";
 
-export const createRating = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { avaliavel_tipo, avaliavel_id, nota, comentario } = req.body;
+export const createRating = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { avaliavel_tipo, avaliavel_id, nota, comentario } = req.body;
 
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
 
-    if (!avaliavel_tipo || !avaliavel_id || !nota) {
-      return res.status(400).json({ error: "Tipo, ID e nota são obrigatórios" });
-    }
+  if (!avaliavel_tipo || !avaliavel_id || !nota) {
+    throw new AppError("Tipo, ID e nota são obrigatórios", 400);
+  }
 
-    const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda'];
-    if (!tiposValidos.includes(avaliavel_tipo)) {
-      return res.status(400).json({ error: "Tipo de avaliação inválido" });
-    }
+  const tiposValidos = ['perfil_estabelecimento', 'perfil_artista', 'banda'];
+  if (!tiposValidos.includes(avaliavel_tipo)) {
+    throw new AppError("Tipo de avaliação inválido", 400);
+  }
 
+  if (nota < 1 || nota > 5) {
+    throw new AppError("Nota deve ser entre 1 e 5", 400);
+  }
+
+  const avaliacaoExistente = await RatingModel.findOne({
+    where: { usuario_id, avaliavel_tipo, avaliavel_id }
+  });
+
+  if (avaliacaoExistente) {
+    throw new AppError("Você já avaliou este item", 400);
+  }
+
+  const avaliacao = await RatingModel.create({
+    usuario_id,
+    avaliavel_tipo,
+    avaliavel_id,
+    nota,
+    comentario: comentario?.trim() || null
+  });
+
+  await redisService.invalidatePattern(`avaliacoes:${avaliavel_tipo}:${avaliavel_id}:*`);
+
+  await pubSubService.publishAvaliacaoCriada({
+    id: avaliacao.id,
+    usuario_id,
+    avaliavel_tipo,
+    avaliavel_id,
+    nota
+  });
+
+  res.status(201).json({
+    message: "Avaliação criada com sucesso",
+    avaliacao
+  });
+});
+
+export const updateRating = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { id } = req.params;
+  const { nota, comentario } = req.body;
+
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
+
+  const avaliacao = await RatingModel.findByPk(id as string);
+  if (!avaliacao) throw new AppError("Avaliação não encontrada", 404);
+
+  if (avaliacao.usuario_id !== usuario_id) {
+    throw new AppError("Você não tem permissão para atualizar esta avaliação", 403);
+  }
+
+  const nota_antiga = avaliacao.nota;
+
+  if (nota !== undefined) {
     if (nota < 1 || nota > 5) {
-      return res.status(400).json({ error: "Nota deve ser entre 1 e 5" });
+      throw new AppError("Nota deve ser entre 1 e 5", 400);
     }
-
-    const avaliacaoExistente = await RatingModel.findOne({
-      where: { usuario_id, avaliavel_tipo, avaliavel_id }
-    });
-
-    if (avaliacaoExistente) {
-      return res.status(400).json({ error: "Você já avaliou este item" });
-    }
-
-    const avaliacao = await RatingModel.create({
-      usuario_id,
-      avaliavel_tipo,
-      avaliavel_id,
-      nota,
-      comentario: comentario?.trim() || null
-    });
-
-    await redisService.invalidatePattern(`avaliacoes:${avaliavel_tipo}:${avaliavel_id}:*`);
-
-    await pubSubService.publishAvaliacaoCriada({
-      id: avaliacao.id,
-      usuario_id,
-      avaliavel_tipo,
-      avaliavel_id,
-      nota
-    });
-
-    res.status(201).json({ 
-      message: "Avaliação criada com sucesso",
-      avaliacao 
-    });
-  } catch (error) {
-    console.error("Erro ao criar avaliação:", error);
-    res.status(500).json({ error: "Erro ao criar avaliação" });
+    avaliacao.nota = nota;
   }
-};
 
-export const updateRating = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { id } = req.params;
-    const { nota, comentario } = req.body;
-
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
-
-    const avaliacao = await RatingModel.findByPk(id);
-
-    if (!avaliacao) {
-      return res.status(404).json({ error: "Avaliação não encontrada" });
-    }
-
-    if (avaliacao.usuario_id !== usuario_id) {
-      return res.status(403).json({ error: "Você não tem permissão para atualizar esta avaliação" });
-    }
-
-    if (nota !== undefined) {
-      if (nota < 1 || nota > 5) {
-        return res.status(400).json({ error: "Nota deve ser entre 1 e 5" });
-      }
-      avaliacao.nota = nota;
-    }
-
-    if (comentario !== undefined) {
-      avaliacao.comentario = comentario?.trim() || null;
-    }
-
-    const nota_antiga = avaliacao.nota;
-
-    await avaliacao.save();
-
-    await redisService.invalidatePattern(`avaliacoes:${avaliacao.avaliavel_tipo}:${avaliacao.avaliavel_id}:*`);
-
-    await pubSubService.publishAvaliacaoAtualizada({
-      id: avaliacao.id,
-      avaliavel_tipo: avaliacao.avaliavel_tipo,
-      avaliavel_id: avaliacao.avaliavel_id,
-      nota_antiga,
-      nota_nova: avaliacao.nota
-    });
-
-    res.json({ 
-      message: "Avaliação atualizada com sucesso",
-      avaliacao 
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar avaliação:", error);
-    res.status(500).json({ error: "Erro ao atualizar avaliação" });
+  if (comentario !== undefined) {
+    avaliacao.comentario = comentario?.trim() || null;
   }
-};
 
-export const getRatings = async (req: Request, res: Response) => {
-  try {
-    const { avaliavel_tipo, avaliavel_id } = req.params;
+  await avaliacao.save();
 
-    if (!avaliavel_tipo || !avaliavel_id) {
-      return res.status(400).json({ error: "Tipo e ID são obrigatórios" });
-    }
+  await redisService.invalidatePattern(`avaliacoes:${avaliacao.avaliavel_tipo}:${avaliacao.avaliavel_id}:*`);
 
-    const cacheKey = `avaliacoes:${avaliavel_tipo}:${avaliavel_id}`;
+  await pubSubService.publishAvaliacaoAtualizada({
+    id: avaliacao.id,
+    avaliavel_tipo: avaliacao.avaliavel_tipo,
+    avaliavel_id: avaliacao.avaliavel_id,
+    nota_antiga,
+    nota_nova: avaliacao.nota
+  });
 
-    const cached = await redisService.get<any>(cacheKey);
-    if (cached) {
-      console.log(`Cache HIT: ${cacheKey}`);
-      return res.json({
-        ...cached,
-        source: "cache"
-      });
-    }
+  res.json({
+    message: "Avaliação atualizada com sucesso",
+    avaliacao
+  });
+});
 
-    console.log(`Cache MISS: ${cacheKey}`);
+export const getRatings = asyncHandler(async (req: Request, res: Response) => {
+  const { avaliavel_tipo, avaliavel_id } = req.params;
 
-    const avaliacoes = await RatingModel.findAll({
-      where: { avaliavel_tipo, avaliavel_id },
-      order: [['created_at', 'DESC']]
-    });
-
-    const total = avaliacoes.length;
-    const media = total > 0 
-      ? avaliacoes.reduce((acc, av) => acc + av.nota, 0) / total 
-      : 0;
-
-    const resultado = {
-      message: "Avaliações recuperadas com sucesso",
-      total,
-      media: parseFloat(media.toFixed(2)),
-      avaliacoes
-    };
-
-    await redisService.set(cacheKey, resultado, 600);
-
-    res.json({
-      ...resultado,
-      source: "database"
-    });
-  } catch (error) {
-    console.error("Erro ao buscar avaliações:", error);
-    res.status(500).json({ error: "Erro ao buscar avaliações" });
+  if (!avaliavel_tipo || !avaliavel_id) {
+    throw new AppError("Tipo e ID são obrigatórios", 400);
   }
-};
 
-export const deleteRating = async (req: AuthRequest, res: Response) => {
-  try {
-    const usuario_id = req.user?.id;
-    const { id } = req.params;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const offset = (page - 1) * limit;
 
-    if (!usuario_id) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
+  const cacheKey = `avaliacoes:${avaliavel_tipo}:${avaliavel_id}:p${page}:l${limit}`;
 
-    const avaliacao = await RatingModel.findByPk(id);
-
-    if (!avaliacao) {
-      return res.status(404).json({ error: "Avaliação não encontrada" });
-    }
-
-    if (avaliacao.usuario_id !== usuario_id) {
-      return res.status(403).json({ error: "Você não tem permissão para deletar esta avaliação" });
-    }
-
-    await avaliacao.destroy();
-
-    await redisService.invalidatePattern(`avaliacoes:${avaliacao.avaliavel_tipo}:${avaliacao.avaliavel_id}:*`);
-
-    await pubSubService.publishAvaliacaoDeletada({
-      id: avaliacao.id,
-      avaliavel_tipo: avaliacao.avaliavel_tipo,
-      avaliavel_id: avaliacao.avaliavel_id
-    });
-
-    res.json({ message: "Avaliação deletada com sucesso" });
-  } catch (error) {
-    console.error("Erro ao deletar avaliação:", error);
-    res.status(500).json({ error: "Erro ao deletar avaliação" });
+  const cached = await redisService.get<any>(cacheKey);
+  if (cached) {
+    return res.json(cached);
   }
-};
+
+  const { count, rows } = await RatingModel.findAndCountAll({
+    where: { avaliavel_tipo, avaliavel_id },
+    order: [['created_at', 'DESC']],
+    limit,
+    offset,
+  });
+
+  const avgResult = await RatingModel.findOne({
+    where: { avaliavel_tipo, avaliavel_id },
+    attributes: [[Sequelize.fn('AVG', Sequelize.col('nota')), 'media']],
+    raw: true,
+  });
+  const media = avgResult ? parseFloat((avgResult as any).media) || 0 : 0;
+
+  const resultado = {
+    message: "Avaliações recuperadas com sucesso",
+    media: parseFloat(media.toFixed(2)),
+    data: rows,
+    pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) },
+  };
+
+  await redisService.set(cacheKey, resultado, 600);
+  res.json(resultado);
+});
+
+export const deleteRating = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  const { id } = req.params;
+
+  if (!usuario_id) throw new AppError("Usuário não autenticado", 401);
+
+  const avaliacao = await RatingModel.findByPk(id as string);
+  if (!avaliacao) throw new AppError("Avaliação não encontrada", 404);
+
+  if (avaliacao.usuario_id !== usuario_id) {
+    throw new AppError("Você não tem permissão para deletar esta avaliação", 403);
+  }
+
+  await avaliacao.destroy();
+
+  await redisService.invalidatePattern(`avaliacoes:${avaliacao.avaliavel_tipo}:${avaliacao.avaliavel_id}:*`);
+
+  await pubSubService.publishAvaliacaoDeletada({
+    id: avaliacao.id,
+    avaliavel_tipo: avaliacao.avaliavel_tipo,
+    avaliavel_id: avaliacao.avaliavel_id
+  });
+
+  res.json({ message: "Avaliação deletada com sucesso" });
+});

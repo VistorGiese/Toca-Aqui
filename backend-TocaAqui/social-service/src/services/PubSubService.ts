@@ -41,9 +41,6 @@ class PubSubService {
       const message = JSON.stringify(data);
       const subscriberCount = await this.publisher.publish(channel, message);
 
-      console.log(`[PubSub] Evento publicado em "${channel}":`, data);
-      console.log(`Subscribers notificados: ${subscriberCount}`);
-
       return subscriberCount;
     } catch (error) {
       console.error(`[PubSub] Erro ao publicar no canal "${channel}":`, error);

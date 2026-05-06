@@ -6,12 +6,14 @@ import {
   checkFavorite,
 } from "../controllers/FavoriteController";
 import { authMiddleware } from "../middleware/authmiddleware";
+import { validate } from "../middleware/validate";
+import { addFavoriteSchema } from "../schemas/favoriteSchemas";
 
 const router = Router();
 
-router.post("/", authMiddleware, addFavorite);             
-router.delete("/:banda_id", authMiddleware, removeFavorite);
+router.post("/", authMiddleware, validate(addFavoriteSchema), addFavorite);
+router.delete("/:favoritavel_tipo/:favoritavel_id", authMiddleware, removeFavorite);
 router.get("/", authMiddleware, getFavorites);
-router.get("/:banda_id", authMiddleware, checkFavorite);
+router.get("/:favoritavel_tipo/:favoritavel_id", authMiddleware, checkFavorite);
 
 export default router;

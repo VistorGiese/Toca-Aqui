@@ -1,45 +1,52 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "./authmiddleware";
 import { UserRole } from "../models/UserModel";
+import { Model, ModelStatic } from "sequelize";
+import AddressModel from "../models/AddressModel";
+import BandModel from "../models/BandModel";
+import BookingModel from "../models/BookingModel";
+import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
+import EstablishmentMemberModel from "../models/EstablishmentMemberModel";
+
+const modelRegistry: Record<string, ModelStatic<Model>> = {
+  Address: AddressModel,
+  Band: BandModel,
+  Booking: BookingModel,
+  EstablishmentProfile: EstablishmentProfileModel,
+};
 
 
 export const checkRole = (...allowedRoles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): Response | void => {
     try {
       if (!req.user) {
-        console.error('[RBAC] Tentativa de autorização sem autenticação prévia');
-        return res.status(401).json({ 
-          error: "Não Autenticado", 
-          message: "Você precisa estar autenticado para acessar este recurso" 
+        return res.status(401).json({
+          error: "Não Autenticado",
+          message: "Você precisa estar autenticado para acessar este recurso"
         });
       }
 
       const userRole = req.user.role;
       if (!userRole) {
-        console.error(`[RBAC] Usuário ID ${req.user.id} sem role definida`);
-        return res.status(403).json({ 
-          error: "Role Não Definida", 
-          message: "Seu perfil de usuário não possui uma role atribuída" 
+        return res.status(403).json({
+          error: "Role Não Definida",
+          message: "Seu perfil de usuário não possui uma role atribuída"
         });
       }
 
       if (!allowedRoles.includes(userRole as UserRole)) {
-        console.warn(`[RBAC] Acesso negado: Usuário ID ${req.user.id} (role: ${userRole}) tentou acessar rota que requer: ${allowedRoles.join(', ')}`);
-        return res.status(403).json({ 
-          error: "Acesso Negado", 
-          message: `Esta ação requer uma das seguintes permissões: ${allowedRoles.join(', ')}`,
-          userRole,
-          requiredRoles: allowedRoles
+        return res.status(403).json({
+          error: "Acesso Negado",
+          message: `Esta ação requer uma das seguintes permissões: ${allowedRoles.join(', ')}`
         });
       }
 
-      console.log(`[RBAC] Autorização concedida: Usuário ID ${req.user.id} (role: ${userRole}) acessando rota que requer: ${allowedRoles.join(', ')}`);
       next();
     } catch (error) {
       console.error('[RBAC] Erro no middleware de autorização:', error);
-      return res.status(500).json({ 
-        error: "Erro de Autorização", 
-        message: "Erro ao verificar permissões do usuário" 
+      return res.status(500).json({
+        error: "Erro de Autorização",
+        message: "Erro ao verificar permissões do usuário"
       });
     }
   };
@@ -50,25 +57,6 @@ export const checkAdmin = () => {
 };
 
 
-export const checkEstablishmentOwner = () => {
-  return checkRole(UserRole.ADMIN, UserRole.ESTABLISHMENT_OWNER);
-};
-
-
-export const checkArtist = () => {
-  return checkRole(UserRole.ADMIN, UserRole.ARTIST);
-};
-
-
-export const checkAnyRole = () => {
-  return checkRole(
-    UserRole.ADMIN, 
-    UserRole.ESTABLISHMENT_OWNER, 
-    UserRole.ARTIST, 
-    UserRole.COMMON_USER
-  );
-};
-
 
 export const checkOwnership = (
   getResourceOwnerId: (req: AuthRequest) => Promise<number | undefined>
@@ -76,53 +64,40 @@ export const checkOwnership = (
   return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
     try {
       if (!req.user) {
-        console.error('[RBAC] Tentativa de ownership sem autenticação prévia');
-        return res.status(401).json({ 
-          error: "Não Autenticado", 
+        return res.status(401).json({
+          error: "Não Autenticado",
         });
       }
 
       if (req.user.role === UserRole.ADMIN) {
-        console.log(`[RBAC] Admin bypass: Usuário ID ${req.user.id} (admin) tem acesso total`);
         return next();
       }
 
       const resourceOwnerId = await getResourceOwnerId(req);
 
       if (!resourceOwnerId) {
-        console.warn(`[RBAC] Recurso não encontrado ou não possui dono`);
-        return res.status(404).json({ 
-          error: "Recurso Não Encontrado", 
-          message: "O recurso solicitado não foi encontrado" 
+        return res.status(404).json({
+          error: "Recurso Não Encontrado",
+          message: "O recurso solicitado não foi encontrado"
         });
       }
 
       if (req.user.id !== resourceOwnerId) {
-        console.warn(`[RBAC] Ownership negado: Usuário ID ${req.user.id} tentou acessar recurso de usuário ID ${resourceOwnerId}`);
-        return res.status(403).json({ 
+        return res.status(403).json({
+          error: "Acesso Negado",
           message: "Você não tem permissão para acessar este recurso",
         });
       }
 
-      console.log(`[RBAC] Ownership validado: Usuário ID ${req.user.id} é dono do recurso`);
       next();
     } catch (error) {
       console.error('[RBAC] Erro ao validar ownership:', error);
-      return res.status(500).json({ 
-        message: "Erro ao verificar permissões do recurso" 
+      return res.status(500).json({
+        error: "Erro de Autorização",
+        message: "Erro ao verificar permissões do recurso"
       });
     }
   };
-};
-
-
-export const getAllRoles = (): UserRole[] => {
-  return Object.values(UserRole);
-};
-
-
-export const isValidRole = (role: string): role is UserRole => {
-  return Object.values(UserRole).includes(role as UserRole);
 };
 
 
@@ -139,37 +114,31 @@ export const checkOwnershipOrAdmin = (
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      // ADMIN BYPASS 
       if (user.role === UserRole.ADMIN) {
-        console.log(`[ADMIN BYPASS] Admin ${user.email} acessando ${resourceModel} ${resourceId}`);
         return next();
       }
 
-      try {
-        const Model = require(`../models/${resourceModel}Model`).default;
-        const resource = await Model.findByPk(resourceId);
+      const Model = modelRegistry[resourceModel];
+      if (!Model) {
+        console.error(`Model "${resourceModel}" não registrado no modelRegistry`);
+        return res.status(500).json({ error: 'Erro ao validar permissões' });
+      }
+      const resource = await Model.findByPk(resourceId as string);
 
-        if (!resource) {
-          return res.status(404).json({ 
-            error: `${resourceModel} não encontrado` 
+      if (!resource) {
+        return res.status(404).json({
+          error: `${resourceModel} não encontrado`
         });
       }
 
-      const ownerId = resource[ownerField];        if (ownerId !== user.id) {
-          console.warn(`[OWNERSHIP DENIED] User ${user.id} tentou acessar ${resourceModel} ${resourceId} (owner: ${ownerId})`);
-          return res.status(403).json({ 
-            error: 'Você não tem permissão para acessar este recurso' 
-          });
-        }
-
-        console.log(`[OWNERSHIP OK] User ${user.id} é dono de ${resourceModel} ${resourceId}`);
-        next();
-      } catch (modelError) {
-        console.error(`Erro ao carregar model ${resourceModel}:`, modelError);
-        return res.status(500).json({ 
-          error: 'Erro ao validar permissões' 
+      const ownerId = (resource as any)[ownerField];
+      if (ownerId !== user.id) {
+        return res.status(403).json({
+          error: 'Você não tem permissão para acessar este recurso'
         });
       }
+
+      next();
     } catch (error) {
       console.error('Erro no middleware checkOwnershipOrAdmin:', error);
       res.status(500).json({ error: 'Erro interno ao verificar permissões' });
@@ -177,6 +146,94 @@ export const checkOwnershipOrAdmin = (
   };
 };
 
+
+/**
+ * Verifica se o usuário tem acesso gerencial ao estabelecimento.
+ * Permite: admin global, owner (usuario_id) ou membro com role 'admin' na tabela estabelecimento_membros.
+ * O parâmetro da rota deve ser :id (id do estabelecimento).
+ */
+export const checkEstablishmentAccess = () => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+    try {
+      const user = req.user;
+      const estabelecimentoId = Number(req.params.id);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      // Admin global tem acesso irrestrito
+      if (user.role === UserRole.ADMIN) {
+        return next();
+      }
+
+      const estabelecimento = await EstablishmentProfileModel.findByPk(estabelecimentoId);
+      if (!estabelecimento) {
+        return res.status(404).json({ error: 'Estabelecimento não encontrado' });
+      }
+
+      // Owner do estabelecimento
+      if (estabelecimento.usuario_id === user.id) {
+        return next();
+      }
+
+      // Membro com role admin concedido pelo owner
+      const membro = await EstablishmentMemberModel.findOne({
+        where: { estabelecimento_id: estabelecimento.id, usuario_id: user.id },
+      });
+
+      if (membro) {
+        return next();
+      }
+
+      return res.status(403).json({
+        error: 'Acesso negado',
+        message: 'Você não tem permissão para gerenciar este estabelecimento',
+      });
+    } catch (error) {
+      console.error('Erro no middleware checkEstablishmentAccess:', error);
+      return res.status(500).json({ error: 'Erro interno ao verificar permissões' });
+    }
+  };
+};
+
+/**
+ * Verifica se o usuário é o dono (owner) do estabelecimento.
+ * Membros admin não passam por esta verificação — apenas o owner pode, por exemplo, gerenciar membros.
+ */
+export const checkEstablishmentOwnerOnly = () => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+    try {
+      const user = req.user;
+      const estabelecimentoId = Number(req.params.id);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      if (user.role === UserRole.ADMIN) {
+        return next();
+      }
+
+      const estabelecimento = await EstablishmentProfileModel.findByPk(estabelecimentoId);
+      if (!estabelecimento) {
+        return res.status(404).json({ error: 'Estabelecimento não encontrado' });
+      }
+
+      if (estabelecimento.usuario_id !== user.id) {
+        return res.status(403).json({
+          error: 'Acesso negado',
+          message: 'Apenas o dono do estabelecimento pode realizar esta ação',
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Erro no middleware checkEstablishmentOwnerOnly:', error);
+      return res.status(500).json({ error: 'Erro interno ao verificar permissões' });
+    }
+  };
+};
 
 export const checkRolesOrAdmin = (...allowedRoles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): Response | void => {
@@ -186,17 +243,13 @@ export const checkRolesOrAdmin = (...allowedRoles: UserRole[]) => {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
-    // ADMIN BYPASS
     if (user.role === UserRole.ADMIN) {
-      console.log(`[ADMIN BYPASS] Admin ${user.email} acessando rota protegida`);
       return next();
     }
 
     if (!allowedRoles.includes(user.role as UserRole)) {
-      return res.status(403).json({ 
-        error: 'Você não tem permissão para acessar este recurso',
-        requiredRoles: allowedRoles,
-        yourRole: user.role
+      return res.status(403).json({
+        error: 'Você não tem permissão para acessar este recurso'
       });
     }
 

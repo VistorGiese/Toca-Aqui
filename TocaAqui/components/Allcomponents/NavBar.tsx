@@ -1,26 +1,56 @@
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { StyleSheet, Text, View, Pressable, Alert } from "react-native";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { colors } from "@/utils/colors";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/Navigate";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useState } from "react";
 
 export default function NavBar() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadRole = async () => {
+        const role = await AsyncStorage.getItem("userRole");
+        setUserRole(role);
+      };
+
+      loadRole();
+    }, [])
+  );
 
   const currentSection =
     route.name === "HomePage"
       ? "home"
       : route.name === "Schedulling"
         ? "calendar"
-        : route.name === "CreateEvent"
+        : route.name === "CreateEvent" || route.name === "ArtistFavorites"
           ? "favorites"
-          : route.name === "ArtistProfile"
+          : route.name === "ArtistProfile" ||
+              route.name === "ArtistSelfProfile" ||
+              route.name === "Profile"
             ? "profile"
             : "";
+
+  const handleLogout = () => {
+    Alert.alert("Sair", "Deseja mesmo sair da conta?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Sair",
+        style: "destructive",
+        onPress: async () => {
+          await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
+          navigation.replace("Login");
+        },
+      },
+    ]);
+  };
 
   const handlePress = (id: string) => {
     switch (id) {
@@ -31,10 +61,21 @@ export default function NavBar() {
         navigation.navigate("Schedulling");
         break;
       case "favorites":
+        if (userRole === "artist") {
+          navigation.navigate("ArtistFavorites");
+          break;
+        }
         navigation.navigate("CreateEvent");
         break;
       case "profile":
+        if (userRole === "artist") {
+          navigation.navigate("ArtistSelfProfile");
+          break;
+        }
         navigation.navigate("Profile");
+        break;
+      case "logout":
+        handleLogout();
         break;
     }
   };
@@ -51,9 +92,27 @@ export default function NavBar() {
     { id: "profile", icon: "user", text: "Perfil", type: "FontAwesome" },
   ];
 
+  const commonUserNavItems = [
+    { id: "home", icon: "house", text: "Início", type: "FontAwesome6" },
+    { id: "logout", icon: "sign-out", text: "Sair", type: "FontAwesome" },
+  ];
+
+  const artistNavItems = [
+    { id: "home", icon: "house", text: "Início", type: "FontAwesome6" },
+    { id: "favorites", icon: "star", text: "Favoritos", type: "FontAwesome" },
+    { id: "profile", icon: "user", text: "Perfil", type: "FontAwesome" },
+  ];
+
+  const visibleNavItems =
+    userRole === "common_user"
+      ? commonUserNavItems
+      : userRole === "artist"
+        ? artistNavItems
+        : navItems;
+
   return (
     <View style={styles.container}>
-      {navItems.map((item) => {
+      {visibleNavItems.map((item) => {
         const isSelected = currentSection === item.id;
 
         return (

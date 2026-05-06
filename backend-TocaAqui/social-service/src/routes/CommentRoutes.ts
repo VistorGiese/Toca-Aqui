@@ -13,7 +13,7 @@ router.get("/:comentavel_tipo/:comentavel_id", CommentController.getComments);
 router.delete("/:id", 
   authMiddleware, 
   checkOwnership(async (req: AuthRequest) => {
-    const comment = await Comment.findByPk(req.params.id);
+    const comment = await Comment.findByPk(req.params.id as string);
     return comment?.usuario_id || null;
   }),
   CommentController.deleteComment

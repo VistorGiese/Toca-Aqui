@@ -4,7 +4,7 @@ import sequelize from '../config/database';
 export interface FavoriteAttributes {
   id?: number;
   usuario_id: number;
-  favoritavel_tipo: 'perfil_estabelecimento' | 'perfil_artista' | 'banda';
+  favoritavel_tipo: 'perfil_estabelecimento' | 'perfil_artista' | 'banda' | 'agendamento';
   favoritavel_id: number;
   data_criacao?: Date;
   data_atualizacao?: Date;
@@ -13,7 +13,7 @@ export interface FavoriteAttributes {
 class FavoriteModel extends Model<FavoriteAttributes> implements FavoriteAttributes {
   public id!: number;
   public usuario_id!: number;
-  public favoritavel_tipo!: 'perfil_estabelecimento' | 'perfil_artista' | 'banda';
+  public favoritavel_tipo!: 'perfil_estabelecimento' | 'perfil_artista' | 'banda' | 'agendamento';
   public favoritavel_id!: number;
   public readonly data_criacao!: Date;
   public readonly data_atualizacao!: Date;
@@ -34,7 +34,7 @@ FavoriteModel.init({
     },
   },
   favoritavel_tipo: {
-    type: DataTypes.ENUM('perfil_estabelecimento', 'perfil_artista', 'banda'),
+    type: DataTypes.ENUM('perfil_estabelecimento', 'perfil_artista', 'banda', 'agendamento'),
     allowNull: false,
   },
   favoritavel_id: {
