@@ -12,7 +12,7 @@ services:
       - DB_NAME=toca_aqui_v4
       - DB_USER=root
       - DB_PASSWORD=
-      - JWT_SECRET=chave.com.br
+      - JWT_SECRET=chave.com.br.secret.key
       - JWT_EXPIRES_IN=7d
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -73,7 +73,7 @@ services:
       - DB_NAME=toca_aqui_social
       - DB_USER=root
       - DB_PASSWORD=
-      - JWT_SECRET=chave.com.br
+      - JWT_SECRET=chave.com.br.secret.key
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PORT=3001
