@@ -15,8 +15,8 @@ import {
     View,
 } from "react-native";
 
-import Button from "../components/Allcomponents/Button";
-import Input from "../components/Allcomponents/Input";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { AccountProps } from "../contexts/AccountFromContexto";
 import { RootStackParamList } from "../navigation/Navigate";
 import {

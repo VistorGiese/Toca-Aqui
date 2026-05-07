@@ -5,9 +5,9 @@ import React, { useContext, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
 
-import Button from "../components/Allcomponents/Button";
+import Button from "@/components/ui/Button";
 import Fund from "../components/Allcomponents/Fund";
-import Input from "../components/Allcomponents/Input";
+import Input from "@/components/ui/Input";
 import ToBack from "../components/Allcomponents/ToBack";
 import {
   AccontFormContext,

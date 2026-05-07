@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, NavigationIndependentTree } from "@react-navigation/native";
 import { AccountProvider } from '../contexts/AccountFromContexto';
 import { AuthProvider } from '../contexts/AuthContext';
 import Navigate, { linking } from "../navigation/Navigate";
@@ -105,13 +105,15 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <NavigationContainer linking={linking}>
-        <AuthProvider>
-          <AccountProvider>
-            <Navigate />
-          </AccountProvider>
-        </AuthProvider>
-      </NavigationContainer>
+      <NavigationIndependentTree>
+        <NavigationContainer linking={linking}>
+          <AuthProvider>
+            <AccountProvider>
+              <Navigate />
+            </AccountProvider>
+          </AuthProvider>
+        </NavigationContainer>
+      </NavigationIndependentTree>
     </ErrorBoundary>
   );
 }

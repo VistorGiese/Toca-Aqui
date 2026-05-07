@@ -8,7 +8,7 @@ import {
     Text,
     View,
 } from "react-native";
-import Button from "../components/Allcomponents/Button";
+import Button from "@/components/ui/Button";
 import ToBack from "../components/Allcomponents/ToBack";
 import { AccontFormContext } from "../contexts/AccountFromContexto";
 import {

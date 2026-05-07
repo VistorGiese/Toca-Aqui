@@ -18,9 +18,9 @@ import { RootStackParamList } from "../../navigation/Navigate";
 import { colors } from "@/utils/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { userService } from "@/http/userService";
-import Button from "../../components/Allcomponents/Button";
+import Button from "@/components/ui/Button";
 import Fund from "../../components/Allcomponents/Fund";
-import Input from "../../components/Allcomponents/Input";
+import Input from "@/components/ui/Input";
 import ToBack from "../../components/Allcomponents/ToBack";
 
 const { height } = Dimensions.get("window");
