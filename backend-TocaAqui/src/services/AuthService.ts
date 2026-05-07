@@ -43,11 +43,11 @@ export class AuthService {
     const user = await UserModel.create({ nome_completo, email, senha: hashedPassword, role: role as any, email_verificado: false });
 
     const verifyToken = crypto.randomBytes(32).toString('hex');
-    await redisService.getClient().setex(`verify:${verifyToken}`, 60 * 60 * 24, String(user.id));
     try {
+      await redisService.getClient().setex(`verify:${verifyToken}`, 60 * 60 * 24, String(user.id));
       await sendVerificationEmail(email, verifyToken);
     } catch (err) {
-      console.error('[AuthService] Falha ao enviar email de verificação:', err);
+      console.error('[AuthService] Falha ao armazenar token ou enviar email de verificação:', err);
     }
 
     return { id: user.id, nome_completo: user.nome_completo, email: user.email, role: user.role, email_verificado: false };
@@ -69,7 +69,11 @@ export class AuthService {
   async logout(token: string, exp: number) {
     const ttlSeconds = exp - Math.floor(Date.now() / 1000);
     if (ttlSeconds > 0) {
-      await redisService.getClient().setex(`blacklist:${token}`, ttlSeconds, '1');
+      try {
+        await redisService.getClient().setex(`blacklist:${token}`, ttlSeconds, '1');
+      } catch (err) {
+        console.error('[AuthService] Falha ao registrar token na blacklist:', err);
+      }
     }
   }
 
@@ -82,16 +86,22 @@ export class AuthService {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
-    await redisService.getClient().setex(`reset:${token}`, 60 * 60, String(user.id));
     try {
+      await redisService.getClient().setex(`reset:${token}`, 60 * 60, String(user.id));
       await sendPasswordResetEmail(email, token);
     } catch (err) {
-      console.error('[AuthService] Falha ao enviar email de redefinição de senha:', err);
+      console.error('[AuthService] Falha ao armazenar token ou enviar email de redefinição:', err);
     }
   }
 
   async resetPassword(token: string, nova_senha: string) {
-    const userId = await redisService.getClient().get(`reset:${token}`);
+    let userId: string | null;
+    try {
+      userId = await redisService.getClient().get(`reset:${token}`);
+    } catch (err) {
+      console.error('[AuthService] Falha ao consultar token de redefinição no Redis:', err);
+      throw new AppError('Serviço temporariamente indisponível. Tente novamente.', 503);
+    }
     if (!userId) throw new AppError('Token inválido ou expirado.', 400);
 
     const user = await UserModel.findByPk(userId);
@@ -99,7 +109,11 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(nova_senha, 10);
     await user.update({ senha: hashedPassword });
-    await redisService.getClient().del(`reset:${token}`);
+    try {
+      await redisService.getClient().del(`reset:${token}`);
+    } catch (err) {
+      console.error('[AuthService] Falha ao remover token de redefinição do Redis:', err);
+    }
   }
 
   async resendVerificationEmail(email: string) {
@@ -111,16 +125,22 @@ export class AuthService {
     if (user.email_verificado) return;
 
     const token = crypto.randomBytes(32).toString('hex');
-    await redisService.getClient().setex(`verify:${token}`, 60 * 60 * 24, String(user.id));
     try {
+      await redisService.getClient().setex(`verify:${token}`, 60 * 60 * 24, String(user.id));
       await sendVerificationEmail(email, token);
     } catch (err) {
-      console.error('[AuthService] Falha ao reenviar email de verificação:', err);
+      console.error('[AuthService] Falha ao armazenar token ou reenviar email de verificação:', err);
     }
   }
 
   async verifyEmail(token: string) {
-    const userId = await redisService.getClient().get(`verify:${token}`);
+    let userId: string | null;
+    try {
+      userId = await redisService.getClient().get(`verify:${token}`);
+    } catch (err) {
+      console.error('[AuthService] Falha ao consultar token de verificação no Redis:', err);
+      throw new AppError('Serviço temporariamente indisponível. Tente novamente.', 503);
+    }
     if (!userId) throw new AppError('Token inválido ou expirado.', 400);
 
     const user = await UserModel.findByPk(userId);
@@ -129,7 +149,11 @@ export class AuthService {
     if (user.email_verificado) return { alreadyVerified: true };
 
     await user.update({ email_verificado: true });
-    await redisService.getClient().del(`verify:${token}`);
+    try {
+      await redisService.getClient().del(`verify:${token}`);
+    } catch (err) {
+      console.error('[AuthService] Falha ao remover token de verificação do Redis:', err);
+    }
     return { alreadyVerified: false };
   }
 
