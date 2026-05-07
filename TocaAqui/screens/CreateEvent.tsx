@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../utils/colors";
 import HorizontalCalendar from "@/components/Allcomponents/HorizontalCalendar";
-import Input from "@/components/Allcomponents/Input";
+import Input from "@/components/ui/Input";
 import { bookingService } from "../http/bookingService";
 import {
   TimeSlot,

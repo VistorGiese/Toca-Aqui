@@ -21,8 +21,8 @@ import { bandService } from "@/http/bandService";
 import { artistService } from "@/http/artistService";
 import { showApiError } from "@/utils/errorHandler";
 import { useAuth } from "@/contexts/AuthContext";
-import Input from "../../components/Allcomponents/Input";
-import Button from "../../components/Allcomponents/Button";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 const { height } = Dimensions.get("window");
 

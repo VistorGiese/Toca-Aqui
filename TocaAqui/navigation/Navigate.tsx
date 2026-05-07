@@ -5,7 +5,7 @@ import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { Booking } from "@/http/bookingService";
-import Register from "../screens/Register";
+import Register from "../screens/register";
 import VerifyEmail from "../screens/VerifyEmail";
 import ResetPassword from "../screens/ResetPassword";
 import ArtistProfile from "../screens/ArtistProfile";

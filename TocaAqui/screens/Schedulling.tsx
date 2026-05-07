@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Modal from "react-native-modal";
-import Button from "../components/Allcomponents/Button";
+import Button from "@/components/ui/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/Navigate"; // <-- Importe seus tipos

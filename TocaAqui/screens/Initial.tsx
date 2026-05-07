@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Button from "../components/Allcomponents/Button";
+import Button from "@/components/ui/Button";
 import FundInitialPage from "../components/Allcomponents/FundInitialPage";
 import { RootStackParamList } from "../navigation/Navigate";
 
