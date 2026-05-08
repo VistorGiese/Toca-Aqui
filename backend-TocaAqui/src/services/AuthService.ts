@@ -9,6 +9,8 @@ import { validateEmailFormat, validatePasswordFormat } from './userValidationSer
 import redisService from '../config/redis';
 import { sendPasswordResetEmail, sendVerificationEmail } from './EmailService';
 import { AppError } from '../errors/AppError';
+import { geocodificarEndereco } from './GeocodingService';
+import AddressModel from '../models/AddressModel';
 
 export interface RegisterParams {
   nome_completo: string;
@@ -207,12 +209,30 @@ export class AuthService {
     }
 
     const { endereco_id, ...rest } = data;
-    return EstablishmentProfileModel.create({
+    const profile = await EstablishmentProfileModel.create({
       usuario_id: userId,
       ...rest,
       tipo_estabelecimento: (data.tipo_estabelecimento as any) || 'bar',
       ...(endereco_id ? { endereco_id } : {}),
     });
+
+    if (endereco_id) {
+      const endereco = await AddressModel.findByPk(endereco_id);
+      if (endereco) {
+        const coords = await geocodificarEndereco(
+          endereco.rua,
+          endereco.numero,
+          endereco.cidade,
+          endereco.estado,
+          endereco.cep
+        );
+        if (coords) {
+          await profile.update({ latitude: coords.latitude, longitude: coords.longitude });
+        }
+      }
+    }
+
+    return profile;
   }
 
   async createArtistProfile(userId: number, data: {

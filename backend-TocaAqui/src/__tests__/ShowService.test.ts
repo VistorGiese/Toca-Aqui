@@ -49,6 +49,129 @@ const mockEmpty = () =>
 describe('ShowService', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  // ─── getShowById ──────────────────────────────────────────────────────────
+  describe('getShowById', () => {
+    const makeShow = (overrides = {}) => ({
+      id: 1,
+      esta_publico: true,
+      capacidade_maxima: 100,
+      ingressos_vendidos: 40,
+      toJSON: jest.fn().mockReturnValue({ id: 1, titulo_evento: 'Show A' }),
+      ...overrides,
+    });
+
+    it('retorna show com ingressos_disponiveis e esgotado calculados', async () => {
+      const show = makeShow();
+      (BookingModel.findOne as jest.Mock).mockResolvedValue(show);
+
+      const result = await showService.getShowById(1);
+
+      expect(result.ingressos_disponiveis).toBe(60);
+      expect(result.esgotado).toBe(false);
+    });
+
+    it('calcula esgotado=true quando ingressos_vendidos >= capacidade_maxima', async () => {
+      const show = makeShow({ capacidade_maxima: 50, ingressos_vendidos: 50 });
+      (BookingModel.findOne as jest.Mock).mockResolvedValue(show);
+
+      const result = await showService.getShowById(1);
+
+      expect(result.esgotado).toBe(true);
+      expect(result.ingressos_disponiveis).toBe(0);
+    });
+
+    it('retorna ingressos_disponiveis=null quando sem capacidade_maxima', async () => {
+      const show = makeShow({ capacidade_maxima: null });
+      (BookingModel.findOne as jest.Mock).mockResolvedValue(show);
+
+      const result = await showService.getShowById(1);
+
+      expect(result.ingressos_disponiveis).toBeNull();
+      expect(result.esgotado).toBe(false);
+    });
+
+    it('lança 404 quando show não encontrado ou não público', async () => {
+      (BookingModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      await expect(showService.getShowById(999)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+  });
+
+  // ─── getShowsDestaque ─────────────────────────────────────────────────────
+  describe('getShowsDestaque', () => {
+    it('retorna lista de shows em destaque', async () => {
+      const shows = [{ id: 1 }, { id: 2 }];
+      (BookingModel.findAll as jest.Mock).mockResolvedValue(shows);
+
+      const result = await showService.getShowsDestaque();
+
+      expect(result).toBe(shows);
+      expect(BookingModel.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 10 })
+      );
+    });
+
+    it('retorna lista vazia quando não há shows', async () => {
+      (BookingModel.findAll as jest.Mock).mockResolvedValue([]);
+
+      const result = await showService.getShowsDestaque(5);
+
+      expect(result).toEqual([]);
+      expect(BookingModel.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 5 })
+      );
+    });
+  });
+
+  // ─── searchShows ──────────────────────────────────────────────────────────
+  describe('searchShows', () => {
+    const { default: ArtistProfileModel } = require('../models/ArtistProfileModel');
+    const { default: EstablishmentProfileModel } = require('../models/EstablishmentProfileModel');
+
+    it('busca por artistas quando tipo="artistas"', async () => {
+      const artistas = [{ id: 1, nome_artistico: 'Banda X' }];
+      (ArtistProfileModel.findAll as jest.Mock).mockResolvedValue(artistas);
+
+      const result = await showService.searchShows('rock', 'artistas');
+
+      expect(result.tipo).toBe('artistas');
+      expect(result.resultados).toBe(artistas);
+      expect(ArtistProfileModel.findAll).toHaveBeenCalled();
+    });
+
+    it('busca por locais quando tipo="locais"', async () => {
+      const locais = [{ id: 1, nome_estabelecimento: 'Bar do Rock' }];
+      (EstablishmentProfileModel.findAll as jest.Mock).mockResolvedValue(locais);
+
+      const result = await showService.searchShows('bar', 'locais');
+
+      expect(result.tipo).toBe('locais');
+      expect(result.resultados).toBe(locais);
+      expect(EstablishmentProfileModel.findAll).toHaveBeenCalled();
+    });
+
+    it('busca por shows quando tipo não informado (padrão)', async () => {
+      const shows = [{ id: 1, titulo_evento: 'Festival Rock' }];
+      (BookingModel.findAll as jest.Mock).mockResolvedValue(shows);
+
+      const result = await showService.searchShows('festival');
+
+      expect(result.tipo).toBe('shows');
+      expect(result.resultados).toBe(shows);
+      expect(BookingModel.findAll).toHaveBeenCalled();
+    });
+
+    it('retorna resultado vazio quando não há correspondência', async () => {
+      (BookingModel.findAll as jest.Mock).mockResolvedValue([]);
+
+      const result = await showService.searchShows('xyzinexistente');
+
+      expect(result.resultados).toEqual([]);
+    });
+  });
+
   describe('getPublicShows', () => {
     // ─── Phase 4: esta_hoje filter ────────────────────────────────────────────
 

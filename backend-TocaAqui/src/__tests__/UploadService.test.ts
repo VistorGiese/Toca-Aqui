@@ -100,6 +100,52 @@ describe('UploadService', () => {
     });
   });
 
+  describe('fileFilter (via acesso interno)', () => {
+    const makeFile = (originalname: string, mimetype: string) =>
+      ({ originalname, mimetype } as Express.Multer.File);
+
+    it('chama cb(null, true) para jpg com mime válido', () => {
+      const cb = jest.fn();
+      (uploadService as any).fileFilter({}, makeFile('foto.jpg', 'image/jpeg'), cb);
+      expect(cb).toHaveBeenCalledWith(null, true);
+    });
+
+    it('chama cb(null, true) para png com mime válido', () => {
+      const cb = jest.fn();
+      (uploadService as any).fileFilter({}, makeFile('foto.png', 'image/png'), cb);
+      expect(cb).toHaveBeenCalledWith(null, true);
+    });
+
+    it('chama cb(null, true) para webp com mime válido', () => {
+      const cb = jest.fn();
+      (uploadService as any).fileFilter({}, makeFile('foto.webp', 'image/webp'), cb);
+      expect(cb).toHaveBeenCalledWith(null, true);
+    });
+
+    it('chama cb(Error) quando extensão não é permitida', () => {
+      const cb = jest.fn();
+      (uploadService as any).fileFilter({}, makeFile('virus.exe', 'image/jpeg'), cb);
+      expect(cb).toHaveBeenCalledWith(expect.any(Error));
+      expect((cb.mock.calls[0][0] as Error).message).toContain('.exe');
+    });
+
+    it('chama cb(Error) quando MIME type não é permitido mesmo com extensão válida', () => {
+      const cb = jest.fn();
+      (uploadService as any).fileFilter({}, makeFile('foto.jpg', 'application/octet-stream'), cb);
+      expect(cb).toHaveBeenCalledWith(expect.any(Error));
+    });
+  });
+
+  describe('uploadSingle e uploadMultiple', () => {
+    it('uploadSingle é uma função (middleware multer)', () => {
+      expect(typeof uploadService.uploadSingle).toBe('function');
+    });
+
+    it('uploadMultiple é uma função (middleware multer)', () => {
+      expect(typeof uploadService.uploadMultiple).toBe('function');
+    });
+  });
+
   describe('getFileInfo', () => {
     it('retorna size e created quando arquivo existe', () => {
       const fakeStats = { size: 2048, birthtime: new Date('2025-06-01') };

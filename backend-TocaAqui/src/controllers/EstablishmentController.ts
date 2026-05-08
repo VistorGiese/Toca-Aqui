@@ -10,6 +10,7 @@ import { uploadService } from '../services/UploadService';
 import { CACHE_TTL, CACHE_KEYS } from '../config/cache';
 import { asyncHandler } from '../middleware/errorHandler';
 import { AppError } from '../errors/AppError';
+import { geocodificarEndereco } from '../services/GeocodingService';
 
 export const listEstablishments = asyncHandler(async (req: Request, res: Response) => {
   const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
@@ -155,6 +156,25 @@ export const updateEstablishment = asyncHandler(async (req: AuthRequest, res: Re
     }
   }
 
+  const novoEnderecoId = endereco_id ?? establishment.endereco_id;
+  let coordenadas: { latitude?: number; longitude?: number } = {};
+
+  if (endereco_id && endereco_id !== establishment.endereco_id) {
+    const endereco = await AddressModel.findByPk(endereco_id);
+    if (endereco) {
+      const coords = await geocodificarEndereco(
+        endereco.rua,
+        endereco.numero,
+        endereco.cidade,
+        endereco.estado,
+        endereco.cep
+      );
+      if (coords) {
+        coordenadas = { latitude: coords.latitude, longitude: coords.longitude };
+      }
+    }
+  }
+
   await establishment.update({
     nome_estabelecimento: nome_estabelecimento ?? establishment.nome_estabelecimento,
     tipo_estabelecimento: tipo_estabelecimento ?? establishment.tipo_estabelecimento,
@@ -162,10 +182,11 @@ export const updateEstablishment = asyncHandler(async (req: AuthRequest, res: Re
     generos_musicais: generos_musicais ?? establishment.generos_musicais,
     horario_abertura: horario_abertura ?? establishment.horario_abertura,
     horario_fechamento: horario_fechamento ?? establishment.horario_fechamento,
-    endereco_id: endereco_id ?? establishment.endereco_id,
+    endereco_id: novoEnderecoId,
     telefone_contato: telefone_contato ?? establishment.telefone_contato,
     fotos: fotos !== undefined ? fotos : establishment.fotos,
     esta_ativo: esta_ativo !== undefined ? esta_ativo : establishment.esta_ativo,
+    ...coordenadas,
   });
 
   // Invalidar cache

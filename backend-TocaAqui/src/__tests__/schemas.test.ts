@@ -144,6 +144,57 @@ describe('createBookingSchema', () => {
   it('updateBookingSchema aceita objeto parcial', () => {
     expect(updateBookingSchema.safeParse({ titulo_evento: 'Novo Nome' }).success).toBe(true);
   });
+
+  it('rejeita quando cache_maximo < cache_minimo', () => {
+    const result = createBookingSchema.safeParse({
+      ...valid,
+      cache_minimo: 500,
+      cache_maximo: 200,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('aceita quando cache_maximo >= cache_minimo', () => {
+    const result = createBookingSchema.safeParse({
+      ...valid,
+      cache_minimo: 200,
+      cache_maximo: 500,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('aceita campos opcionais como esta_publico e preco_ingresso_inteira', () => {
+    const result = createBookingSchema.safeParse({
+      ...valid,
+      esta_publico: true,
+      preco_ingresso_inteira: 50,
+      preco_ingresso_meia: 25,
+      capacidade_maxima: 200,
+      classificacao_etaria: 18,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('updateBookingSchema rejeita horario_fim igual a horario_inicio quando ambos fornecidos', () => {
+    const result = updateBookingSchema.safeParse({
+      horario_inicio: '20:00',
+      horario_fim: '20:00',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('updateBookingSchema aceita horario_inicio sem horario_fim (parcial)', () => {
+    const result = updateBookingSchema.safeParse({ horario_inicio: '20:00' });
+    expect(result.success).toBe(true);
+  });
+
+  it('updateBookingSchema rejeita quando cache_maximo < cache_minimo', () => {
+    const result = updateBookingSchema.safeParse({
+      cache_minimo: 1000,
+      cache_maximo: 500,
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 // ─── bandSchemas ──────────────────────────────────────────────────────────────

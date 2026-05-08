@@ -28,6 +28,11 @@ jest.mock('../models/BandModel', () => ({
   default: { findByPk: jest.fn(), findAll: jest.fn() },
 }));
 
+jest.mock('../models/BookingModel', () => ({
+  __esModule: true,
+  default: { findByPk: jest.fn(), findAll: jest.fn() },
+}));
+
 jest.mock('sequelize', () => {
   const actual = jest.requireActual('sequelize');
   return { ...actual, Op: actual.Op };
@@ -43,6 +48,9 @@ import {
 } from '../controllers/FavoriteController';
 import FavoriteModel from '../models/FavoriteModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
+import ArtistProfileModel from '../models/ArtistProfileModel';
+import BandModel from '../models/BandModel';
+import BookingModel from '../models/BookingModel';
 
 const flushPromises = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -160,6 +168,63 @@ describe('FavoriteController', () => {
         expect.objectContaining({ statusCode: 400 })
       );
     });
+
+    it('adiciona favorito do tipo perfil_artista', async () => {
+      const favorito = { id: 2, usuario_id: 1, favoritavel_tipo: 'perfil_artista', favoritavel_id: 3 };
+      const req = makeReq({
+        user: { id: 1 },
+        body: { favoritavel_tipo: 'perfil_artista', favoritavel_id: 3 },
+      });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 3 });
+      (FavoriteModel.findOne as jest.Mock).mockResolvedValue(null);
+      (FavoriteModel.create as jest.Mock).mockResolvedValue(favorito);
+
+      addFavorite(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(ArtistProfileModel.findByPk).toHaveBeenCalledWith(3);
+    });
+
+    it('adiciona favorito do tipo banda', async () => {
+      const favorito = { id: 3, usuario_id: 1, favoritavel_tipo: 'banda', favoritavel_id: 7 };
+      const req = makeReq({
+        user: { id: 1 },
+        body: { favoritavel_tipo: 'banda', favoritavel_id: 7 },
+      });
+      const res = mockRes();
+
+      (BandModel.findByPk as jest.Mock).mockResolvedValue({ id: 7 });
+      (FavoriteModel.findOne as jest.Mock).mockResolvedValue(null);
+      (FavoriteModel.create as jest.Mock).mockResolvedValue(favorito);
+
+      addFavorite(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(BandModel.findByPk).toHaveBeenCalledWith(7);
+    });
+
+    it('adiciona favorito do tipo agendamento', async () => {
+      const favorito = { id: 4, usuario_id: 1, favoritavel_tipo: 'agendamento', favoritavel_id: 20 };
+      const req = makeReq({
+        user: { id: 1 },
+        body: { favoritavel_tipo: 'agendamento', favoritavel_id: 20 },
+      });
+      const res = mockRes();
+
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue({ id: 20 });
+      (FavoriteModel.findOne as jest.Mock).mockResolvedValue(null);
+      (FavoriteModel.create as jest.Mock).mockResolvedValue(favorito);
+
+      addFavorite(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(BookingModel.findByPk).toHaveBeenCalledWith(20);
+    });
   });
 
   // ─── removeFavorite ───────────────────────────────────────────────────────
@@ -197,6 +262,21 @@ describe('FavoriteController', () => {
         expect.objectContaining({ statusCode: 404 })
       );
     });
+
+    it('passa erro 401 quando usuário não identificado', async () => {
+      const req = makeReq({
+        user: undefined,
+        params: { favoritavel_tipo: 'banda', favoritavel_id: '5' },
+      });
+      const res = mockRes();
+
+      removeFavorite(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
   });
 
   // ─── getFavorites ─────────────────────────────────────────────────────────
@@ -224,6 +304,29 @@ describe('FavoriteController', () => {
 
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({ statusCode: 401 })
+      );
+    });
+
+    it('filtra favoritos por tipo quando tipo é fornecido', async () => {
+      const favoritosBanda = [
+        { id: 1, favoritavel_tipo: 'banda', favoritavel_id: 7, createdAt: new Date() },
+      ];
+      const req = makeReq({ user: { id: 1 }, query: { tipo: 'banda' } });
+      const res = mockRes();
+
+      (FavoriteModel.findAll as jest.Mock).mockResolvedValue(favoritosBanda);
+      (BandModel.findAll as jest.Mock).mockResolvedValue([{ id: 7, nome_banda: 'Banda X' }]);
+
+      getFavorites(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(FavoriteModel.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ favoritavel_tipo: 'banda' }),
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ total: 1, favoritos: expect.any(Array) })
       );
     });
   });
@@ -261,6 +364,21 @@ describe('FavoriteController', () => {
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ eh_favorito: false })
+      );
+    });
+
+    it('passa erro 401 quando usuário não identificado', async () => {
+      const req = makeReq({
+        user: undefined,
+        params: { favoritavel_tipo: 'banda', favoritavel_id: '5' },
+      });
+      const res = mockRes();
+
+      checkFavorite(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
       );
     });
   });

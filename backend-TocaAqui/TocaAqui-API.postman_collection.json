@@ -1,12 +1,11 @@
 {
   "info": {
     "name": "Toca Aqui - API Completa",
-    "description": "Coleção completa de endpoints do backend Toca Aqui.\n\n**Main API**: http://localhost:3000\n**Social Service**: http://localhost:3001\n\n**Como usar:**\n1. Faça login em POST /usuarios/login\n2. Copie o token da resposta\n3. Cole na variável de coleção `token`\n4. Ajuste os IDs nas variáveis conforme necessário\n\n**Roles necessárias por fluxo:**\n- Criar agendamento/estabelecimento: token de establishment_owner\n- Criar banda/artista: token de artist\n- Aceitar candidatura: token de establishment_owner\n- Aceitar contrato (artista): token de artist\n- Aceitar contrato (estab): token de establishment_owner\n- Avaliar estabelecimento (POST /contratos/:id/avaliar): token de artist\n- Avaliar artista (POST /contratos/:id/avaliar-artista): token de establishment_owner\n- Admin: token de admin",
+    "description": "Coleção completa de endpoints do backend Toca Aqui.\n\n**API**: http://localhost:3000\n\n**Como usar:**\n1. Faça login em POST /usuarios/login\n2. Copie o token da resposta (salvo automaticamente pela collection)\n3. Ajuste os IDs nas variáveis conforme necessário\n\n**Roles necessárias por fluxo:**\n- Criar agendamento/estabelecimento: token de establishment_owner\n- Criar banda/artista: token de artist\n- Aceitar candidatura: token de establishment_owner\n- Aceitar contrato (artista): token de artist\n- Aceitar contrato (estab): token de establishment_owner\n- Avaliar estabelecimento (POST /contratos/:id/avaliar): token de artist\n- Avaliar artista (POST /contratos/:id/avaliar-artista): token de establishment_owner\n- Admin: token de admin\n\n**Fluxo de pagamento (DEV/TCC):**\n1. POST /dev/mock-pagamento/sinal { contrato_id } → cria payment pendente\n2. POST /dev/mock-pagamento/confirmar { payment_id, status: 'pago'|'falhou' } → simula webhook",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
-    { "key": "socialUrl", "value": "http://localhost:3001", "type": "string" },
     { "key": "token", "value": "SEU_JWT_AQUI", "type": "string" },
     { "key": "userId", "value": "1", "type": "string" },
     { "key": "artistaId", "value": "1", "type": "string" },
@@ -40,18 +39,10 @@
           }
         },
         {
-          "name": "GET /health - Main API",
+          "name": "GET /health",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/health",
-            "auth": { "type": "noauth" }
-          }
-        },
-        {
-          "name": "GET /health - Social Service",
-          "request": {
-            "method": "GET",
-            "url": "{{socialUrl}}/health",
             "auth": { "type": "noauth" }
           }
         }
@@ -572,7 +563,7 @@
           }
         },
         {
-          "name": "GET /:id/historico - Histórico",
+          "name": "GET /:id/historico - Histórico de edições",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/contratos/{{contratoId}}/historico"
@@ -586,7 +577,7 @@
           }
         },
         {
-          "name": "POST /:id/avaliar - Artista avalia estabelecimento (requer token de artist e contrato concluído)",
+          "name": "POST /:id/avaliar - Artista avalia estabelecimento (requer contrato concluído)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/contratos/{{contratoId}}/avaliar",
@@ -598,7 +589,7 @@
           }
         },
         {
-          "name": "POST /:id/avaliar-artista - Estabelecimento avalia artista (requer token de establishment_owner e contrato concluído)",
+          "name": "POST /:id/avaliar-artista - Estabelecimento avalia artista (requer contrato concluído)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/contratos/{{contratoId}}/avaliar-artista",
@@ -612,34 +603,47 @@
       ]
     },
     {
-      "name": "Pagamentos",
+      "name": "[DEV] Mock Pagamentos",
+      "description": "Endpoints apenas para desenvolvimento e TCC. Simulam o fluxo completo do Stripe sem chamar APIs externas. Disponível somente quando NODE_ENV != production.",
       "item": [
         {
-          "name": "GET /contrato/:id - Por contrato",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/pagamentos/contrato/{{contratoId}}"
-          }
-        },
-        {
-          "name": "POST /contrato/:id/sinal - Criar sinal (requer Stripe configurado)",
+          "name": "POST /dev/mock-pagamento/sinal - Criar sinal (simula createSignalPayment)",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/pagamentos/contrato/{{contratoId}}/sinal"
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/dev/mock-pagamento/sinal",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contrato_id\": {{contratoId}}\n}"
+            },
+            "description": "Cria o registro de pagamento do sinal na tabela `pagamentos` com status pendente. Retorna um mock de paymentId e clientSecret. O contrato precisa estar com status 'aceito'.\n\nEquivalente em produção: POST /pagamentos/contrato/:id/sinal"
           }
         },
         {
-          "name": "GET /:id - Por ID",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/pagamentos/{{pagamentoId}}"
-          }
-        },
-        {
-          "name": "POST /:id/iniciar - Iniciar pagamento (requer Stripe configurado)",
+          "name": "POST /dev/mock-pagamento/confirmar - Confirmar pagamento (simula webhook Stripe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.payment && res.payment.id) pm.collectionVariables.set('pagamentoId', res.payment.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/pagamentos/{{pagamentoId}}/iniciar"
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/dev/mock-pagamento/confirmar",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_id\": {{pagamentoId}},\n  \"status\": \"pago\"\n}"
+            },
+            "description": "Processa o resultado do pagamento simulando o webhook do Stripe.\n\n- status 'pago': atualiza payment para PAGO, cria pagamento do restante se era sinal, notifica ambas as partes\n- status 'falhou': atualiza payment para FALHOU, notifica ambas as partes, marca contrato como falhou\n\nEquivalente em produção: POST /webhooks/stripe (payment_intent.succeeded / payment_intent.payment_failed)"
           }
         }
       ]
@@ -901,7 +905,7 @@
       "name": "Avaliacoes de Show",
       "item": [
         {
-          "name": "POST / - Criar avaliação",
+          "name": "POST / - Criar avaliação (requer agendamento passado)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/avaliacoes",
@@ -989,7 +993,7 @@
           }
         },
         {
-          "name": "POST /:id/seguir - Seguir/Desseguir",
+          "name": "POST /:id/seguir - Seguir/Desseguir (toggle)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/artistas/{{artistaId}}/seguir"
@@ -1015,7 +1019,7 @@
           }
         },
         {
-          "name": "PATCH /:id/lida - Marcar como lida (use ID de notificação do próprio usuário)",
+          "name": "PATCH /:id/lida - Marcar como lida",
           "request": {
             "method": "PATCH",
             "url": "{{baseUrl}}/notificacoes/{{notificacaoId}}/lida"
@@ -1073,141 +1077,6 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/admin/bandas/estatisticas"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Webhooks",
-      "item": [
-        {
-          "name": "POST /stripe - Stripe Webhook",
-          "request": {
-            "method": "POST",
-            "auth": { "type": "noauth" },
-            "url": "{{baseUrl}}/webhooks/stripe",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "stripe-signature", "value": "t=timestamp,v1=signature" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {}\n}"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "[Social Service] Favoritos",
-      "item": [
-        {
-          "name": "POST / - Adicionar",
-          "request": {
-            "method": "POST",
-            "url": "{{socialUrl}}/favoritos",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"favoritavel_tipo\": \"perfil_artista\",\n  \"favoritavel_id\": {{artistaId}}\n}"
-            }
-          }
-        },
-        {
-          "name": "GET / - Listar",
-          "request": {
-            "method": "GET",
-            "url": "{{socialUrl}}/favoritos"
-          }
-        },
-        {
-          "name": "GET /check/:tipo/:id - Verificar",
-          "request": {
-            "method": "GET",
-            "url": "{{socialUrl}}/favoritos/check/perfil_artista/{{artistaId}}"
-          }
-        },
-        {
-          "name": "DELETE /:tipo/:id - Remover",
-          "request": {
-            "method": "DELETE",
-            "url": "{{socialUrl}}/favoritos/perfil_artista/{{artistaId}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "[Social Service] Comentarios",
-      "item": [
-        {
-          "name": "POST / - Criar",
-          "request": {
-            "method": "POST",
-            "url": "{{socialUrl}}/comentarios",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"comentavel_tipo\": \"agendamento\",\n  \"comentavel_id\": {{agendamentoId}},\n  \"texto\": \"Ótimo show!\"\n}"
-            }
-          }
-        },
-        {
-          "name": "GET /:tipo/:id - Listar por entidade",
-          "request": {
-            "method": "GET",
-            "auth": { "type": "noauth" },
-            "url": "{{socialUrl}}/comentarios/agendamento/{{agendamentoId}}"
-          }
-        },
-        {
-          "name": "DELETE /:id - Excluir",
-          "request": {
-            "method": "DELETE",
-            "url": "{{socialUrl}}/comentarios/{{comentarioId}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "[Social Service] Avaliacoes",
-      "item": [
-        {
-          "name": "POST / - Criar",
-          "request": {
-            "method": "POST",
-            "url": "{{socialUrl}}/avaliacoes",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"avaliavel_tipo\": \"perfil_artista\",\n  \"avaliavel_id\": {{artistaId}},\n  \"nota\": 5,\n  \"comentario\": \"Artista incrível!\"\n}"
-            }
-          }
-        },
-        {
-          "name": "GET /:tipo/:id - Por entidade",
-          "request": {
-            "method": "GET",
-            "auth": { "type": "noauth" },
-            "url": "{{socialUrl}}/avaliacoes/perfil_artista/{{artistaId}}"
-          }
-        },
-        {
-          "name": "PUT /:id - Atualizar",
-          "request": {
-            "method": "PUT",
-            "url": "{{socialUrl}}/avaliacoes/{{avaliacaoId}}",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nota\": 4,\n  \"comentario\": \"Muito bom!\"\n}"
-            }
-          }
-        },
-        {
-          "name": "DELETE /:id - Excluir",
-          "request": {
-            "method": "DELETE",
-            "url": "{{socialUrl}}/avaliacoes/{{avaliacaoId}}"
           }
         }
       ]

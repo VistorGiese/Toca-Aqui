@@ -15,7 +15,11 @@ jest.mock('../models/EstablishmentProfileModel', () => ({
 
 jest.mock('../models/AddressModel', () => ({
   __esModule: true,
-  default: {},
+  default: { findByPk: jest.fn() },
+}));
+
+jest.mock('../services/GeocodingService', () => ({
+  geocodificarEndereco: jest.fn(),
 }));
 
 jest.mock('../models/UserModel', () => ({
@@ -50,6 +54,7 @@ jest.mock('sequelize', () => {
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authmiddleware';
 import {
+  listEstablishments,
   getEstablishment,
   updateEstablishment,
   deleteEstablishment,
@@ -57,8 +62,10 @@ import {
   removeEstablishmentPhoto,
 } from '../controllers/EstablishmentController';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
+import AddressModel from '../models/AddressModel';
 import redisService from '../config/redis';
 import { uploadService } from '../services/UploadService';
+import { geocodificarEndereco } from '../services/GeocodingService';
 
 // asyncHandler retorna void — drenar microtasks para aguardar a promise interna
 const flushPromises = () => new Promise<void>((resolve) => setImmediate(resolve));
@@ -95,6 +102,93 @@ describe('EstablishmentController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockNext = jest.fn();
+  });
+
+  // ─── listEstablishments ───────────────────────────────────────────────────
+  describe('listEstablishments', () => {
+    it('retorna lista paginada sem cache', async () => {
+      const rows = [makeEstablishment(), makeEstablishment({ id: 2, nome_estabelecimento: 'Bar 2' })];
+      (redisService.get as jest.Mock).mockResolvedValueOnce(null);
+      (EstablishmentProfileModel.findAndCountAll as jest.Mock).mockResolvedValue({ count: 2, rows });
+
+      const req = makeReq({ query: {} });
+      const res = mockRes();
+
+      listEstablishments(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: rows,
+          pagination: expect.objectContaining({ total: 2, page: 1 }),
+        })
+      );
+      expect(redisService.set).toHaveBeenCalled();
+    });
+
+    it('retorna dados do cache quando disponível', async () => {
+      const cached = { success: true, data: [], pagination: { total: 0, page: 1 } };
+      (redisService.get as jest.Mock).mockResolvedValueOnce(cached);
+
+      const req = makeReq({ query: {} });
+      const res = mockRes();
+
+      listEstablishments(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(cached);
+      expect(EstablishmentProfileModel.findAndCountAll).not.toHaveBeenCalled();
+    });
+
+    it('filtra por nome quando nome é fornecido', async () => {
+      (redisService.get as jest.Mock).mockResolvedValueOnce(null);
+      (EstablishmentProfileModel.findAndCountAll as jest.Mock).mockResolvedValue({ count: 1, rows: [makeEstablishment()] });
+
+      const req = makeReq({ query: { nome: 'Bar' } });
+      const res = mockRes();
+
+      listEstablishments(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(EstablishmentProfileModel.findAndCountAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ nome_estabelecimento: expect.anything() }),
+        })
+      );
+    });
+
+    it('filtra por tipo quando tipo é fornecido', async () => {
+      (redisService.get as jest.Mock).mockResolvedValueOnce(null);
+      (EstablishmentProfileModel.findAndCountAll as jest.Mock).mockResolvedValue({ count: 1, rows: [makeEstablishment()] });
+
+      const req = makeReq({ query: { tipo: 'bar' } });
+      const res = mockRes();
+
+      listEstablishments(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(EstablishmentProfileModel.findAndCountAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ tipo_estabelecimento: 'bar' }),
+        })
+      );
+    });
+
+    it('clamps limit a 100 e mínimo a 1', async () => {
+      (redisService.get as jest.Mock).mockResolvedValueOnce(null);
+      (EstablishmentProfileModel.findAndCountAll as jest.Mock).mockResolvedValue({ count: 0, rows: [] });
+
+      const req = makeReq({ query: { limit: '9999' } });
+      const res = mockRes();
+
+      listEstablishments(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(EstablishmentProfileModel.findAndCountAll).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 100 })
+      );
+    });
   });
 
   // ─── getEstablishment ─────────────────────────────────────────────────────
@@ -220,6 +314,91 @@ describe('EstablishmentController', () => {
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({ statusCode: 404 })
       );
+    });
+
+    it('atualiza todos os campos opcionais', async () => {
+      const establishment = makeEstablishment({ usuario_id: 10 });
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue(establishment);
+      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      const req = makeReq({
+        user: { id: 10, role: 'establishment_owner' as any },
+        params: { id: '1' },
+        body: {
+          descricao: 'Nova descrição',
+          generos_musicais: 'samba,forró',
+          horario_abertura: '16:00',
+          horario_fechamento: '00:00',
+          telefone_contato: '44999999999',
+          esta_ativo: false,
+        },
+      });
+      const res = mockRes();
+
+      updateEstablishment(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(establishment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          descricao: 'Nova descrição',
+          generos_musicais: 'samba,forró',
+          horario_abertura: '16:00',
+          horario_fechamento: '00:00',
+          telefone_contato: '44999999999',
+          esta_ativo: false,
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('geocodifica quando endereco_id muda e endereço é encontrado', async () => {
+      const establishment = makeEstablishment({ usuario_id: 10, endereco_id: 5 });
+      const novoEndereco = { rua: 'Rua Nova', numero: '200', cidade: 'Curitiba', estado: 'PR', cep: '80000-000' };
+
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue(establishment);
+      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+      (AddressModel.findByPk as jest.Mock).mockResolvedValue(novoEndereco);
+      (geocodificarEndereco as jest.Mock).mockResolvedValue({ latitude: -25.4, longitude: -49.2 });
+
+      const req = makeReq({
+        user: { id: 10, role: 'establishment_owner' as any },
+        params: { id: '1' },
+        body: { endereco_id: 10 },
+      });
+      const res = mockRes();
+
+      updateEstablishment(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(geocodificarEndereco).toHaveBeenCalledWith('Rua Nova', '200', 'Curitiba', 'PR', '80000-000');
+      expect(establishment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ latitude: -25.4, longitude: -49.2 })
+      );
+    });
+
+    it('não falha quando geocoding retorna null', async () => {
+      const establishment = makeEstablishment({ usuario_id: 10, endereco_id: 5 });
+      const novoEndereco = { rua: 'Rua X', numero: '1', cidade: 'Interior', estado: 'MG', cep: '00000-000' };
+
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue(establishment);
+      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+      (AddressModel.findByPk as jest.Mock).mockResolvedValue(novoEndereco);
+      (geocodificarEndereco as jest.Mock).mockResolvedValue(null);
+
+      const req = makeReq({
+        user: { id: 10, role: 'establishment_owner' as any },
+        params: { id: '1' },
+        body: { endereco_id: 10 },
+      });
+      const res = mockRes();
+
+      updateEstablishment(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(establishment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ endereco_id: 10 })
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
 
     it('passa AppError 400 quando novo endereco_id já está em uso por outro estabelecimento', async () => {

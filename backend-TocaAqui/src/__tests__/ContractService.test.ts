@@ -396,6 +396,132 @@ describe('ContractService', () => {
     });
   });
 
+  // ─── cancelContract — contratado ──────────────────────────────────────────
+  describe('cancelContract — contratado', () => {
+    it('aplica penalidade de 20% para contratado que cancela com < 72h', async () => {
+      const nearDate = new Date();
+      nearDate.setHours(nearDate.getHours() + 24); // ~24h
+      const contrato = makeContrato({ data_evento: nearDate });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (ContractHistoryModel.create as jest.Mock).mockResolvedValue({});
+      contrato.reload = jest.fn().mockResolvedValue(contrato);
+
+      const result = await service.cancelContract(1, 1, 'contratado', 'Emergência');
+
+      expect(result.penalidade_percentual).toBe(20);
+      expect(contrato.update).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'cancelado' })
+      );
+    });
+
+    it('sem penalidade para contratado que cancela com > 72h', async () => {
+      const farDate = new Date();
+      farDate.setDate(farDate.getDate() + 10);
+      const contrato = makeContrato({ data_evento: farDate });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (ContractHistoryModel.create as jest.Mock).mockResolvedValue({});
+      contrato.reload = jest.fn().mockResolvedValue(contrato);
+
+      const result = await service.cancelContract(1, 1, 'contratado', 'Motivo');
+
+      expect(result.penalidade_percentual).toBe(0);
+    });
+
+    it('lança 400 quando contrato já está concluído', async () => {
+      const contrato = makeContrato({ status: 'concluido' });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+
+      await expect(service.cancelContract(1, 1, 'contratante', 'Motivo')).rejects.toEqual(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+  });
+
+  // ─── completeContract — incrementos ───────────────────────────────────────
+  describe('completeContract — incrementos', () => {
+    it('incrementa shows_realizados do artista individual ao concluir', async () => {
+      const contrato = makeContrato({ status: 'aceito', artista_id: 7 });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (ArtistProfileModel.increment as jest.Mock).mockResolvedValue(undefined);
+      (EstablishmentProfileModel.increment as jest.Mock).mockResolvedValue(undefined);
+      contrato.reload = jest.fn().mockResolvedValue(contrato);
+
+      await service.completeContract(1);
+
+      expect(ArtistProfileModel.increment).toHaveBeenCalledWith(
+        'shows_realizados',
+        expect.objectContaining({ by: 1, where: { id: 7 } })
+      );
+    });
+
+    it('incrementa shows_realizados dos membros da banda ao concluir', async () => {
+      const contrato = makeContrato({ status: 'aceito', banda_id: 5 });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (BandMemberModel.findAll as jest.Mock).mockResolvedValue([
+        { perfil_artista_id: 10 },
+        { perfil_artista_id: 11 },
+      ]);
+      (ArtistProfileModel.increment as jest.Mock).mockResolvedValue(undefined);
+      (EstablishmentProfileModel.increment as jest.Mock).mockResolvedValue(undefined);
+      contrato.reload = jest.fn().mockResolvedValue(contrato);
+
+      await service.completeContract(1);
+
+      expect(ArtistProfileModel.increment).toHaveBeenCalledWith(
+        'shows_realizados',
+        expect.objectContaining({ where: { id: [10, 11] } })
+      );
+    });
+  });
+
+  // ─── getByEvent ────────────────────────────────────────────────────────────
+  describe('getByEvent', () => {
+    it('retorna contrato quando existe para o evento', async () => {
+      const contrato = makeContrato();
+      (ContractModel.findOne as jest.Mock).mockResolvedValue(contrato);
+
+      const result = await service.getByEvent(20);
+
+      expect(result).toBe(contrato);
+      expect(ContractModel.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { evento_id: 20 } })
+      );
+    });
+
+    it('retorna null quando não há contrato para o evento', async () => {
+      (ContractModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.getByEvent(999);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ─── getHistory ────────────────────────────────────────────────────────────
+  describe('getHistory', () => {
+    it('retorna histórico de alterações do contrato', async () => {
+      const contrato = makeContrato();
+      const historico = [{ id: 1, campo_alterado: 'status' }];
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (ContractHistoryModel.findAll as jest.Mock).mockResolvedValue(historico);
+
+      const result = await service.getHistory(1);
+
+      expect(result).toBe(historico);
+      expect(ContractHistoryModel.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { contrato_id: 1 } })
+      );
+    });
+
+    it('lança 404 quando contrato não encontrado', async () => {
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.getHistory(999)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+  });
+
   // ─── getUserRole ──────────────────────────────────────────────────────────
   describe('getUserRole', () => {
     it('retorna contratante quando é dono do estabelecimento', async () => {
