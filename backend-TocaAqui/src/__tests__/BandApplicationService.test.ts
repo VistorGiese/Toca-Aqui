@@ -319,6 +319,64 @@ describe('BandApplicationService', () => {
     });
   });
 
+  // ─── reject ───────────────────────────────────────────────────────────────
+  describe('reject', () => {
+    it('rejeita candidatura pendente com sucesso', async () => {
+      const aplicacao = makeAplicacao({ banda_id: 1 });
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(aplicacao);
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento());
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(makeBanda());
+      (BandMemberModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.reject(100);
+
+      expect(aplicacao.update).toHaveBeenCalledWith({ status: 'rejeitado' });
+      expect(result).toBe(aplicacao);
+    });
+
+    it('lança 404 quando candidatura não encontrada', async () => {
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.reject(999)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404, message: 'Candidatura não encontrada' })
+      );
+    });
+
+    it('lança 400 quando candidatura não está pendente', async () => {
+      const aplicacao = makeAplicacao({ status: 'aceito' });
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(aplicacao);
+
+      await expect(service.reject(100)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('rejeita candidatura de artista individual e notifica', async () => {
+      const aplicacao = makeAplicacao({ artista_id: 7, banda_id: undefined });
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(aplicacao);
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento());
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 7, usuario_id: 42, nome_artistico: 'Solo' });
+
+      const result = await service.reject(100);
+
+      expect(aplicacao.update).toHaveBeenCalledWith({ status: 'rejeitado' });
+      expect(result).toBe(aplicacao);
+    });
+
+    it('rejeita candidatura de banda e notifica líder', async () => {
+      const aplicacao = makeAplicacao({ banda_id: 1 });
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(aplicacao);
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(makeEvento());
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(makeBanda());
+      (BandMemberModel.findOne as jest.Mock).mockResolvedValue({ perfil_artista_id: 10 });
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 10, usuario_id: 55, nome_artistico: 'Líder' });
+
+      const result = await service.reject(100);
+
+      expect(result).toBe(aplicacao);
+    });
+  });
+
   // ─── getApplicationsByArtist (Phase 02) ──────────────────────────────────
   describe('getApplicationsByArtist', () => {
     const makeArtistProfile = (overrides = {}) => ({ id: 7, usuario_id: 42, nome_artistico: 'Solo', ...overrides });

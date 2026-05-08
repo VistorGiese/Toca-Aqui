@@ -7,7 +7,20 @@ process.env.JWT_SECRET = 'super-secret-key-for-tests-only-32chars';
 jest.mock('../models/AddressModel', () => ({ findByPk: jest.fn() }));
 jest.mock('../models/BandModel', () => ({ findByPk: jest.fn() }));
 jest.mock('../models/BookingModel', () => ({ findByPk: jest.fn() }));
-jest.mock('../models/EstablishmentProfileModel', () => ({ findByPk: jest.fn() }));
+jest.mock('../models/EstablishmentProfileModel', () => ({
+  __esModule: true,
+  default: { findByPk: jest.fn(), findOne: jest.fn() },
+  findByPk: jest.fn(),
+  findOne: jest.fn(),
+}));
+jest.mock('../models/EstablishmentMemberModel', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn() },
+}));
+jest.mock('../models/ArtistProfileModel', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn() },
+}));
 
 import { Response, NextFunction } from 'express';
 import {
@@ -16,10 +29,17 @@ import {
   checkOwnership,
   checkOwnershipOrAdmin,
   checkRolesOrAdmin,
+  checkEstablishmentAccess,
+  checkEstablishmentOwnerOnly,
+  checkHasArtistProfile,
+  checkHasEstablishmentProfile,
 } from '../middleware/authorizationMiddleware';
 import { AuthRequest } from '../middleware/authmiddleware';
 import { UserRole } from '../types/roles';
 import BookingModel from '../models/BookingModel';
+import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
+import EstablishmentMemberModel from '../models/EstablishmentMemberModel';
+import ArtistProfileModel from '../models/ArtistProfileModel';
 
 const mockRes = () => {
   const res = {} as Response;
@@ -214,6 +234,210 @@ describe('checkOwnershipOrAdmin', () => {
     await checkOwnershipOrAdmin('ModelInexistente')(req, res, mockNext as unknown as NextFunction);
 
     expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
+describe('checkEstablishmentAccess', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('admin passa sem consultar o banco', async () => {
+    const req = makeReq({ user: { id: 1, role: UserRole.ADMIN }, params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentAccess()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+    expect(EstablishmentProfileModel.findByPk).not.toHaveBeenCalled();
+  });
+
+  it('retorna 401 quando usuário não está autenticado', async () => {
+    const req = makeReq({ params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentAccess()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('retorna 404 quando estabelecimento não existe', async () => {
+    (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue(null);
+    const req = makeReq({ user: { id: 1, role: UserRole.ESTABLISHMENT_OWNER }, params: { id: '99' } });
+    const res = mockRes();
+
+    await checkEstablishmentAccess()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('owner do estabelecimento passa', async () => {
+    (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 5, usuario_id: 10 });
+    const req = makeReq({ user: { id: 10, role: UserRole.ESTABLISHMENT_OWNER }, params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentAccess()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+  });
+
+  it('membro do estabelecimento passa', async () => {
+    (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 5, usuario_id: 99 });
+    (EstablishmentMemberModel.findOne as jest.Mock).mockResolvedValue({ id: 1, usuario_id: 10 });
+    const req = makeReq({ user: { id: 10, role: UserRole.ESTABLISHMENT_OWNER }, params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentAccess()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+  });
+
+  it('retorna 403 para usuário não-owner e não-membro', async () => {
+    (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 5, usuario_id: 99 });
+    (EstablishmentMemberModel.findOne as jest.Mock).mockResolvedValue(null);
+    const req = makeReq({ user: { id: 10, role: UserRole.ARTIST }, params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentAccess()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+});
+
+describe('checkEstablishmentOwnerOnly', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('admin passa sem consultar o banco', async () => {
+    const req = makeReq({ user: { id: 1, role: UserRole.ADMIN }, params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentOwnerOnly()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+    expect(EstablishmentProfileModel.findByPk).not.toHaveBeenCalled();
+  });
+
+  it('owner passa', async () => {
+    (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 5, usuario_id: 7 });
+    const req = makeReq({ user: { id: 7, role: UserRole.ESTABLISHMENT_OWNER }, params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentOwnerOnly()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+  });
+
+  it('retorna 401 quando não autenticado', async () => {
+    const req = makeReq({ params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentOwnerOnly()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('retorna 404 quando estabelecimento não existe', async () => {
+    (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue(null);
+    const req = makeReq({ user: { id: 1, role: UserRole.ESTABLISHMENT_OWNER }, params: { id: '99' } });
+    const res = mockRes();
+
+    await checkEstablishmentOwnerOnly()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('retorna 403 para não-owner', async () => {
+    (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 5, usuario_id: 99 });
+    const req = makeReq({ user: { id: 1, role: UserRole.ESTABLISHMENT_OWNER }, params: { id: '5' } });
+    const res = mockRes();
+
+    await checkEstablishmentOwnerOnly()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+});
+
+describe('checkHasArtistProfile', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('admin passa sem consultar o banco', async () => {
+    const req = makeReq({ user: { id: 1, role: UserRole.ADMIN } });
+    const res = mockRes();
+
+    await checkHasArtistProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+    expect(ArtistProfileModel.findOne).not.toHaveBeenCalled();
+  });
+
+  it('passa quando usuário tem perfil de artista', async () => {
+    (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue({ id: 1, usuario_id: 5 });
+    const req = makeReq({ user: { id: 5, role: UserRole.ARTIST } });
+    const res = mockRes();
+
+    await checkHasArtistProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+  });
+
+  it('retorna 401 quando não autenticado', async () => {
+    const req = makeReq();
+    const res = mockRes();
+
+    await checkHasArtistProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('retorna 403 quando usuário não tem perfil de artista', async () => {
+    (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+    const req = makeReq({ user: { id: 5, role: UserRole.COMMON_USER } });
+    const res = mockRes();
+
+    await checkHasArtistProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+});
+
+describe('checkHasEstablishmentProfile', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('admin passa sem consultar o banco', async () => {
+    const req = makeReq({ user: { id: 1, role: UserRole.ADMIN } });
+    const res = mockRes();
+
+    await checkHasEstablishmentProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+    expect(EstablishmentProfileModel.findOne).not.toHaveBeenCalled();
+  });
+
+  it('passa quando usuário tem perfil de estabelecimento', async () => {
+    (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 5 });
+    const req = makeReq({ user: { id: 5, role: UserRole.ESTABLISHMENT_OWNER } });
+    const res = mockRes();
+
+    await checkHasEstablishmentProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(mockNext).toHaveBeenCalledTimes(1);
+  });
+
+  it('retorna 401 quando não autenticado', async () => {
+    const req = makeReq();
+    const res = mockRes();
+
+    await checkHasEstablishmentProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('retorna 403 quando usuário não tem perfil de estabelecimento', async () => {
+    (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+    const req = makeReq({ user: { id: 5, role: UserRole.COMMON_USER } });
+    const res = mockRes();
+
+    await checkHasEstablishmentProfile()(req, res, mockNext as unknown as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(403);
   });
 });
 

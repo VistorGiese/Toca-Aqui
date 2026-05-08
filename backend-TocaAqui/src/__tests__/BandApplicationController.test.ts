@@ -7,7 +7,9 @@ jest.mock('../services/BandApplicationService', () => ({
   bandApplicationService: {
     apply: jest.fn(),
     accept: jest.fn(),
+    reject: jest.fn(),
     getApplicationsForEvent: jest.fn(),
+    getApplicationsByArtist: jest.fn(),
   },
 }));
 
@@ -16,6 +18,8 @@ import {
   applyBandToEvent,
   acceptBandApplication,
   getBandApplicationsForEvent,
+  rejectBandApplication,
+  getMyApplications,
 } from '../controllers/BandApplicationController';
 import { bandApplicationService } from '../services/BandApplicationService';
 import { AuthRequest } from '../middleware/authmiddleware';
@@ -181,6 +185,75 @@ describe('BandApplicationController', () => {
       await flushPromises();
 
       expect(mockNext).toHaveBeenCalledWith(erro);
+    });
+  });
+
+  describe('rejectBandApplication', () => {
+    it('retorna 200 com candidatura recusada', async () => {
+      const aplicacao = makeAplicacao({ status: 'rejeitado' });
+      (bandApplicationService.reject as jest.Mock).mockResolvedValue(aplicacao);
+
+      const req = makeAuthReq({ user: { id: 5 }, params: { id: '1' } });
+      const res = mockRes();
+
+      rejectBandApplication(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Candidatura recusada com sucesso', aplicacao })
+      );
+    });
+
+    it('passa AppError 401 quando usuário não identificado', async () => {
+      const req = makeAuthReq({ user: undefined });
+      const res = mockRes();
+
+      rejectBandApplication(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
+
+    it('passa erro ao next quando service lança exceção', async () => {
+      const erro = new Error('Candidatura não encontrada');
+      (bandApplicationService.reject as jest.Mock).mockRejectedValue(erro);
+
+      const req = makeAuthReq({ user: { id: 5 }, params: { id: '999' } });
+      const res = mockRes();
+
+      rejectBandApplication(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(erro);
+    });
+  });
+
+  describe('getMyApplications', () => {
+    it('retorna candidaturas do artista logado', async () => {
+      const aplicacoes = [makeAplicacao(), makeAplicacao({ id: 2 })];
+      (bandApplicationService.getApplicationsByArtist as jest.Mock).mockResolvedValue(aplicacoes);
+
+      const req = makeAuthReq({ user: { id: 5 } });
+      const res = mockRes();
+
+      getMyApplications(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(aplicacoes);
+    });
+
+    it('passa AppError 401 quando usuário não identificado', async () => {
+      const req = makeAuthReq({ user: undefined });
+      const res = mockRes();
+
+      getMyApplications(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
     });
   });
 });

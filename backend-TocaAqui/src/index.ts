@@ -17,13 +17,15 @@ import AdminRoutes from "./routes/AdminRoutes";
 import EstablishmentRoutes from "./routes/EstablishmentRoutes";
 import NotificationRoutes from "./routes/NotificationRoutes";
 import ContractRoutes from "./routes/ContractRoutes";
-import PaymentRoutes from "./routes/PaymentRoutes";
-import WebhookRoutes from "./routes/WebhookRoutes";
+// STRIPE — previsto para produção, desativado no MVP/TCC
+// import PaymentRoutes from "./routes/PaymentRoutes";
+// import WebhookRoutes from "./routes/WebhookRoutes";
 import ShowRoutes from "./routes/ShowRoutes";
 import IngressoRoutes from "./routes/IngressoRoutes";
 import AvaliacaoShowRoutes from "./routes/AvaliacaoShowRoutes";
 import ComentarioShowRoutes from "./routes/ComentarioShowRoutes";
 import ArtistaPublicoRoutes from "./routes/ArtistaPublicoRoutes";
+import MockPaymentRoutes from "./routes/MockPaymentRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 import './models/associations';
@@ -58,7 +60,8 @@ app.use(helmet({
   },
 }));
 // Stripe webhook precisa do body raw ANTES do express.json()
-app.use('/webhooks', express.raw({ type: 'application/json' }), WebhookRoutes);
+// STRIPE — previsto para produção, desativado no MVP/TCC
+// app.use('/webhooks', express.raw({ type: 'application/json' }), WebhookRoutes);
 
 app.use(express.json());
 app.use(generalLimiter);
@@ -89,12 +92,18 @@ app.use("/admin", AdminRoutes);
 app.use("/estabelecimentos", EstablishmentRoutes);
 app.use("/notificacoes", NotificationRoutes);
 app.use("/contratos", ContractRoutes);
-app.use("/pagamentos", PaymentRoutes);
+// STRIPE — previsto para produção, desativado no MVP/TCC
+// app.use("/pagamentos", PaymentRoutes);
 app.use("/shows", ShowRoutes);
 app.use("/ingressos", IngressoRoutes);
 app.use("/avaliacoes", AvaliacaoShowRoutes);
 app.use("/comentarios", ComentarioShowRoutes);
 app.use("/artistas", ArtistaPublicoRoutes);
+
+// @dev APENAS PARA DESENVOLVIMENTO E TCC — mock do webhook do Stripe
+if (env.NODE_ENV !== 'production') {
+  app.use("/dev", MockPaymentRoutes);
+}
 
 app.get("/", (_req, res) => {
   res.json({ message: "API funcionando!" });

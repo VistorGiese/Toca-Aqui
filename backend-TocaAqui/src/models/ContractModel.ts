@@ -9,6 +9,12 @@ export enum ContractStatus {
   CONCLUIDO = 'concluido',
 }
 
+export enum StatusPagamento {
+  PENDENTE = 'pendente',
+  PAGO = 'pago',
+  FALHOU = 'falhou',
+}
+
 export enum PaymentMethod {
   PIX = 'pix',
   TRANSFERENCIA = 'transferencia',
@@ -69,6 +75,7 @@ export interface ContractAttributes {
   // Controle de edição
   ultima_edicao_por?: 'contratante' | 'contratado';
   versao: number;
+  status_pagamento: StatusPagamento;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -116,6 +123,7 @@ class ContractModel extends Model<ContractAttributes> implements ContractAttribu
   public data_aceite_contratado?: Date;
   public ultima_edicao_por?: 'contratante' | 'contratado';
   public versao!: number;
+  public status_pagamento!: StatusPagamento;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -205,6 +213,11 @@ ContractModel.init(
       allowNull: true,
     },
     versao: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    status_pagamento: {
+      type: DataTypes.ENUM(...Object.values(StatusPagamento)),
+      allowNull: false,
+      defaultValue: StatusPagamento.PENDENTE,
+    },
   },
   {
     sequelize,

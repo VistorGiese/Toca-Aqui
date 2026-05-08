@@ -294,6 +294,51 @@ describe('BandController', () => {
         expect.objectContaining({ statusCode: 401 })
       );
     });
+
+    it('deleta arquivo enviado quando nome já está em uso por outra banda', async () => {
+      const band = makeBand({ id: 1, nome_banda: 'Rock Band' });
+      const outraBanda = makeBand({ id: 99, nome_banda: 'Novo Nome' });
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { nome_banda: 'Novo Nome' },
+        file: { filename: 'upload.jpg', size: 1024, mimetype: 'image/jpeg' } as any,
+      } as any);
+      const res = mockRes();
+
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(band);
+      (BandModel.findOne as jest.Mock).mockResolvedValue(outraBanda);
+
+      updateBand(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(uploadService.deleteFile).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('deleta imagem antiga quando banda já possui imagem e novo arquivo é enviado', async () => {
+      const band = makeBand({ imagem: 'uploads/old.jpg' });
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { descricao: 'Nova descrição' },
+        file: { filename: 'new.jpg', size: 512, mimetype: 'image/jpeg' } as any,
+      } as any);
+      const res = mockRes();
+
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(band);
+      (BandModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      updateBand(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(uploadService.deleteFile).toHaveBeenCalledWith('uploads/old.jpg');
+      expect(band.update).toHaveBeenCalledWith(
+        expect.objectContaining({ imagem: 'uploads/band.jpg' })
+      );
+    });
   });
 
   // ─── deleteBand ───────────────────────────────────────────────────────────

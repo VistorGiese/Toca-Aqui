@@ -31,7 +31,33 @@ jest.mock('../utils/jwt', () => ({
 
 jest.mock('../models/ArtistProfileModel', () => ({
   __esModule: true,
-  default: { findByPk: jest.fn() },
+  default: { findByPk: jest.fn(), findOne: jest.fn() },
+}));
+
+jest.mock('../models/EstablishmentProfileModel', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn() },
+}));
+
+jest.mock('../models/UserModel', () => ({
+  __esModule: true,
+  default: {
+    findByPk: jest.fn(),
+    findOne: jest.fn(),
+  },
+}));
+
+jest.mock('bcryptjs', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
+jest.mock('../models/PreferenciaUsuarioModel', () => ({
+  __esModule: true,
+  default: {
+    upsert: jest.fn(),
+    findOne: jest.fn(),
+  },
 }));
 
 import { Request, Response, NextFunction } from 'express';
@@ -48,11 +74,22 @@ import {
   createArtistProfile,
   uploadArtistPhoto,
   atualizarPerfilArtista,
+  alterarEmail,
+  alterarNome,
+  savePreferencias,
+  atualizarIndisponibilidades,
+  excluirConta,
+  getMinhasPaginas,
+  getPreferencias,
 } from '../controllers/UserController';
 import { authService } from '../services/AuthService';
 import { uploadService } from '../services/UploadService';
 import { verifyToken } from '../utils/jwt';
 import ArtistProfileModel from '../models/ArtistProfileModel';
+import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
+import UserModel from '../models/UserModel';
+import bcrypt from 'bcryptjs';
+import PreferenciaUsuarioModel from '../models/PreferenciaUsuarioModel';
 
 const flushPromises = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -519,6 +556,447 @@ describe('UserController', () => {
 
       // Assert — update chamado com apenas o campo presente
       expect(profile.update).toHaveBeenCalledWith({ nome_artistico: 'Só Nome' });
+    });
+
+    it('atualiza múltiplos campos de uma vez', async () => {
+      const profile = makeProfile();
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '7' },
+        body: { nome_artistico: 'Novo Nome', biografia: 'Nova bio', cache_minimo: 500, cache_maximo: 2000, generos: ['jazz'] },
+      });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(profile);
+
+      atualizarPerfilArtista(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(profile.update).toHaveBeenCalledWith({
+        nome_artistico: 'Novo Nome',
+        biografia: 'Nova bio',
+        cache_minimo: 500,
+        cache_maximo: 2000,
+        generos: ['jazz'],
+      });
+    });
+  });
+
+  // ─── alterarEmail ─────────────────────────────────────────────────────────
+  describe('alterarEmail', () => {
+    const makeUser = (overrides = {}) => ({
+      id: 1,
+      email: 'atual@email.com',
+      senha: 'hash-senha',
+      update: jest.fn().mockResolvedValue(undefined),
+      ...overrides,
+    });
+
+    it('altera email com sucesso', async () => {
+      const user = makeUser();
+      const req = makeReq({ user: { id: 1 }, body: { novo_email: 'novo@email.com', senha: 'Senha123' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(user);
+      (UserModel.findOne as jest.Mock).mockResolvedValue(null);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      alterarEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(user.update).toHaveBeenCalledWith({ email: 'novo@email.com' });
+      expect(res.json).toHaveBeenCalledWith({ message: 'Email alterado com sucesso' });
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined, body: {} });
+      const res = mockRes();
+
+      alterarEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    });
+
+    it('lança 400 quando novo_email ou senha ausentes', async () => {
+      const req = makeReq({ user: { id: 1 }, body: { novo_email: 'novo@email.com' } });
+      const res = mockRes();
+
+      alterarEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+
+    it('lança 404 quando usuário não encontrado no banco', async () => {
+      const req = makeReq({ user: { id: 1 }, body: { novo_email: 'novo@email.com', senha: 'Senha123' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      alterarEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
+    });
+
+    it('lança 401 quando senha incorreta', async () => {
+      const user = makeUser();
+      const req = makeReq({ user: { id: 1 }, body: { novo_email: 'novo@email.com', senha: 'ErradA' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      alterarEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    });
+
+    it('lança 400 quando email já está em uso', async () => {
+      const user = makeUser();
+      const req = makeReq({ user: { id: 1 }, body: { novo_email: 'ocupado@email.com', senha: 'Senha123' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (UserModel.findOne as jest.Mock).mockResolvedValue(makeUser({ id: 2 }));
+
+      alterarEmail(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+  });
+
+  // ─── alterarNome ──────────────────────────────────────────────────────────
+  describe('alterarNome', () => {
+    const makeUser = (overrides = {}) => ({
+      id: 1,
+      nome_completo: 'Nome Antigo',
+      update: jest.fn().mockResolvedValue(undefined),
+      ...overrides,
+    });
+
+    it('altera nome com sucesso', async () => {
+      const user = makeUser();
+      const req = makeReq({ user: { id: 1 }, body: { nome_completo: 'Nome Novo' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(user);
+
+      alterarNome(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(user.update).toHaveBeenCalledWith({ nome_completo: 'Nome Novo' });
+      expect(res.json).toHaveBeenCalledWith({ message: 'Nome alterado com sucesso' });
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined, body: {} });
+      const res = mockRes();
+
+      alterarNome(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    });
+
+    it('lança 400 quando nome_completo ausente', async () => {
+      const req = makeReq({ user: { id: 1 }, body: {} });
+      const res = mockRes();
+
+      alterarNome(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+
+    it('lança 404 quando usuário não encontrado no banco', async () => {
+      const req = makeReq({ user: { id: 1 }, body: { nome_completo: 'Nome Novo' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      alterarNome(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
+    });
+  });
+
+  // ─── savePreferencias ─────────────────────────────────────────────────────
+  describe('savePreferencias', () => {
+    it('cria preferências e retorna 201 quando é a primeira vez', async () => {
+      const preferencias = { usuario_id: 1, generos_favoritos: 'rock', cidade: 'SP' };
+      const req = makeReq({ user: { id: 1 }, body: { generos_favoritos: 'rock', cidade: 'SP' } });
+      const res = mockRes();
+
+      (PreferenciaUsuarioModel.upsert as jest.Mock).mockResolvedValue([preferencias, true]);
+
+      savePreferencias(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Preferências criadas com sucesso' })
+      );
+    });
+
+    it('atualiza preferências e retorna 200 quando já existem', async () => {
+      const preferencias = { usuario_id: 1, generos_favoritos: 'samba' };
+      const req = makeReq({ user: { id: 1 }, body: { generos_favoritos: 'samba', raio_busca_km: 30 } });
+      const res = mockRes();
+
+      (PreferenciaUsuarioModel.upsert as jest.Mock).mockResolvedValue([preferencias, false]);
+
+      savePreferencias(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Preferências atualizadas com sucesso' })
+      );
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined, body: {} });
+      const res = mockRes();
+
+      savePreferencias(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    });
+  });
+
+  // ─── atualizarIndisponibilidades ──────────────────────────────────────────
+  describe('atualizarIndisponibilidades', () => {
+    const makeProfile = (overrides = {}) => ({
+      id: 1,
+      usuario_id: 1,
+      update: jest.fn().mockResolvedValue(undefined),
+      ...overrides,
+    });
+
+    it('atualiza indisponibilidades com sucesso', async () => {
+      const profile = makeProfile();
+      const datas = ['2026-06-01', '2026-06-15'];
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { datas_indisponiveis: datas },
+      });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(profile);
+
+      atualizarIndisponibilidades(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(profile.update).toHaveBeenCalledWith({ datas_indisponiveis: JSON.stringify(datas) });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Indisponibilidades atualizadas', datas_indisponiveis: datas })
+      );
+    });
+
+    it('lança 400 quando datas_indisponiveis não é array', async () => {
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { datas_indisponiveis: '2026-06-01' },
+      });
+      const res = mockRes();
+
+      atualizarIndisponibilidades(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+
+    it('lança 404 quando perfil não encontrado', async () => {
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '999' },
+        body: { datas_indisponiveis: [] },
+      });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      atualizarIndisponibilidades(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
+    });
+
+    it('lança 403 quando perfil pertence a outro usuário', async () => {
+      const profile = makeProfile({ usuario_id: 99 });
+      const req = makeReq({
+        user: { id: 1, role: 'artist' as any },
+        params: { id: '1' },
+        body: { datas_indisponiveis: [] },
+      });
+      const res = mockRes();
+
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue(profile);
+
+      atualizarIndisponibilidades(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
+    });
+  });
+
+  // ─── excluirConta ─────────────────────────────────────────────────────────
+  describe('excluirConta', () => {
+    const makeUser = (overrides = {}) => ({
+      id: 1,
+      senha: 'hash-senha',
+      destroy: jest.fn().mockResolvedValue(undefined),
+      ...overrides,
+    });
+
+    it('exclui conta com sucesso', async () => {
+      const user = makeUser();
+      const req = makeReq({ user: { id: 1 }, body: { senha: 'Senha123' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      excluirConta(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(user.destroy).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ message: 'Conta excluída com sucesso' });
+    });
+
+    it('lança 401 quando senha incorreta', async () => {
+      const user = makeUser();
+      const req = makeReq({ user: { id: 1 }, body: { senha: 'ErradA' } });
+      const res = mockRes();
+
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      excluirConta(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+      expect(user.destroy).not.toHaveBeenCalled();
+    });
+
+    it('lança 400 quando senha ausente', async () => {
+      const req = makeReq({ user: { id: 1 }, body: {} });
+      const res = mockRes();
+
+      excluirConta(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined, body: { senha: 'abc' } });
+      const res = mockRes();
+
+      excluirConta(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    });
+  });
+
+  // ─── getMinhasPaginas ─────────────────────────────────────────────────────
+  describe('getMinhasPaginas', () => {
+    it('retorna ambos os perfis quando existem', async () => {
+      const artistProfile = { id: 2, nome_artistico: 'DJ', foto_perfil: 'foto.jpg' };
+      const estabProfile = { id: 5, nome_estabelecimento: 'Bar', tipo_estabelecimento: 'bar' };
+      const req = makeReq({ user: { id: 1 } });
+      const res = mockRes();
+
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(artistProfile);
+      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue(estabProfile);
+
+      getMinhasPaginas(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          usuario_id: 1,
+          pagina_artista: expect.objectContaining({ id: 2, nome_artistico: 'DJ' }),
+          pagina_estabelecimento: expect.objectContaining({ id: 5 }),
+        })
+      );
+    });
+
+    it('retorna null para perfis não existentes', async () => {
+      const req = makeReq({ user: { id: 1 } });
+      const res = mockRes();
+
+      (ArtistProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      getMinhasPaginas(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ pagina_artista: null, pagina_estabelecimento: null })
+      );
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined });
+      const res = mockRes();
+
+      getMinhasPaginas(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    });
+  });
+
+  // ─── getPreferencias ──────────────────────────────────────────────────────
+  describe('getPreferencias', () => {
+    it('retorna preferências do usuário', async () => {
+      const prefs = { usuario_id: 1, generos_favoritos: 'rock', cidade: 'SP' };
+      const req = makeReq({ user: { id: 1 } });
+      const res = mockRes();
+
+      (PreferenciaUsuarioModel.findOne as jest.Mock).mockResolvedValue(prefs);
+
+      getPreferencias(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ preferencias: prefs })
+      );
+    });
+
+    it('retorna null quando usuário não tem preferências', async () => {
+      const req = makeReq({ user: { id: 1 } });
+      const res = mockRes();
+
+      (PreferenciaUsuarioModel.findOne as jest.Mock).mockResolvedValue(null);
+
+      getPreferencias(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ preferencias: null })
+      );
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined });
+      const res = mockRes();
+
+      getPreferencias(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
     });
   });
 });

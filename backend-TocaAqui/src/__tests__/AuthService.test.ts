@@ -40,6 +40,15 @@ jest.mock('../services/EmailService', () => ({
   sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../models/AddressModel', () => ({
+  __esModule: true,
+  default: { findByPk: jest.fn().mockResolvedValue(null) },
+}));
+
+jest.mock('../services/GeocodingService', () => ({
+  geocodificarEndereco: jest.fn().mockResolvedValue(null),
+}));
+
 import { AuthService } from '../services/AuthService';
 import { AppError } from '../errors/AppError';
 import UserModel from '../models/UserModel';
@@ -314,6 +323,71 @@ describe('AuthService', () => {
     });
   });
 
+  // ─── resendVerificationEmail ──────────────────────────────────────────────
+  describe('resendVerificationEmail', () => {
+    it('retorna silenciosamente quando email não existe', async () => {
+      (UserModel.findOne as jest.Mock).mockResolvedValue(null);
+      const { sendVerificationEmail } = require('../services/EmailService');
+
+      await expect(service.resendVerificationEmail('nao@existe.com')).resolves.toBeUndefined();
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
+    });
+
+    it('retorna silenciosamente quando email já foi verificado', async () => {
+      (UserModel.findOne as jest.Mock).mockResolvedValue(makeUser({ email_verificado: true }));
+      const { sendVerificationEmail } = require('../services/EmailService');
+
+      await expect(service.resendVerificationEmail('teste@email.com')).resolves.toBeUndefined();
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
+    });
+
+    it('envia novo email de verificação quando usuário existe e não verificou', async () => {
+      (UserModel.findOne as jest.Mock).mockResolvedValue(makeUser({ email_verificado: false }));
+      const { sendVerificationEmail } = require('../services/EmailService');
+
+      await service.resendVerificationEmail('teste@email.com');
+
+      expect(redisService.getClient().setex).toHaveBeenCalledWith(
+        expect.stringMatching(/^verify:/),
+        60 * 60 * 24,
+        expect.any(String)
+      );
+      expect(sendVerificationEmail).toHaveBeenCalledWith('teste@email.com', expect.any(String));
+    });
+  });
+
+  // ─── getUserProfile ────────────────────────────────────────────────────────
+  describe('getUserProfile', () => {
+    it('retorna perfil do usuário quando encontrado', async () => {
+      const user = makeUser({ id: 5 });
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(user);
+
+      const result = await service.getUserProfile(5);
+
+      expect(result).toBe(user);
+    });
+
+    it('lança 404 quando usuário não encontrado', async () => {
+      (UserModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.getUserProfile(999)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+  });
+
+  // ─── verifyEmail — usuário não encontrado ──────────────────────────────────
+  describe('verifyEmail — edge cases', () => {
+    it('lança 404 quando token existe mas userId não encontra usuário', async () => {
+      (redisService.getClient().get as jest.Mock).mockResolvedValueOnce('999');
+      (UserModel.findByPk as jest.Mock).mockResolvedValueOnce(null);
+
+      await expect(service.verifyEmail('token-orfao')).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+  });
+
   // ─── createEstablishmentProfile ───────────────────────────────────────────
   describe('createEstablishmentProfile', () => {
     const profileData = {
@@ -327,7 +401,7 @@ describe('AuthService', () => {
 
     it('cria o perfil quando endereço não está em uso', async () => {
       (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValueOnce(null);
-      (EstablishmentProfileModel.create as jest.Mock).mockResolvedValueOnce({ id: 1, ...profileData });
+      (EstablishmentProfileModel.create as jest.Mock).mockResolvedValueOnce({ id: 1, ...profileData, update: jest.fn().mockResolvedValue(undefined) });
 
       const result = await service.createEstablishmentProfile(1, profileData);
 

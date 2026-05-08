@@ -160,6 +160,37 @@ describe('AddressController', () => {
       expect(res.json).toHaveBeenCalledWith(address);
     });
 
+    it('atualiza todos os campos do endereço', async () => {
+      const address = makeAddress();
+      const req = makeReq({
+        params: { id: '1' },
+        body: {
+          rua: 'Rua Nova',
+          numero: '500',
+          bairro: 'Jardim',
+          cidade: 'Campo Mourão',
+          estado: 'PR',
+          cep: '87300-000',
+        },
+      });
+      const res = mockRes();
+
+      (AddressModel.findByPk as jest.Mock).mockResolvedValue(address);
+
+      updateAddress(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(address.update).toHaveBeenCalledWith({
+        rua: 'Rua Nova',
+        numero: '500',
+        bairro: 'Jardim',
+        cidade: 'Campo Mourão',
+        estado: 'PR',
+        cep: '87300-000',
+      });
+      expect(res.json).toHaveBeenCalledWith(address);
+    });
+
     it('passa AppError 404 quando não encontrado', async () => {
       const req = makeReq({ params: { id: '999' }, body: {} });
       const res = mockRes();

@@ -77,6 +77,7 @@ import {
   getContractHistory,
   completeContractHandler,
   avaliarArtista,
+  avaliarEstabelecimento,
 } from '../controllers/ContractController';
 import { contractService } from '../services/ContractService';
 import { createNotification } from '../services/NotificationService';
@@ -448,6 +449,121 @@ describe('ContractController', () => {
 
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({ statusCode: 401 })
+      );
+    });
+  });
+
+  // ─── avaliarEstabelecimento ───────────────────────────────────────────────
+  describe('avaliarEstabelecimento', () => {
+    const makeContratoConcluido = (overrides = {}) =>
+      makeContrato({ status: 'concluido', artista_id: 7, banda_id: null, evento_id: 30, ...overrides });
+
+    it('retorna 201 quando artista individual avalia o estabelecimento', async () => {
+      const contrato = makeContratoConcluido();
+      const avaliacao = { id: 10, nota_local: 5 };
+      const req = makeReq({
+        user: { id: 3 },
+        params: { id: '1' },
+        body: { nota: 5, comentario: 'Lugar ótimo', tags: [] },
+      });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 3 });
+      (AvaliacaoShowModel.findOne as jest.Mock).mockResolvedValue(null);
+      (AvaliacaoShowModel.create as jest.Mock).mockResolvedValue(avaliacao);
+
+      avaliarEstabelecimento(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ avaliacao })
+      );
+    });
+
+    it('lança 401 quando usuário não identificado', async () => {
+      const req = makeReq({ user: undefined, params: { id: '1' }, body: { nota: 4 } });
+      const res = mockRes();
+
+      avaliarEstabelecimento(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 401 })
+      );
+    });
+
+    it('lança 400 quando nota está fora do intervalo 1-5', async () => {
+      const req = makeReq({ user: { id: 3 }, params: { id: '1' }, body: { nota: 0 } });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContratoConcluido());
+
+      avaliarEstabelecimento(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('lança 404 quando contrato não encontrado', async () => {
+      const req = makeReq({ user: { id: 3 }, params: { id: '999' }, body: { nota: 4 } });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      avaliarEstabelecimento(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+
+    it('lança 400 quando contrato não está concluído', async () => {
+      const req = makeReq({ user: { id: 3 }, params: { id: '1' }, body: { nota: 4 } });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContrato({ status: 'aceito', artista_id: 7 }));
+
+      avaliarEstabelecimento(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
+      );
+    });
+
+    it('lança 403 quando usuário não é o contratado', async () => {
+      const req = makeReq({ user: { id: 99 }, params: { id: '1' }, body: { nota: 4 } });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContratoConcluido());
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 3 });
+
+      avaliarEstabelecimento(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 403 })
+      );
+    });
+
+    it('lança 400 quando avaliação duplicada', async () => {
+      const req = makeReq({ user: { id: 3 }, params: { id: '1' }, body: { nota: 4 } });
+      const res = mockRes();
+
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(makeContratoConcluido());
+      (ArtistProfileModel.findByPk as jest.Mock).mockResolvedValue({ usuario_id: 3 });
+      (AvaliacaoShowModel.findOne as jest.Mock).mockResolvedValue({ id: 2 });
+
+      avaliarEstabelecimento(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
       );
     });
   });
