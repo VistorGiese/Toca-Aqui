@@ -189,21 +189,33 @@ export class BandApplicationService {
       }
     }
 
-    // Notificar líderes das bandas rejeitadas
+    // Notificar líderes das bandas rejeitadas e artistas individuais rejeitados
     const rejeitadas = await BandApplicationModel.findAll({
       where: { evento_id: aplicacao.evento_id, id: { [Op.ne]: aplicacao.id }, status: 'rejeitado' },
     });
     for (const rej of rejeitadas) {
-      if (!rej.banda_id) continue;
-      const lider = await BandMemberModel.findOne({ where: { banda_id: rej.banda_id, e_lider: true } });
-      if (lider) {
-        const artista = await ArtistProfileModel.findByPk(lider.perfil_artista_id);
-        const bandaRej = await BandModel.findByPk(rej.banda_id);
-        if (artista && bandaRej) {
+      if (rej.banda_id) {
+        const lider = await BandMemberModel.findOne({ where: { banda_id: rej.banda_id, e_lider: true } });
+        if (lider) {
+          const artista = await ArtistProfileModel.findByPk(lider.perfil_artista_id);
+          const bandaRej = await BandModel.findByPk(rej.banda_id);
+          if (artista && bandaRej) {
+            await createNotification(
+              artista.usuario_id,
+              NotificationType.APLICACAO_REJEITADA,
+              `A candidatura da sua banda "${bandaRej.nome_banda}" ao evento "${evento.titulo_evento}" foi rejeitada.`,
+              'aplicacao',
+              rej.id
+            );
+          }
+        }
+      } else if (rej.artista_id) {
+        const artista = await ArtistProfileModel.findByPk(rej.artista_id);
+        if (artista) {
           await createNotification(
             artista.usuario_id,
             NotificationType.APLICACAO_REJEITADA,
-            `A candidatura da sua banda "${bandaRej.nome_banda}" ao evento "${evento.titulo_evento}" foi rejeitada.`,
+            `Sua candidatura ao evento "${evento.titulo_evento}" foi rejeitada.`,
             'aplicacao',
             rej.id
           );
@@ -286,6 +298,7 @@ export class BandApplicationService {
       genero: Array.isArray(a.ArtistProfile?.generos) ? a.ArtistProfile.generos[0] : null,
       cache_minimo: a.ArtistProfile?.cache_minimo ?? null,
       cache_maximo: a.ArtistProfile?.cache_maximo ?? null,
+      valor_proposto: a.valor_proposto ?? null,
     }));
 
     const closed = evento.status === 'aceito';
