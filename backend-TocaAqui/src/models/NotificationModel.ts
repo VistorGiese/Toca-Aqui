@@ -13,6 +13,7 @@ export enum NotificationType {
   CONTRATO_CANCELADO   = 'contrato_cancelado',
   PAGAMENTO_PENDENTE   = 'pagamento_pendente',
   PAGAMENTO_RECEBIDO   = 'pagamento_recebido',
+  PAGAMENTO_FALHOU     = 'pagamento_falhou',
 }
 
 export interface NotificationAttributes {

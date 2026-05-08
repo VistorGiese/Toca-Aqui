@@ -7,6 +7,7 @@ import { createNotification } from './NotificationService';
 import { NotificationType } from '../models/NotificationModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import BandMemberModel from '../models/BandMemberModel';
+import ArtistProfileModel from '../models/ArtistProfileModel';
 import redisService from '../config/redis';
 
 const markPastEventsAsRealizado = async () => {
@@ -102,13 +103,24 @@ const sendPaymentReminders = async () => {
       // Notificar estabelecimento
       const estab = await EstablishmentProfileModel.findByPk(contrato.perfil_estabelecimento_id);
       if (estab) {
-        await createNotification(
-          estab.usuario_id,
-          NotificationType.PAGAMENTO_PENDENTE,
-          msg,
-          'pagamento',
-          payment.id!
-        );
+        await createNotification(estab.usuario_id, NotificationType.PAGAMENTO_PENDENTE, msg, 'pagamento', payment.id!);
+      }
+
+      // Notificar contratado (artista individual ou líder de banda)
+      if (contrato.artista_id) {
+        const artista = await ArtistProfileModel.findByPk(contrato.artista_id);
+        if (artista) {
+          await createNotification(artista.usuario_id, NotificationType.PAGAMENTO_PENDENTE, msg, 'pagamento', payment.id!);
+        }
+      } else if (contrato.banda_id) {
+        const lider = await BandMemberModel.findOne({
+          where: { banda_id: contrato.banda_id, e_lider: true },
+          include: [{ association: 'ArtistProfile', attributes: ['usuario_id'] }],
+        });
+        const liderUserId = (lider as any)?.ArtistProfile?.usuario_id;
+        if (liderUserId) {
+          await createNotification(liderUserId, NotificationType.PAGAMENTO_PENDENTE, msg, 'pagamento', payment.id!);
+        }
       }
     }
   } catch (error) {

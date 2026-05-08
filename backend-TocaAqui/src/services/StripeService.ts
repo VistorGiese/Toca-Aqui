@@ -186,6 +186,12 @@ export class StripeService {
     await paymentService.updateStatus(payment.id!, PaymentStatus.FALHOU, {
       error: paymentIntent.last_payment_error?.message || 'Pagamento falhou',
     });
+
+    const contrato = await ContractModel.findByPk(payment.contrato_id);
+    if (!contrato) return;
+
+    const msg = `Falha no pagamento de R$ ${Number(payment.valor).toFixed(2)} (${payment.tipo}). Verifique os dados de pagamento e tente novamente.`;
+    await this.notifyBothParties(contrato, NotificationType.PAGAMENTO_FALHOU, msg);
   }
 
   private async handleRefund(charge: any): Promise<void> {
