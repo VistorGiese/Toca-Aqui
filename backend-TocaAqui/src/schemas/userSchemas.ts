@@ -23,8 +23,15 @@ export const createEstablishmentProfileSchema = z.object({
   generos_musicais: z.string().min(1, 'Gêneros musicais são obrigatórios').trim(),
   horario_abertura: z.string().min(1, 'Horário de abertura é obrigatório'),
   horario_fechamento: z.string().min(1, 'Horário de fechamento é obrigatório'),
-  endereco_id: z.number().int().positive().optional(),
   telefone_contato: z.string().min(8, 'Telefone deve ter ao menos 8 caracteres').trim(),
+  endereco: z.object({
+    rua: z.string().min(1, 'Rua é obrigatória').trim(),
+    numero: z.string().min(1, 'Número é obrigatório').trim(),
+    bairro: z.string().min(1, 'Bairro é obrigatório').trim(),
+    cidade: z.string().min(1, 'Cidade é obrigatória').trim(),
+    estado: z.string().length(2, 'Estado deve ter 2 caracteres').trim().toUpperCase(),
+    cep: z.string().min(8, 'CEP inválido').trim(),
+  }),
 });
 
 export const createArtistProfileSchema = z.object({

@@ -11,6 +11,7 @@ import { sendPasswordResetEmail, sendVerificationEmail } from './EmailService';
 import { AppError } from '../errors/AppError';
 import { geocodificarEndereco } from './GeocodingService';
 import AddressModel from '../models/AddressModel';
+import sequelize from '../config/database';
 
 export interface RegisterParams {
   nome_completo: string;
@@ -62,7 +63,8 @@ export class AuthService {
     const isValid = await bcrypt.compare(senha, user.senha);
     if (!isValid) throw new AppError('Credenciais inválidas', 401);
 
-    if (!user.email_verificado) throw new AppError('Email não verificado. Verifique sua caixa de entrada.', 403);
+    // DEV/TCC: verificação de email desativada
+    // if (!user.email_verificado) throw new AppError('Email não verificado. Verifique sua caixa de entrada.', 403);
 
     const token = generateToken({ id: user.id, email: user.email, role: user.role });
     return { token, user: { id: user.id!, nome_completo: user.nome_completo, email: user.email, role: user.role } };
@@ -192,44 +194,41 @@ export class AuthService {
     generos_musicais: string;
     horario_abertura: string;
     horario_fechamento: string;
-    endereco_id?: number;
     telefone_contato: string;
+    endereco: {
+      rua: string;
+      numero: string;
+      bairro: string;
+      cidade: string;
+      estado: string;
+      cep: string;
+    };
   }) {
-    if (data.endereco_id) {
-      const existing = await EstablishmentProfileModel.findOne({
-        where: { endereco_id: data.endereco_id, esta_ativo: true },
-      });
-      if (existing) {
-        throw new AppError(
-          'Este endereço já está sendo utilizado por outro estabelecimento ativo',
-          400,
-          { estabelecimento_existente: { id: existing.id, nome: existing.nome_estabelecimento } }
-        );
-      }
-    }
+    const { endereco, ...rest } = data;
 
-    const { endereco_id, ...rest } = data;
-    const profile = await EstablishmentProfileModel.create({
-      usuario_id: userId,
-      ...rest,
-      tipo_estabelecimento: (data.tipo_estabelecimento as any) || 'bar',
-      ...(endereco_id ? { endereco_id } : {}),
+    const profile = await sequelize.transaction(async (t) => {
+      const novoEndereco = await AddressModel.create(endereco, { transaction: t });
+
+      const novoProfile = await EstablishmentProfileModel.create({
+        usuario_id: userId,
+        ...rest,
+        tipo_estabelecimento: (data.tipo_estabelecimento as any) || 'bar',
+        endereco_id: novoEndereco.id,
+      }, { transaction: t });
+
+      return novoProfile;
     });
 
-    if (endereco_id) {
-      const endereco = await AddressModel.findByPk(endereco_id);
-      if (endereco) {
-        const coords = await geocodificarEndereco(
-          endereco.rua,
-          endereco.numero,
-          endereco.cidade,
-          endereco.estado,
-          endereco.cep
-        );
-        if (coords) {
-          await profile.update({ latitude: coords.latitude, longitude: coords.longitude });
-        }
-      }
+    // Geocoding fora da transação — falha não reverte o cadastro
+    const coords = await geocodificarEndereco(
+      endereco.rua,
+      endereco.numero,
+      endereco.cidade,
+      endereco.estado,
+      endereco.cep
+    );
+    if (coords) {
+      await profile.update({ latitude: coords.latitude, longitude: coords.longitude });
     }
 
     return profile;

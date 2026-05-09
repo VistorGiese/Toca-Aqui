@@ -106,7 +106,8 @@ ArtistProfileModel.init(
     },
     tipo_atuacao: {
       type: DataTypes.STRING(50),
-      allowNull: true,
+      allowNull: false,
+      defaultValue: 'solo',
     },
     cache_minimo: {
       type: DataTypes.DECIMAL(10, 2),

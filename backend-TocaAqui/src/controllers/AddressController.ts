@@ -5,12 +5,6 @@ import AddressModel from "../models/AddressModel";
 
 export const createAddress = asyncHandler(async (req: Request, res: Response) => {
   const { rua, numero, bairro, cidade, estado, cep } = req.body;
-  if (rua && numero) {
-    const existingAddressByRuaNumero = await AddressModel.findOne({ where: { rua, numero } });
-    if (existingAddressByRuaNumero) {
-      throw new AppError("Já existe um endereço cadastrado com esta rua e número.", 400);
-    }
-  }
   const address = await AddressModel.create({
     rua,
     numero,

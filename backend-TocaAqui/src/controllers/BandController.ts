@@ -6,7 +6,7 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 import sequelize from "../config/database";
-import BandModel from "../models/BandModel";
+import BandModel, { BandAttributes } from "../models/BandModel";
 import { uploadService } from "../services/UploadService";
 import redisService from "../config/redis";
 import { CACHE_TTL, CACHE_KEYS } from "../config/cache";
@@ -175,12 +175,22 @@ export const updateBand = asyncHandler(async (req: AuthRequest, res: Response) =
     uploadService.deleteFile(band.imagem);
   }
 
-  const { nome_banda, nome, descricao, generos_musicais, esta_ativo } = req.body;
-  const updateData: Partial<{ nome_banda: string; descricao: string; generos_musicais: any; esta_ativo: boolean; imagem: string }> = {};
+  const { nome_banda, nome, descricao, generos_musicais, esta_ativo, cache_minimo, cache_maximo, cidade, estado, telefone_contato, links_sociais, press_kit, tem_estrutura_som, estrutura_som, esta_disponivel } = req.body;
+  const updateData: Partial<BandAttributes> = {};
   if (novoNome !== undefined) updateData.nome_banda = novoNome;
   if (descricao !== undefined) updateData.descricao = descricao;
   if (generos_musicais !== undefined) updateData.generos_musicais = generos_musicais;
   if (esta_ativo !== undefined) updateData.esta_ativo = esta_ativo;
+  if (cache_minimo !== undefined) updateData.cache_minimo = cache_minimo;
+  if (cache_maximo !== undefined) updateData.cache_maximo = cache_maximo;
+  if (cidade !== undefined) updateData.cidade = cidade;
+  if (estado !== undefined) updateData.estado = estado;
+  if (telefone_contato !== undefined) updateData.telefone_contato = telefone_contato;
+  if (links_sociais !== undefined) updateData.links_sociais = links_sociais;
+  if (press_kit !== undefined) updateData.press_kit = press_kit;
+  if (tem_estrutura_som !== undefined) updateData.tem_estrutura_som = tem_estrutura_som;
+  if (estrutura_som !== undefined) updateData.estrutura_som = estrutura_som;
+  if (esta_disponivel !== undefined) updateData.esta_disponivel = esta_disponivel;
   if (req.file) {
     updateData.imagem = uploadService.getRelativePath(req.file);
   }
