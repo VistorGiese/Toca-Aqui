@@ -12,14 +12,19 @@ import redisService from '../config/redis';
 
 const markPastEventsAsRealizado = async () => {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM
 
     const [updated] = await BookingModel.update(
       { status: BookingStatus.REALIZADO },
       {
         where: {
-          data_show: { [Op.lt]: today },
           status: { [Op.in]: [BookingStatus.PENDENTE, BookingStatus.ACEITO] },
+          [Op.or]: [
+            { data_show: { [Op.lt]: todayStr } },
+            { data_show: todayStr, horario_fim: { [Op.lte]: currentTime } },
+          ],
         },
       }
     );
@@ -41,12 +46,17 @@ const markPastEventsAsRealizado = async () => {
  */
 const completeFinishedContracts = async () => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
 
     const contratosAceitos = await ContractModel.findAll({
       where: {
         status: ContractStatus.ACEITO,
-        data_evento: { [Op.lt]: today },
+        [Op.or]: [
+          { data_evento: { [Op.lt]: todayStr } },
+          { data_evento: todayStr, horario_fim: { [Op.lte]: currentTime } },
+        ],
       },
       include: [{
         association: 'Payments',
@@ -129,13 +139,13 @@ const sendPaymentReminders = async () => {
 };
 
 export const initCronJobs = () => {
-  // Roda todo dia às 00:05 — marca eventos passados como realizados
-  cron.schedule('5 0 * * *', markPastEventsAsRealizado, {
+  // Roda a cada 15 minutos — marca eventos encerrados como realizados
+  cron.schedule('*/15 * * * *', markPastEventsAsRealizado, {
     timezone: 'America/Sao_Paulo',
   });
 
-  // Roda todo dia às 01:00 — conclui contratos finalizados
-  cron.schedule('0 1 * * *', completeFinishedContracts, {
+  // Roda a cada 15 minutos — conclui contratos de eventos encerrados
+  cron.schedule('*/15 * * * *', completeFinishedContracts, {
     timezone: 'America/Sao_Paulo',
   });
 
