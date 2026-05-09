@@ -25,7 +25,7 @@ router.get("/minhas", getMyApplications);
 router.get("/:evento_id", getBandApplicationsForEvent);
 
 const checkEventOwnership = checkOwnership(async (req: AuthRequest) => {
-	const application = await BandApplicationModel.findByPk(req.params.id as string);
+	const application = await BandApplicationModel.findByPk(req.params.candidaturaId as string);
 	if (!application) return undefined;
 
 	const booking = await BookingModel.findByPk(application.evento_id);
@@ -37,7 +37,7 @@ const checkEventOwnership = checkOwnership(async (req: AuthRequest) => {
 	return establishment.usuario_id;
 });
 
-router.put("/:id/aceitar", checkEventOwnership, acceptBandApplication);
-router.put("/:id/recusar", checkEventOwnership, rejectBandApplication);
+router.put("/:candidaturaId/aceitar", checkEventOwnership, acceptBandApplication);
+router.put("/:candidaturaId/recusar", checkEventOwnership, rejectBandApplication);
 
 export default router;

@@ -28,9 +28,23 @@ class IngressoService {
       throw notFound('Show não encontrado ou não está disponível para venda');
     }
 
-    const hoje = new Date();
-    if (new Date(show.data_show) < hoje) {
+    const agora = new Date();
+    const dataShow = new Date(show.data_show);
+    dataShow.setHours(0, 0, 0, 0);
+    const hoje = new Date(agora);
+    hoje.setHours(0, 0, 0, 0);
+
+    if (dataShow < hoje) {
       throw badRequest('Este show já aconteceu');
+    }
+
+    if (dataShow.getTime() === hoje.getTime()) {
+      const [horas, minutos] = (show.horario_inicio as string).split(':').map(Number);
+      const inicioShow = new Date(agora);
+      inicioShow.setHours(horas, minutos, 0, 0);
+      if (agora >= inicioShow) {
+        throw badRequest('Este show já começou');
+      }
     }
 
     if (show.capacidade_maxima && show.ingressos_vendidos >= show.capacidade_maxima) {

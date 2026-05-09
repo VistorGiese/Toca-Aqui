@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createBooking,
   getBookings,
+  getMeusAgendamentos,
   getBookingById,
   updateBooking,
   deleteBooking,
@@ -26,6 +27,8 @@ const router = Router();
 router.get("/proximidade", getByProximidade);
 
 router.post("/", authMiddleware, validate(createBookingSchema), createBooking);
+
+router.get("/meus", authMiddleware, getMeusAgendamentos);
 
 router.get("/", authMiddleware, getBookings);
 

@@ -14,21 +14,19 @@ import UserModel from '../models/UserModel';
 
 export const createBand = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
-  const { nome_banda, descricao, generos_musicais, perfil_artista_id } = req.body;
+  const {
+    nome_banda, descricao, imagem, generos_musicais, perfil_artista_id,
+    cache_minimo, cache_maximo, cidade, estado, telefone_contato,
+    links_sociais, press_kit, tem_estrutura_som, estrutura_som,
+    esta_disponivel, datas_indisponiveis,
+    membros = [],
+  } = req.body;
 
   if (!userId) throw new AppError('Usuário não identificado', 401);
 
-  if (!nome_banda || !perfil_artista_id) {
-    throw new AppError('Nome da banda e perfil de artista são obrigatórios', 400);
-  }
-
   const artistProfile = await ArtistProfileModel.findOne({
-    where: {
-      id: perfil_artista_id,
-      usuario_id: userId,
-    },
+    where: { id: perfil_artista_id, usuario_id: userId },
   });
-
   if (!artistProfile) {
     throw new AppError('Perfil de artista não encontrado ou não pertence ao usuário', 404);
   }
@@ -36,10 +34,25 @@ export const createBand = asyncHandler(async (req: AuthRequest, res: Response) =
   const band = await BandModel.create({
     nome_banda,
     descricao,
+    imagem,
     generos_musicais: generos_musicais || [],
     esta_ativo: true,
+    cache_minimo: cache_minimo ?? null,
+    cache_maximo: cache_maximo ?? null,
+    cidade: cidade ?? null,
+    estado: estado ?? null,
+    telefone_contato: telefone_contato ?? null,
+    links_sociais: links_sociais || [],
+    press_kit: press_kit || [],
+    tem_estrutura_som: tem_estrutura_som ?? false,
+    estrutura_som: estrutura_som || [],
+    esta_disponivel: esta_disponivel ?? true,
+    datas_indisponiveis: datas_indisponiveis || [],
   });
 
+  await band.reload();
+
+  // Adicionar criador como líder aprovado
   await BandMemberModel.create({
     banda_id: band.id,
     perfil_artista_id,
@@ -49,14 +62,47 @@ export const createBand = asyncHandler(async (req: AuthRequest, res: Response) =
     data_entrada: new Date(),
   });
 
+  // Convidar membros iniciais (máx 9 além do líder)
+  const membrosValidos: Array<{ perfil_artista_id: number; funcao?: string }> = membros.slice(0, 9);
+  const convites = await Promise.allSettled(
+    membrosValidos
+      .filter((m: { perfil_artista_id: number }) => m.perfil_artista_id !== perfil_artista_id)
+      .map((m: { perfil_artista_id: number; funcao?: string }) =>
+        BandMemberModel.create({
+          banda_id: band.id,
+          perfil_artista_id: m.perfil_artista_id,
+          funcao: m.funcao || 'Membro',
+          e_lider: false,
+          status: 'pending',
+        })
+      )
+  );
+
+  const convitesCriados = convites.filter(r => r.status === 'fulfilled').length;
+
   res.status(201).json({
     message: 'Banda criada com sucesso',
+    convites_enviados: convitesCriados,
     band: {
       id: band.id,
       nome_banda: band.nome_banda,
       descricao: band.descricao,
+      imagem: band.imagem,
       generos_musicais: band.generos_musicais,
       esta_ativo: band.esta_ativo,
+      cache_minimo: band.cache_minimo,
+      cache_maximo: band.cache_maximo,
+      cidade: band.cidade,
+      estado: band.estado,
+      telefone_contato: band.telefone_contato,
+      links_sociais: band.links_sociais,
+      press_kit: band.press_kit,
+      tem_estrutura_som: band.tem_estrutura_som,
+      estrutura_som: band.estrutura_som,
+      nota_media: band.nota_media,
+      shows_realizados: band.shows_realizados,
+      esta_disponivel: band.esta_disponivel,
+      datas_indisponiveis: band.datas_indisponiveis,
     },
   });
 });
@@ -65,7 +111,12 @@ export const getBandDetails = asyncHandler(async (req: AuthRequest, res: Respons
   const { id } = req.params;
 
   const band = await BandModel.findByPk(id as string, {
-    attributes: ['id', 'nome_banda', 'descricao', 'generos_musicais', 'esta_ativo'],
+    attributes: [
+      'id', 'nome_banda', 'descricao', 'imagem', 'generos_musicais', 'esta_ativo',
+      'cache_minimo', 'cache_maximo', 'cidade', 'estado', 'telefone_contato',
+      'links_sociais', 'press_kit', 'tem_estrutura_som', 'estrutura_som',
+      'nota_media', 'shows_realizados', 'esta_disponivel',
+    ],
     include: [
       {
         model: BandMemberModel,
@@ -97,8 +148,21 @@ export const getBandDetails = asyncHandler(async (req: AuthRequest, res: Respons
     id: band.id,
     nome_banda: band.nome_banda,
     descricao: band.descricao,
+    imagem: band.imagem,
     generos_musicais: band.generos_musicais,
     esta_ativo: band.esta_ativo,
+    cache_minimo: band.cache_minimo,
+    cache_maximo: band.cache_maximo,
+    cidade: band.cidade,
+    estado: band.estado,
+    telefone_contato: band.telefone_contato,
+    links_sociais: band.links_sociais,
+    press_kit: band.press_kit,
+    tem_estrutura_som: band.tem_estrutura_som,
+    estrutura_som: band.estrutura_som,
+    nota_media: band.nota_media,
+    shows_realizados: band.shows_realizados,
+    esta_disponivel: band.esta_disponivel,
     members: (band as any).Members?.map((member: any) => ({
       id: member.id,
       funcao: member.funcao,
@@ -250,7 +314,10 @@ export const getUserBands = asyncHandler(async (req: AuthRequest, res: Response)
           {
             model: BandModel,
             as: 'Band',
-            attributes: ['id', 'nome_banda', 'descricao', 'generos_musicais'],
+            attributes: [
+              'id', 'nome_banda', 'descricao', 'imagem', 'generos_musicais',
+              'cidade', 'estado', 'cache_minimo', 'cache_maximo', 'esta_disponivel',
+            ],
           },
         ],
       },
@@ -262,7 +329,13 @@ export const getUserBands = asyncHandler(async (req: AuthRequest, res: Response)
       id: membership.Band.id,
       nome_banda: membership.Band.nome_banda,
       descricao: membership.Band.descricao,
+      imagem: membership.Band.imagem,
       generos_musicais: membership.Band.generos_musicais,
+      cidade: membership.Band.cidade,
+      estado: membership.Band.estado,
+      cache_minimo: membership.Band.cache_minimo,
+      cache_maximo: membership.Band.cache_maximo,
+      esta_disponivel: membership.Band.esta_disponivel,
       funcao: membership.funcao,
       e_lider: membership.e_lider,
       data_entrada: membership.data_entrada,

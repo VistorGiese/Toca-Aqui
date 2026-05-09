@@ -53,17 +53,24 @@ export class ContractService {
     }
 
     let nomeContratado = 'Artista';
+    let telefoneContratado: string | undefined;
+    let generoContratado: string | undefined;
     let contratadoId: { banda_id?: number; artista_id?: number } = {};
 
     if (aplicacao.banda_id) {
       const banda = await BandModel.findByPk(aplicacao.banda_id);
       if (!banda) throw new AppError('Banda não encontrada', 404);
       nomeContratado = banda.nome_banda ?? 'Artista';
+      telefoneContratado = banda.telefone_contato ?? undefined;
+      const generos: string[] = Array.isArray(banda.generos_musicais) ? banda.generos_musicais : [];
+      generoContratado = generos[0] ?? undefined;
       contratadoId = { banda_id: aplicacao.banda_id };
     } else if (aplicacao.artista_id) {
       const artista = await ArtistProfileModel.findByPk(aplicacao.artista_id);
       if (!artista) throw new AppError('Artista não encontrado', 404);
       nomeContratado = artista.nome_artistico;
+      const generos: any[] = Array.isArray(artista.generos) ? artista.generos : [];
+      generoContratado = generos[0] ?? undefined;
       contratadoId = { artista_id: aplicacao.artista_id };
     }
 
@@ -91,13 +98,13 @@ export class ContractService {
       telefone_contratante: estabelecimento.telefone_contato,
       // Snapshot contratado
       nome_contratado: nomeContratado,
-      telefone_contratado: undefined,
+      telefone_contratado: telefoneContratado,
       // Evento
       data_evento: evento.data_show,
       horario_inicio: evento.horario_inicio,
       horario_fim: evento.horario_fim,
       duracao_minutos: duracao,
-      genero_musical: estabelecimento.generos_musicais?.split(',')[0].trim() ?? null,
+      genero_musical: generoContratado ?? estabelecimento.generos_musicais?.split(',')[0].trim() ?? null,
       local_evento: `${estabelecimento.nome_estabelecimento} - ${enderecoStr}`,
       // Cachê — semeado a partir do valor proposto pelo artista
       cache_total: aplicacao.valor_proposto ?? 0,

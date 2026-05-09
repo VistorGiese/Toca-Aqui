@@ -14,20 +14,19 @@ import { AuthRequest } from '../middleware/authmiddleware';
 export const createBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, generos_musicais, genero_musical, esta_publico, preco_ingresso_inteira, preco_ingresso_meia, capacidade_maxima, classificacao_etaria } = req.body;
+  const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, generos_musicais, genero_musical, esta_publico, preco_ingresso_inteira, preco_ingresso_meia, capacidade_maxima, classificacao_etaria, perfil_estabelecimento_id } = req.body;
 
-  // Sempre derivar o estabelecimento do token — nunca confiar no body
-  let perfil = await EstablishmentProfileModel.findOne({ where: { usuario_id: req.user.id } });
+  // Validar que o usuário logado é dono ou membro do estabelecimento informado
+  const perfil = await EstablishmentProfileModel.findByPk(perfil_estabelecimento_id);
+  if (!perfil) throw new AppError('Estabelecimento não encontrado', 404);
 
-  if (!perfil) {
-    const membro = await EstablishmentMemberModel.findOne({ where: { usuario_id: req.user.id } });
-    if (membro) {
-      perfil = await EstablishmentProfileModel.findByPk(membro.estabelecimento_id);
-    }
+  const isDono = perfil.usuario_id === req.user.id;
+  if (!isDono) {
+    const membro = await EstablishmentMemberModel.findOne({
+      where: { estabelecimento_id: perfil_estabelecimento_id, usuario_id: req.user.id },
+    });
+    if (!membro) throw new AppError('Acesso negado: este estabelecimento não pertence ao usuário logado', 403);
   }
-
-  if (!perfil) throw new AppError('Perfil de estabelecimento não encontrado para este usuário', 403);
-  const perfil_estabelecimento_id = perfil.id;
 
   const conflito = await BookingModel.findOne({
     where: {
@@ -193,6 +192,63 @@ export const deleteBooking = asyncHandler(async (req: AuthRequest, res: Response
   await redisService.invalidatePattern('agendamentos:*');
 
   res.json({ message: "Agendamento removido com sucesso" });
+});
+
+export const getMeusAgendamentos = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
+  // Busca todos os estabelecimentos onde o usuário é dono ou membro
+  const perfilDono = await EstablishmentProfileModel.findAll({
+    where: { usuario_id: req.user.id },
+    attributes: ['id'],
+  });
+
+  const membroEm = await EstablishmentMemberModel.findAll({
+    where: { usuario_id: req.user.id },
+    attributes: ['estabelecimento_id'],
+  });
+
+  const ids = [
+    ...perfilDono.map((p) => p.id),
+    ...membroEm.map((m) => m.estabelecimento_id),
+  ];
+
+  if (ids.length === 0) throw new AppError('Nenhum estabelecimento encontrado para este usuário', 403);
+
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const offset = (page - 1) * limit;
+
+  const { status } = req.query as Record<string, string>;
+  const where: any = { perfil_estabelecimento_id: { [Op.in]: ids } };
+  if (status) where.status = status;
+
+  const { count, rows } = await BookingModel.findAndCountAll({
+    where,
+    include: [{
+      model: EstablishmentProfileModel,
+      as: 'EstablishmentProfile',
+      attributes: ['id', 'nome_estabelecimento'],
+    }],
+    order: [['data_show', 'DESC']],
+    limit,
+    offset,
+  });
+
+  const mappedRows = rows.map((row: any) => ({
+    ...row.toJSON(),
+    nome_estabelecimento: row.EstablishmentProfile?.nome_estabelecimento ?? null,
+  }));
+
+  res.json({
+    data: mappedRows,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    },
+  });
 });
 
 export const getByProximidade = asyncHandler(async (req: Request, res: Response) => {

@@ -75,7 +75,7 @@ export interface ContractAttributes {
   // Controle de edição
   ultima_edicao_por?: 'contratante' | 'contratado';
   versao: number;
-  status_pagamento: StatusPagamento;
+  status_pagamento?: StatusPagamento;
   created_at?: Date;
   updated_at?: Date;
 }
