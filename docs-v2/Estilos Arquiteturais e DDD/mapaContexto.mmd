@@ -1,0 +1,51 @@
+%%{init: {"theme": "default"}}%%
+graph TD
+    subgraph CORE["Core Domain"]
+        ES["Event Scheduling Context\n(Agendamento, BandApplication)"]
+        CT["Contract Context\n(Contrato, ContractHistory)"]
+        PR["Profile Context\n(PerfilArtista, PerfilEstabelecimento,\nEstablishmentMember)"]
+        BD["Band Context\n(Banda, BandMember)"]
+        TK["Ticketing Context\n(Ingresso)"]
+    end
+
+    subgraph SUPPORT["Supporting Domain"]
+        UM["User Management Context\n(Usuario, PreferenciaUsuario)"]
+        AD["Address Context\n(Endereco)"]
+    end
+
+    subgraph GENERIC["Generic Domain"]
+        SC["Social Context\n(Avaliacao, Comentario, Favorito,\nSeguidorArtista, Notificacao)"]
+        PM["Payment Context\n(Payment via Stripe)\n[planejado]"]
+    end
+
+    subgraph EXTERNAL["Sistemas Externos"]
+        GMAIL["Gmail SMTP\n(e-mail transacional)"]
+        STRIPE["Stripe\n(pagamentos) [planejado]"]
+    end
+
+    %% Upstream/Downstream
+    UM -->|"upstream: auth JWT"| PR
+    UM -->|"upstream: auth JWT"| ES
+    UM -->|"upstream: auth JWT"| SC
+    UM -->|"upstream: auth JWT"| TK
+
+    AD -->|"fornece endereços"| PR
+
+    PR -->|"perfis de artista e banda"| BD
+    PR -->|"perfis de artista/estabelecimento"| ES
+    PR -->|"perfis"| CT
+
+    BD -->|"entidade Banda"| ES
+    BD -->|"entidade Banda"| CT
+
+    ES -->|"aceite aciona geração"| CT
+    ES -->|"agendamentos confirmados"| TK
+    ES -->|"eventos"| SC
+
+    CT -->|"contrato para pagamento [planejado]"| PM
+    TK -->|"ingresso para pagamento [planejado]"| PM
+
+    SC -->|"pub/sub Redis"| SC
+
+    PM -->|"HTTPS/Webhooks"| STRIPE
+    UM -->|"SMTP"| GMAIL

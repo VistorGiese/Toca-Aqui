@@ -1,0 +1,37 @@
+%% C4 Model - Level 2: Container Diagram
+
+C4Container
+    title Sistema "Toca Aqui" - Contêineres
+
+    Person(artista, "Artista / Banda", "Gerencia perfil, candidaturas e contratos.")
+    Person(estabelecimento, "Dono do Estabelecimento", "Publica vagas, seleciona artistas, emite contratos.")
+    Person(usuario, "Usuário Comum", "Descobre shows, compra ingressos, avalia.")
+
+    System_Boundary(tocaAqui, "Toca Aqui") {
+
+        Container(appMobile, "App Mobile", "React Native + Expo + TypeScript", "Interface usada por artistas, estabelecimentos e usuários comuns. Três navegadores raiz: UserNavigator, ArtistNavigator, EstablishmentNavigator.")
+
+        Container(nginx, "Nginx", "nginx:1.25-alpine", "Reverse proxy. Ponto único de entrada HTTP. Encaminha requisições para o backend.")
+
+        Container(api, "Backend API", "Node.js + Express + TypeScript + Sequelize", "Monolito modular. Contém todos os domínios: auth, perfis, eventos, candidaturas, contratos, ingressos, social, notificações.")
+
+        ContainerDb(mysql, "MySQL", "mysql:8.0", "Banco de dados relacional principal. Armazena todos os dados do sistema.")
+
+        Container(redis, "Redis", "redis:7-alpine", "Usado para: Pub/Sub de notificações em tempo real e rate limiting por IP.")
+
+    }
+
+    System_Ext(gmail, "Gmail SMTP", "Envio de e-mails transacionais.")
+    System_Ext(stripe, "Stripe", "Pagamentos. [planejado]")
+
+    Rel(artista, appMobile, "Usa")
+    Rel(estabelecimento, appMobile, "Usa")
+    Rel(usuario, appMobile, "Usa")
+
+    Rel(appMobile, nginx, "Requisições HTTP/JSON", "HTTP")
+    Rel(nginx, api, "Encaminha requisições", "HTTP")
+
+    Rel(api, mysql, "Lê e escreve dados", "Sequelize / TCP")
+    Rel(api, redis, "Pub/Sub de notificações e rate limiting", "Redis Protocol")
+    Rel(api, gmail, "Envia e-mails", "SMTP/TLS")
+    Rel(api, stripe, "Processa pagamentos [planejado]", "HTTPS")
