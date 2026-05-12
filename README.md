@@ -256,18 +256,6 @@ toca-aqui/
 │   ├── Dockerfile
 │   └── package.json
 │
-├── 💬 social-service/                  # Microsserviço Social
-│   ├── src/
-│   │   ├── modules/
-│   │   │   ├── comments/               # Comentários
-│   │   │   ├── reviews/                # Avaliações bidirecionais
-│   │   │   └── favorites/              # Favoritos
-│   │   ├── database/
-│   │   │   └── models/                 # Models do Social DB
-│   │   └── app.ts
-│   ├── Dockerfile
-│   └── package.json
-│
 ├── 🔀 nginx/
 │   └── nginx.conf                      # Gateway, roteamento e rate limit
 │
