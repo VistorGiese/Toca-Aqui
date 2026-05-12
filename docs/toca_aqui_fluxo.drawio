@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- ===== TÍTULO ===== -->
+    <mxCell id="title" value="Toca Aqui — Fluxo End-to-End (Todos os Atores)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#1a1a2e;" vertex="1" parent="1">
+      <mxGeometry x="400" y="20" width="860" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- ===== SWIM LANES ===== -->
+
+    <!-- Lane: App Mobile -->
+    <mxCell id="lane_app" value="📱 App Mobile (React Native)" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="30" y="80" width="200" height="1020" as="geometry" />
+    </mxCell>
+
+    <!-- Lane: Nginx Gateway -->
+    <mxCell id="lane_nginx" value="🔀 Nginx API Gateway" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="250" y="80" width="160" height="1020" as="geometry" />
+    </mxCell>
+
+    <!-- Lane: Main API -->
+    <mxCell id="lane_main" value="⚙️ Main API (Node.js/Express)" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="430" y="80" width="220" height="1020" as="geometry" />
+    </mxCell>
+
+    <!-- Lane: Social Microservice -->
+    <mxCell id="lane_social" value="💬 Social Service (Microserviço)" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="670" y="80" width="200" height="1020" as="geometry" />
+    </mxCell>
+
+    <!-- Lane: Banco de Dados -->
+    <mxCell id="lane_db" value="🗄️ Banco de Dados (MySQL + Redis)" style="swimlane;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="890" y="80" width="200" height="1020" as="geometry" />
+    </mxCell>
+
+    <!-- Lane: PDF / Contrato -->
+    <mxCell id="lane_pdf" value="📄 Geração de Contrato (PDF)" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="1110" y="80" width="200" height="1020" as="geometry" />
+    </mxCell>
+
+    <!-- ===== FASE 1: AUTENTICAÇÃO ===== -->
+    <mxCell id="fase1_label" value="FASE 1 — Cadastro e Autenticação" style="text;html=1;strokeColor=#1a1a2e;fillColor=#1a1a2e;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=5;fontSize=11;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="30" y="85" width="1280" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="a1" value="Usuário acessa o app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="125" width="160" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="a2" value="POST /register ou /login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="185" width="160" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="a3" value="Roteia para Main API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="265" y="185" width="130" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="a4" value="Valida credenciais&#xa;Hash bcrypt&#xa;Gera JWT (role + id)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="445" y="175" width="190" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="a5" value="Persiste usuário&#xa;MySQL: tabela users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="905" y="185" width="170" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="a6" value="Retorna JWT Token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="250" width="160" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- Setas fase 1 -->
+    <mxCell id="e_a1a2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a1" target="a2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_a2a3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a2" target="a3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_a3a4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a3" target="a4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_a4a5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a4" target="a5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_a4a6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a4" target="a6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== FASE 2: CRIAÇÃO DE PERFIL ===== -->
+    <mxCell id="fase2_label" value="FASE 2 — Criação de Perfil (Artista ou Estabelecimento)" style="text;html=1;strokeColor=#2d6a4f;fillColor=#2d6a4f;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=5;fontSize=11;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="30" y="305" width="1280" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="b1" value="Usuário cria perfil&#xa;(Artista ou Estabelecimento)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="340" width="160" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="b2" value="POST /perfil-artista&#xa;ou /perfil-estabelecimento&#xa;(JWT no header)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="265" y="340" width="130" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="b3" value="Middleware valida JWT&#xa;Verifica role&#xa;Cria perfil no DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="445" y="340" width="190" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="b4" value="Salva perfil + endereço&#xa;MySQL: perfil_artista /&#xa;perfil_estabelecimento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="905" y="340" width="170" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_b1b2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="b1" target="b2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_b2b3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="b2" target="b3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_b3b4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="b3" target="b4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== FASE 3: PUBLICAÇÃO DE VAGA ===== -->
+    <mxCell id="fase3_label" value="FASE 3 — Estabelecimento Publica Vaga de Show" style="text;html=1;strokeColor=#7b2d00;fillColor=#7b2d00;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=5;fontSize=11;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="30" y="410" width="1280" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c1" value="Estabelecimento posta&#xa;vaga (data, cachê,&#xa;rider técnico)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="445" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="c2" value="POST /eventos&#xa;(JWT establishment_owner)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="265" y="450" width="130" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="c3" value="Valida JWT + role&#xa;Valida DataShow (futuro)&#xa;Persiste evento&#xa;status: 'aberto'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="445" y="443" width="190" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="c4" value="Redis: invalida cache&#xa;de listagem de eventos&#xa;MySQL: insert evento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="905" y="450" width="170" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="c5" value="Retorna evento criado&#xa;(id, status, data)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="515" width="160" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_c1c2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="c2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_c2c3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c2" target="c3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_c3c4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="c4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_c3c5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="c5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== FASE 4: CANDIDATURA DO ARTISTA ===== -->
+    <mxCell id="fase4_label" value="FASE 4 — Artista Descobre e se Candidata à Vaga" style="text;html=1;strokeColor=#0a3d62;fillColor=#0a3d62;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=5;fontSize=11;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="30" y="570" width="1280" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d1" value="Artista busca vagas&#xa;abertas no feed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="605" width="160" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="d2" value="GET /eventos?status=aberto&#xa;(com cache Redis)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="265" y="608" width="130" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="d3" value="Verifica cache Redis&#xa;Se miss → consulta MySQL&#xa;Retorna lista de eventos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="445" y="603" width="190" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="d4" value="Artista seleciona evento&#xa;e se candidata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="670" width="160" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="d5" value="POST /aplicacoes&#xa;{evento_id, banda_id}&#xa;(JWT artist)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="265" y="672" width="130" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="d6" value="Valida: banda não aplicou 2x&#xa;Valida: evento ainda aberto&#xa;Insert: aplicacao_banda&#xa;status: 'pendente'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="445" y="668" width="190" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="d7" value="MySQL: insert aplicacao&#xa;Notifica estabelecimento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="905" y="675" width="170" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_d1d2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1" target="d2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_d2d3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2" target="d3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_d4d5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4" target="d5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_d5d6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d5" target="d6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_d6d7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6" target="d7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== FASE 5: ACEITE E GERAÇÃO DO CONTRATO ===== -->
+    <mxCell id="fase5_label" value="FASE 5 — Estabelecimento Aceita Candidatura → Geração Automática do Mini-Contrato (PDF)" style="text;html=1;strokeColor=#6a0572;fillColor=#6a0572;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=5;fontSize=11;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="30" y="745" width="1280" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="f1" value="Estabelecimento visualiza&#xa;candidaturas e aceita&#xa;uma banda" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="780" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="f2" value="PATCH /aplicacoes/:id&#xa;{status: 'aceito'}&#xa;(JWT establishment_owner)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="265" y="783" width="130" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="f3" value="Valida ownership&#xa;Atualiza status aplicacao&#xa;→ 'aceito'&#xa;Fecha demais candidaturas&#xa;Dispara geração de contrato" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="445" y="778" width="190" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="f4" value="Coleta dados:&#xa;- Artista (nome, CNPJ/CPF)&#xa;- Estabelecimento&#xa;- Cachê + sinal (50%)&#xa;- Data/horário&#xa;- Rider técnico&#xa;- Cláusulas legais BR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+      <mxGeometry x="1125" y="773" width="170" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="f5" value="Gera PDF com pdfkit&#xa;Assina digitalmente&#xa;(válido pela lei BR)&#xa;Armazena no storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+      <mxGeometry x="1125" y="875" width="170" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="f6" value="MySQL: insert contrato&#xa;status: 'ativo'&#xa;Redis: invalida cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="905" y="783" width="170" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="f7" value="App exibe link do contrato&#xa;para ambos os atores" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="855" width="160" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_f1f2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="f1" target="f2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_f2f3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="f2" target="f3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_f3f4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="f3" target="f4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_f4f5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="f4" target="f5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_f3f6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="f3" target="f6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_f3f7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="f3" target="f7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== FASE 6: PÓS-SHOW E AVALIAÇÕES ===== -->
+    <mxCell id="fase6_label" value="FASE 6 — Pós-Show: Avaliações Bidirecionais (Social Microservice)" style="text;html=1;strokeColor=#1a6b3a;fillColor=#1a6b3a;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=5;fontSize=11;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="30" y="950" width="1280" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="g1" value="Após show: ambos avaliam&#xa;(1-5 estrelas + comentário)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="50" y="985" width="160" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="g2" value="POST /avaliacoes&#xa;(JWT qualquer role)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="265" y="988" width="130" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="g3" value="Nginx roteia para&#xa;Social Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="685" y="988" width="170" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="g4" value="Social DB:&#xa;insert avaliacao&#xa;(MongoDB separado)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="905" y="988" width="170" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_g1g2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="g1" target="g2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_g2g3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="g2" target="g3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_g3g4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="g3" target="g4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== LEGENDA ===== -->
+    <mxCell id="leg_title" value="Legenda" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="90" width="100" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="leg1" value="App Mobile" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="125" width="120" height="25" as="geometry" />
+    </mxCell>
+    <mxCell id="leg2" value="Nginx Gateway" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="155" width="120" height="25" as="geometry" />
+    </mxCell>
+    <mxCell id="leg3" value="Main API" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="185" width="120" height="25" as="geometry" />
+    </mxCell>
+    <mxCell id="leg4" value="Social Service" style="rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="215" width="120" height="25" as="geometry" />
+    </mxCell>
+    <mxCell id="leg5" value="Banco de Dados" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="245" width="120" height="25" as="geometry" />
+    </mxCell>
+    <mxCell id="leg6" value="Geração de Contrato" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1340" y="275" width="120" height="25" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
