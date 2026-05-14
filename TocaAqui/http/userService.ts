@@ -37,15 +37,17 @@ interface RegisterPayload {
   tipo_usuario?: string;
 }
 
-// Resposta de /usuarios/registro: { message, user: { id, nome, email }, token }
+// Resposta de /usuarios/registro: { message, user: { id, nome, email } }
+// token NÃO é retornado pelo backend no registro — apenas no login
 interface RegisterResponse {
   message: string;
   user: {
     id: number;
     nome_completo: string;
     email: string;
+    role?: string;
   };
-  token: string;
+  token?: string;
 }
 
 export const userService = {

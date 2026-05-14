@@ -35,7 +35,7 @@ export default function RoleSelection() {
         <TouchableOpacity
           style={styles.card}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("RegisterLocationName")}
+          onPress={() => navigation.navigate("Register")}
         >
           <View style={styles.cardIcon}>
             <FontAwesome5 name="store" size={28} color={colors.purple} />
@@ -52,7 +52,7 @@ export default function RoleSelection() {
         <TouchableOpacity
           style={styles.card}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("OnboardingArtistProfile")}
+          onPress={() => navigation.navigate("RegisterArtist")}
         >
           <View style={styles.cardIcon}>
             <FontAwesome5 name="guitar" size={28} color={colors.purple} />

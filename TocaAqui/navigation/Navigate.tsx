@@ -161,10 +161,11 @@ export default function Navigate() {
     <Stack.Navigator key={isAuthenticated ? "app" : "auth"} initialRouteName={isAuthenticated ? initialRoute : "Login"} screenOptions={{ headerShown: false }}>
       {!isAuthenticated ? (
         <>
-          {/* Telas de autenticação */}
+          {/* Telas de autenticação e registro */}
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Initial" component={Initial} />
           <Stack.Screen name="Register" component={Register} />
+          <Stack.Screen name="RegisterArtist" component={RegisterArtist} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
           <Stack.Screen name="RoleSelection" component={RoleSelection} />
           <Stack.Screen name="VerifyEmail" component={VerifyEmail} />
@@ -184,9 +185,8 @@ export default function Navigate() {
           <Stack.Screen name="OnboardingEstPerfil" component={OnboardingEstPerfil} />
           <Stack.Screen name="OnboardingEstApresentacao" component={OnboardingEstApresentacao} />
 
-          {/* Artista — registro, onboarding e app */}
+          {/* Artista — onboarding e app */}
           <Stack.Screen name="ArtistNavigator" component={ArtistNavigator} />
-          <Stack.Screen name="RegisterArtist" component={RegisterArtist} />
           <Stack.Screen name="OnboardingArtistProfile" component={OnboardingArtistProfile} />
           <Stack.Screen name="OnboardingArtistBio" component={OnboardingArtistBio} />
           <Stack.Screen name="ArtistProfileEdit" component={ArtistProfileEdit} />
