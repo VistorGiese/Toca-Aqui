@@ -43,8 +43,10 @@ export const styles = StyleSheet.create({
   logoIcon: {
     width: 72,
     height: 72,
-    borderRadius: 18,
+    borderRadius: 36,
     backgroundColor: colors.purpleGlowBg,
+    borderWidth: 1,
+    borderColor: colors.purpleGlowBorder,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
@@ -66,7 +68,7 @@ export const styles = StyleSheet.create({
     gap: 4,
   },
   termsText: {
-    color: colors.textSubtle,
+    color: colors.textMuted,
     fontSize: 12,
     fontFamily: "Montserrat-Regular",
     textAlign: "center",
@@ -85,9 +87,9 @@ export const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: "Montserrat-Bold",
-    fontSize: 16,
-    color: colors.purpleDark,
-    letterSpacing: 1,
+    fontSize: 15,
+    color: colors.white,
+    letterSpacing: 1.5,
   },
   loginRow: {
     flexDirection: "row",
@@ -96,12 +98,12 @@ export const styles = StyleSheet.create({
   },
   loginText: {
     color: colors.textMuted,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Montserrat-Regular",
   },
   loginLink: {
     color: colors.purpleLight,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Montserrat-Bold",
   },
 });

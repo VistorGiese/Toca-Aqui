@@ -1,20 +1,42 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import Constants from "expo-constants";
 
-// Use the REACT_NATIVE_PACKAGER_HOSTNAME env var set by Expo (works on any machine/network).
-// Falls back to localhost for simulators. Override via EXPO_PUBLIC_API_URL if needed.
-const baseURL =
-  process.env.EXPO_PUBLIC_API_URL ??
-  `http://${process.env.REACT_NATIVE_PACKAGER_HOSTNAME ?? "localhost"}:3000`;
+function getExpoRuntimeHost(): string | null {
+  const hostUri =
+    (Constants.expoConfig as any)?.hostUri ??
+    (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost ??
+    (Constants as any)?.manifest?.debuggerHost ??
+    null;
+
+  if (!hostUri || typeof hostUri !== "string") return null;
+  return hostUri.split(":")[0] ?? null;
+}
+
+const envBaseURL = process.env.EXPO_PUBLIC_API_URL?.trim();
+const expoRuntimeHost = getExpoRuntimeHost();
+const packagerHost = process.env.REACT_NATIVE_PACKAGER_HOSTNAME ?? "localhost";
+
+const baseURL = __DEV__
+  ? `http://${expoRuntimeHost ?? packagerHost}:3000`
+  : envBaseURL || `http://${packagerHost}:3000`;
+
+if (__DEV__) {
+  console.log("[API] baseURL →", baseURL, {
+    expoRuntimeHost,
+    packagerHost,
+    envBaseURL: envBaseURL ?? "(vazio)",
+  });
+}
 
 const api = axios.create({
-  baseURL: baseURL,
+  baseURL,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Callback opcional para tratar respostas 401 (usado pelo AuthContext)
 let onUnauthorizedCallback: (() => void) | null = null;
 
 export function setOnUnauthorized(callback: () => void) {

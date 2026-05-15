@@ -15,7 +15,7 @@ import ForgotPassword from "../screens/ForgotPassword";
 import HomePage from "../screens/HomePage";
 import InfoEvent from "../screens/InfoEvent";
 import Initial from "../screens/Initial";
-import Login from "../screens/Login";
+import Login from "../screens/login";
 import Profile from "../screens/Profile";
 import RoleSelection from "../screens/RoleSelection";
 import Schedulling from "../screens/Schedulling";

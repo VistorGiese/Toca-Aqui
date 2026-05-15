@@ -37,15 +37,28 @@ export function useRegister() {
         [{ text: "Ir para login", onPress: () => navigation.navigate("Login") }]
       );
     } catch (error: unknown) {
-      const status = (error as any)?.response?.status;
-      const message: string = (error as any)?.response?.data?.message ?? "";
+      const axiosError = error as any;
+      const status: number | undefined = axiosError?.response?.status;
+      const message: string = axiosError?.response?.data?.message ?? "";
+      const errorCode: string = axiosError?.code ?? "";
+
+      if (__DEV__) {
+        console.log("[Register] erro →", { status, message, errorCode, error });
+      }
 
       if (status === 409 || (status === 400 && message.toLowerCase().includes("email"))) {
         setError("email", { type: "manual", message: "Este e-mail já está cadastrado." });
+      } else if (errorCode === "ECONNABORTED") {
+        Alert.alert("Tempo esgotado", "O servidor demorou demais para responder. Tente novamente.");
       } else if (!status) {
-        Alert.alert("Erro de conexão", "Não foi possível conectar ao servidor.");
+        Alert.alert(
+          "Sem conexão",
+          "Não foi possível alcançar o servidor. Verifique se o backend está rodando e se o dispositivo está na mesma rede."
+        );
+      } else if (status >= 400 && status < 500) {
+        Alert.alert("Erro no cadastro", message || "Dados inválidos. Verifique os campos.");
       } else {
-        Alert.alert("Erro", message || "Erro ao criar conta. Tente novamente.");
+        Alert.alert("Erro no servidor", message || "Erro interno. Tente novamente mais tarde.");
       }
     } finally {
       setIsSubmitting(false);
