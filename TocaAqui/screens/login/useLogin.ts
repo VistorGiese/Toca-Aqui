@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { userService } from "@/http/userService";
 import { RootStackParamList } from "../../navigation/Navigate";
 import { LoginFormData } from "./types";
+import { getApiErrorMessage } from "@/utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -46,10 +47,7 @@ export function useLogin() {
         navigation.reset({ index: 0, routes: [{ name: "UserNavigator" }] });
       }
     } catch (error: unknown) {
-      const message =
-        (error as any)?.response?.data?.message ||
-        (error as any)?.response?.data?.error ||
-        "E-mail ou senha inválidos.";
+      const message = getApiErrorMessage(error, "E-mail ou senha inválidos.");
       setError("email", { type: "manual", message });
       setError("senha", { type: "manual", message: " " });
     } finally {

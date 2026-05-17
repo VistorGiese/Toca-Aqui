@@ -1,6 +1,6 @@
-# Welcome to your Expo app 👋
+# Toca Aqui (App Mobile)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App mobile construído com [Expo](https://expo.dev), React Native e React Navigation (sem Expo Router).
 
 ## Get started
 
@@ -10,30 +10,41 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure environment
+
+   Copie o arquivo de exemplo e ajuste a URL da API:
 
    ```bash
-   npx expo start
+   cp .env.example .env.development.local
    ```
 
-In the output, you'll find options to open the app in a
+   Em seguida, defina `EXPO_PUBLIC_API_URL` no arquivo `.env.development.local`:
+
+   ```bash
+   EXPO_PUBLIC_API_URL=http://SEU_IP_DA_REDE:3000
+   ```
+
+3. Start the app
+
+   ```bash
+   npx expo start -c --lan
+   ```
+
+In the output, you'll find options to open the app in a:
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
 - [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- [Expo Go](https://expo.dev/go)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+O entrypoint do app é `index.js`, que registra `App.tsx`.
+O componente principal está em `app/app.tsx` e a navegação em `navigation/Navigate.tsx`.
 
-## Get a fresh project
+## Network checks (Expo Go + backend local)
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- O celular deve estar na mesma rede Wi-Fi do computador.
+- O backend deve estar acessível via `http://SEU_IP_DA_REDE:3000`.
+- Teste no celular: `http://SEU_IP_DA_REDE:3000/health`.
 
 ## Learn more
 

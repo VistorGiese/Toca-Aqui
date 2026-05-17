@@ -71,6 +71,7 @@ export default function Register() {
               name="nomeCompleto"
               rules={{
                 required: "Nome completo é obrigatório",
+                minLength: { value: 2, message: "Mínimo 2 caracteres" },
                 maxLength: { value: 100, message: "Máximo 100 caracteres" },
               }}
               label="NOME COMPLETO"

@@ -72,7 +72,15 @@ export const userService = {
   },
 
   async register(data: RegisterPayload): Promise<RegisterResponse> {
+    // Registro é público — não enviar token de sessão anterior
+    delete api.defaults.headers.common["Authorization"];
+
     const response = await api.post<RegisterResponse>("/usuarios/registro", data);
+
+    if (__DEV__) {
+      console.log("[Register] sucesso →", response.status, response.data?.message);
+    }
+
     return response.data;
   },
 
