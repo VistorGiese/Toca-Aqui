@@ -16,6 +16,8 @@ export const colors = {
   white: "#FFFFFF",
   textMuted: "#8888AA",
   textSubtle: "#8888AA",
+  textSecondary: "#A0A0B8",
+  textTertiary: "#555577",
 
   // Inputs
   inputBorder: "#1E1A30",
@@ -26,6 +28,15 @@ export const colors = {
   neutral: "#6B7280",
   cyan: "#709D9B",
   green: "#6DB885",
+  surface: "rgba(255, 255, 255, 0.04)",
+  surfaceBorder: "rgba(255, 255, 255, 0.06)",
+  divider: "rgba(255, 255, 255, 0.06)",
+  accentSoftBg: "rgba(167, 139, 250, 0.15)",
+  accentSoftFill: "rgba(167, 139, 250, 0.12)",
+  accentBorderSoft: "rgba(167, 139, 250, 0.3)",
+  iconOnSurface: "rgba(255, 255, 255, 0.3)",
+  iconOnSurfaceMuted: "rgba(255, 255, 255, 0.4)",
+  cardFallback: "#2D1B4E",
 };
 
 export const genreColors: Record<string, string> = {
@@ -43,4 +54,8 @@ export const genreColors: Record<string, string> = {
 
 export function getGenreColor(genre: string): string {
   return genreColors[genre.toUpperCase()] ?? "#6C5CE7";
+}
+
+export function genreColorWithAlpha(genre: string, alpha = "44"): string {
+  return `${getGenreColor(genre)}${alpha}`;
 }

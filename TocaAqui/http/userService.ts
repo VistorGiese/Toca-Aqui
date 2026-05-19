@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "./api";
+import api, { getApiBaseUrl } from "./api";
 import { MinhasPaginas } from "@/types";
 
 interface LoginResponse {
@@ -131,7 +131,12 @@ export const userService = {
 
     // NÃO definir Content-Type — o fetch do React Native define automaticamente
     // com o boundary correto para multipart/form-data
-    const response = await fetch(`${api.defaults.baseURL}/usuarios/foto`, {
+    const baseUrl = getApiBaseUrl().replace(/\/$/, "");
+    const uploadUrl = `${baseUrl}/usuarios/foto`;
+    if (__DEV__) {
+      console.log("[Upload foto] PATCH →", uploadUrl);
+    }
+    const response = await fetch(uploadUrl, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token ?? ""}` },
       body: formData,
