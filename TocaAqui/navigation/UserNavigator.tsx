@@ -7,7 +7,7 @@ import UserFeed from "@/screens/user/UserFeed";
 import UserSearch from "@/screens/user/UserSearch";
 import UserTickets from "@/screens/user/UserTickets";
 import UserFavorites from "@/screens/user/UserFavorites";
-import UserProfile from "@/screens/user/UserProfile";
+import UserProfile from "@/screens/user/profile";
 
 import UserShowDetail from "@/screens/user/UserShowDetail";
 import UserCheckout from "@/screens/user/UserCheckout";
