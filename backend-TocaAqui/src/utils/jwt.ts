@@ -8,7 +8,9 @@ const JWT_EXPIRES_IN: SignOptions["expiresIn"] = env.JWT_EXPIRES_IN as SignOptio
 export interface TokenPayload {
   id: number;
   email: string;
-  role: string;
+  roles: string[];
+  /** @deprecated Mantido para backward compat com tokens antigos. Use roles[]. */
+  role?: string;
   exp?: number;
   iat?: number;
 }
