@@ -41,16 +41,15 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.neutral,
-    borderRadius: 15,
+    backgroundColor: colors.purplePrimary,
+    borderRadius: 14,
   },
   text: {
-    color: colors.purpleDark,
+    color: colors.white,
     fontSize: 24,
     fontFamily: "Poppins-ExtraBold",
   },
   disabledButton: {
-    backgroundColor: colors.purpleDark,
-    opacity: 0.5,
+    opacity: 0.6,
   },
 });

@@ -87,11 +87,21 @@ const getMyGigs = async (estabelecimentoId?: number): Promise<Gig[]> => {
   return toArray<Gig>(r.data);
 };
 
+async function resolveEstablishmentProfileId(): Promise<number> {
+  const storedId = await AsyncStorage.getItem("estabelecimentoId");
+  if (storedId) return Number(storedId);
+  const profile = await getMyEstablishmentProfile();
+  await AsyncStorage.setItem("estabelecimentoId", String(profile.id));
+  return profile.id;
+}
+
 const createGig = async (data: {
   titulo_evento: string; data_show: string; horario_inicio: string; horario_fim: string;
   cache_minimo?: number; cache_maximo?: number; generos_musicais?: string; descricao_evento?: string;
+  perfil_estabelecimento_id?: number;
 }): Promise<Gig> => {
-  const r = await api.post<Gig>("/agendamentos", data);
+  const perfil_estabelecimento_id = data.perfil_estabelecimento_id ?? (await resolveEstablishmentProfileId());
+  const r = await api.post<Gig>("/agendamentos", { ...data, perfil_estabelecimento_id });
   return r.data;
 };
 
@@ -168,7 +178,10 @@ const createEndereco = async (data: {
 const createEstablishmentProfile = async (data: {
   nome_estabelecimento: string; tipo_estabelecimento?: string; descricao?: string;
   generos_musicais: string; horario_abertura: string; horario_fechamento: string;
-  endereco_id: number; telefone_contato: string;
+  telefone_contato: string;
+  endereco: {
+    rua: string; numero: string; bairro: string; cidade: string; estado: string; cep: string;
+  };
 }): Promise<any> => {
   const r = await api.post("/usuarios/perfil-estabelecimento", data);
   return r.data;

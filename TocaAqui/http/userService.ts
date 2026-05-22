@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "./api";
+import api, { getApiBaseUrl } from "./api";
 import { MinhasPaginas } from "@/types";
 
 interface LoginResponse {
@@ -37,15 +37,17 @@ interface RegisterPayload {
   tipo_usuario?: string;
 }
 
-// Resposta de /usuarios/registro: { message, user: { id, nome, email }, token }
+// Resposta de /usuarios/registro: { message, user: { id, nome, email } }
+// token NÃO é retornado pelo backend no registro — apenas no login
 interface RegisterResponse {
   message: string;
   user: {
     id: number;
     nome_completo: string;
     email: string;
+    role?: string;
   };
-  token: string;
+  token?: string;
 }
 
 export const userService = {
@@ -70,7 +72,15 @@ export const userService = {
   },
 
   async register(data: RegisterPayload): Promise<RegisterResponse> {
+    // Registro é público — não enviar token de sessão anterior
+    delete api.defaults.headers.common["Authorization"];
+
     const response = await api.post<RegisterResponse>("/usuarios/registro", data);
+
+    if (__DEV__) {
+      console.log("[Register] sucesso →", response.status, response.data?.message);
+    }
+
     return response.data;
   },
 
@@ -109,6 +119,30 @@ export const userService = {
     return response.data;
   },
 
+  async createEstablishmentProfile(data: {
+    nome_estabelecimento: string;
+    tipo_estabelecimento?: string;
+    descricao?: string;
+    generos_musicais: string;
+    horario_abertura: string;
+    horario_fechamento: string;
+    telefone_contato: string;
+    endereco: {
+      rua: string;
+      numero: string;
+      bairro: string;
+      cidade: string;
+      estado: string;
+      cep: string;
+    };
+  }): Promise<{ message: string; profile: { id: number } }> {
+    const response = await api.post<{ message: string; profile: { id: number } }>(
+      "/usuarios/perfil-estabelecimento",
+      data
+    );
+    return response.data;
+  },
+
   async uploadFoto(uri: string): Promise<{ foto_perfil: string }> {
     const token = await AsyncStorage.getItem("token");
     const filename = uri.split("/").pop() ?? "photo.jpg";
@@ -121,7 +155,12 @@ export const userService = {
 
     // NÃO definir Content-Type — o fetch do React Native define automaticamente
     // com o boundary correto para multipart/form-data
-    const response = await fetch(`${api.defaults.baseURL}/usuarios/foto`, {
+    const baseUrl = getApiBaseUrl().replace(/\/$/, "");
+    const uploadUrl = `${baseUrl}/usuarios/foto`;
+    if (__DEV__) {
+      console.log("[Upload foto] PATCH →", uploadUrl);
+    }
+    const response = await fetch(uploadUrl, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token ?? ""}` },
       body: formData,

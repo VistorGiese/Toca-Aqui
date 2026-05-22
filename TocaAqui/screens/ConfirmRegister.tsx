@@ -51,7 +51,9 @@ export default function ConfirmRegister() {
                 horario_funcionamento_fim: accountFormData.horario_funcionamento_fim?.includes(":")
                     ? accountFormData.horario_funcionamento_fim
                     : `${accountFormData.horario_funcionamento_fim}:00:00`,
-            });
+            };
+
+            await createEstabelecimento({ ...estabelecimentoPayload, endereco_id: enderecoId });
 
             Alert.alert("Sucesso!", "Cadastro realizado com sucesso!", [
                 { text: "OK", onPress: () => navigation.reset({ index: 0, routes: [{ name: "HomePage" }] }) },

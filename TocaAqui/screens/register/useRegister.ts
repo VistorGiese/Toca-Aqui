@@ -6,6 +6,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { userService } from "@/http/userService";
 import { RootStackParamList } from "../../navigation/Navigate";
 import { RegisterFormData } from "./types";
+import {
+  applyApiFieldErrors,
+  getApiErrorMessage,
+  getApiValidationDetails,
+} from "@/utils/errorHandler";
+import { isAxiosError } from "axios";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,7 +31,7 @@ export function useRegister() {
     setIsSubmitting(true);
     try {
       await userService.register({
-        nome_completo: data.nomeCompleto,
+        nome_completo: data.nomeCompleto.trim(),
         email: data.email.trim(),
         senha: data.senha,
         tipo_usuario: "common_user",
@@ -33,20 +39,61 @@ export function useRegister() {
 
       Alert.alert(
         "Conta criada!",
-        "Verifique seu email para ativar a conta antes de fazer login.",
+        "Faça login para continuar. Depois, em Configurações, você pode criar o perfil do seu estabelecimento.",
         [{ text: "Ir para login", onPress: () => navigation.navigate("Login") }]
       );
     } catch (error: unknown) {
-      const status = (error as any)?.response?.status;
-      const message: string = (error as any)?.response?.data?.message ?? "";
+      const status = isAxiosError(error) ? error.response?.status : undefined;
+      const message = getApiErrorMessage(error, "");
+      const detalhes = getApiValidationDetails(error);
 
-      if (status === 409 || (status === 400 && message.toLowerCase().includes("email"))) {
-        setError("email", { type: "manual", message: "Este e-mail já está cadastrado." });
-      } else if (!status) {
-        Alert.alert("Erro de conexão", "Não foi possível conectar ao servidor.");
-      } else {
-        Alert.alert("Erro", message || "Erro ao criar conta. Tente novamente.");
+      if (__DEV__) {
+        console.log("[Register] erro →", {
+          status,
+          message,
+          detalhes,
+          code: isAxiosError(error) ? error.code : undefined,
+          axiosMessage: isAxiosError(error) ? error.message : undefined,
+          body: isAxiosError(error) ? error.response?.data : undefined,
+        });
       }
+
+      if (applyApiFieldErrors(detalhes, setError)) {
+        return;
+      }
+
+      const msgLower = message.toLowerCase();
+
+      if (
+        status === 409 ||
+        (status === 400 && (msgLower.includes("email") || msgLower.includes("e-mail")))
+      ) {
+        setError("email", {
+          type: "manual",
+          message: message || "Este e-mail já está cadastrado.",
+        });
+        return;
+      }
+
+      if (isAxiosError(error) && error.code === "ECONNABORTED") {
+        Alert.alert("Tempo esgotado", "O servidor demorou demais para responder. Tente novamente.");
+        return;
+      }
+
+      if (!status) {
+        Alert.alert(
+          "Sem conexão",
+          "Não foi possível alcançar o servidor. Verifique se o backend está rodando e se o dispositivo está na mesma rede."
+        );
+        return;
+      }
+
+      if (status >= 400 && status < 500) {
+        Alert.alert("Erro no cadastro", message || "Dados inválidos. Verifique os campos.");
+        return;
+      }
+
+      Alert.alert("Erro no servidor", message || "Erro interno. Tente novamente mais tarde.");
     } finally {
       setIsSubmitting(false);
     }

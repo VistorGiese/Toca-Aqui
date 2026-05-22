@@ -16,7 +16,6 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/Navigate";
 import { colors } from "@/utils/colors";
-import { useAuth } from "@/contexts/AuthContext";
 import { userService } from "@/http/userService";
 import Button from "@/components/ui/Button";
 import Fund from "../../components/Allcomponents/Fund";
@@ -36,7 +35,6 @@ interface RegisterFormData {
 
 export default function RegisterArtist() {
   const navigation = useNavigation<NavigationProp>();
-  const { signIn, signInWithToken } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const emailRef = useRef<TextInput>(null);
@@ -58,18 +56,18 @@ export default function RegisterArtist() {
   async function onSubmit(data: RegisterFormData) {
     setIsSubmitting(true);
     try {
-      const response = await userService.register({
+      await userService.register({
         nome_completo: data.nomeCompleto,
         email: data.email.trim(),
         senha: data.senha,
+        tipo_usuario: "artist",
       });
 
-      if (response.token && response.user) {
-        await signInWithToken(response.token, { ...response.user, role: response.user.role || "common_user" });
-      } else {
-        await signIn(data.email.trim(), data.senha);
-      }
-      navigation.reset({ index: 0, routes: [{ name: "RoleSelection" }] });
+      Alert.alert(
+        "Conta criada!",
+        "Verifique seu e-mail para ativar a conta antes de fazer login.",
+        [{ text: "Ir para login", onPress: () => navigation.navigate("Login") }]
+      );
     } catch (error: unknown) {
       const status = (error as any)?.response?.status;
       const message = (error as any)?.response?.data?.message || "";
@@ -78,10 +76,10 @@ export default function RegisterArtist() {
           type: "manual",
           message: "Este e-mail já está cadastrado.",
         });
-      } else if (status === 403 && message.toLowerCase().includes("verificado")) {
-        Alert.alert("Conta criada!", "Verifique seu e-mail para ativar a conta.");
+      } else if (!status) {
+        Alert.alert("Erro de conexão", "Não foi possível conectar ao servidor.");
       } else {
-        Alert.alert("Erro", "Erro ao criar conta. Tente novamente.");
+        Alert.alert("Erro", message || "Erro ao criar conta. Tente novamente.");
       }
     } finally {
       setIsSubmitting(false);

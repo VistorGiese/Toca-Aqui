@@ -42,7 +42,7 @@ export default function Register() {
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <MaterialCommunityIcons name="close" size={22} color="#fff" />
+          <MaterialCommunityIcons name="close" size={22} color={colors.white} />
         </TouchableOpacity>
         <View style={styles.headerSpacer} />
       </View>
@@ -59,7 +59,7 @@ export default function Register() {
           <View style={styles.scrollInner}>
           <View style={styles.logoContainer}>
             <View style={styles.logoIcon}>
-              <MaterialCommunityIcons name="waveform" size={38} color="#A78BFA" />
+              <MaterialCommunityIcons name="waveform" size={38} color={colors.purpleLight} />
             </View>
             <Text style={styles.logoTitle}>TOCA AQUI</Text>
             <Text style={styles.logoSubtitle}>Sua jornada musical começa aqui.</Text>
@@ -71,6 +71,7 @@ export default function Register() {
               name="nomeCompleto"
               rules={{
                 required: "Nome completo é obrigatório",
+                minLength: { value: 2, message: "Mínimo 2 caracteres" },
                 maxLength: { value: 100, message: "Máximo 100 caracteres" },
               }}
               label="NOME COMPLETO"
@@ -143,7 +144,7 @@ export default function Register() {
             disabled={isSubmitting}
           >
             {isSubmitting
-              ? <ActivityIndicator color={colors.purpleDark} />
+              ? <ActivityIndicator color={colors.white} />
               : <Text style={styles.buttonText}>CRIAR CONTA</Text>
             }
           </Button>

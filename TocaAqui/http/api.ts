@@ -1,32 +1,69 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import Constants from "expo-constants";
 
-// Use the REACT_NATIVE_PACKAGER_HOSTNAME env var set by Expo (works on any machine/network).
-// Falls back to localhost for simulators. Override via EXPO_PUBLIC_API_URL if needed.
-const baseURL =
-  process.env.EXPO_PUBLIC_API_URL ??
-  `http://${process.env.REACT_NATIVE_PACKAGER_HOSTNAME ?? "localhost"}:3000`;
+/**
+ * Retorna o host da máquina de dev detectado pelo Expo Go em tempo de execução.
+ * Funciona com `expo start --lan`. Retorna null com --tunnel ou em produção.
+ */
+function getExpoDevHost(): string | null {
+  if (!__DEV__) return null;
+  const hostUri: string | undefined =
+    (Constants.expoConfig as any)?.hostUri ??
+    (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost ??
+    (Constants as any)?.manifest?.debuggerHost;
+  if (!hostUri) return null;
+  // hostUri é "IP:8081" — pega só o IP
+  return hostUri.split(":")[0] ?? null;
+}
+
+/**
+ * Resolve a baseURL da API na seguinte ordem:
+ * 1. EXPO_PUBLIC_API_URL (override via .env.development.local) — controle total
+ * 2. Em dev, host detectado pelo Expo + porta 3000 — sem precisar mexer no .env todo dia
+ * 3. Fallback "http://localhost:3000" — emulador iOS / caso nenhum host seja detectado
+ */
+export function getApiBaseUrl(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (fromEnv) return fromEnv;
+
+  if (__DEV__) {
+    const expoHost = getExpoDevHost();
+    if (expoHost) return `http://${expoHost}:3000`;
+    return "http://localhost:3000";
+  }
+
+  // Produção: EXPO_PUBLIC_API_URL é obrigatória
+  throw new Error("EXPO_PUBLIC_API_URL não definida para produção.");
+}
 
 const api = axios.create({
-  baseURL: baseURL,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Callback opcional para tratar respostas 401 (usado pelo AuthContext)
 let onUnauthorizedCallback: (() => void) | null = null;
 
 export function setOnUnauthorized(callback: () => void) {
   onUnauthorizedCallback = callback;
 }
 
-api.interceptors.request.use(
-  async (config) => {
-    const token = await AsyncStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+api.interceptors.request.use(async (config) => {
+  config.baseURL = getApiBaseUrl();
+
+  if (__DEV__ && config.url?.includes("/usuarios/registro")) {
+    console.log("[API] POST registro →", `${config.baseURL}${config.url}`);
+  }
+
+  const token = await AsyncStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
+  }
+
   return config;
 });
 

@@ -58,18 +58,8 @@ export default function Input({
         )}
         <TextInput
           ref={inputRef}
-          style={[
-            styles.input,
-            app && styles.inputApp,
-            textInputProps.style,
-            {
-              color:
-                textInputProps.value && textInputProps.value.length > 0
-                  ? "#fff"
-                  : colors.neutral,
-            },
-          ]}
-          placeholderTextColor={colors.neutral}
+          style={[styles.input, app && styles.inputApp, textInputProps.style]}
+          placeholderTextColor={colors.placeholder}
           {...textInputProps}
         />
         {rightElement}
@@ -85,27 +75,29 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   label: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Montserrat-Regular",
-    marginBottom: 5,
+    color: colors.textMuted,
+    fontSize: 11,
+    fontFamily: "Montserrat-SemiBold",
+    letterSpacing: 1.5,
+    marginBottom: 8,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.purple,
-    borderRadius: 10,
-    paddingHorizontal: 15,
+    backgroundColor: colors.purpleBlack2,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     height: 50,
   },
   inputContainerError: {
-    borderWidth: 1,
-    borderColor: "#e53e3e",
+    borderColor: colors.error,
   },
   inputContainerApp: {
     backgroundColor: colors.purpleBlack2,
     borderWidth: 1,
-    borderColor: colors.purple,
+    borderColor: colors.inputBorder,
   },
   icon: {
     marginRight: 10,
@@ -113,18 +105,18 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: "100%",
-    color: "#fff",
+    color: colors.white,
     fontFamily: "Montserrat-Regular",
-    fontSize: 16,
+    fontSize: 15,
   },
   inputApp: {
-    color: colors.neutral,
+    color: colors.white,
   },
   errorText: {
-    color: "#e53e3e",
+    color: colors.error,
     fontSize: 12,
     fontFamily: "Montserrat-Regular",
-    marginTop: 4,
-    marginLeft: 5,
+    marginTop: 6,
+    marginLeft: 4,
   },
 });

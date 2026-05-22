@@ -181,7 +181,7 @@ export const createArtistProfile = async (
 
     await api.post("/usuarios/perfil-artista", payload);
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       console.error(
         "Detalhes do erro ao criar perfil de artista:",
         JSON.stringify(error.response?.data, null, 2)
@@ -259,22 +259,27 @@ export const cadastrarEstabelecimentoCompleto = async (
 ): Promise<void> => {
   try {
     console.log("1. Iniciando registro do usuário...");
-    const userResponse = await registerUser(fullData);
+    await registerUser(fullData);
 
-    console.log("2. userResponse recebido:", JSON.stringify(userResponse, null, 2));
-    console.log("3. Token recebido:", userResponse?.token ? "SIM" : "NÃO");
+    // O backend não retorna token no registro — é preciso fazer login para obtê-lo
+    console.log("2. Fazendo login para obter token...");
+    const loginData: LoginPayload = {
+      email: fullData.email_responsavel,
+      senha: fullData.password,
+    };
+    const loginResponse = await loginEstabelecimento(loginData);
 
-    if (!userResponse?.token) {
-      throw new Error("registerUser não retornou token!");
+    if (!loginResponse?.token) {
+      throw new Error("Login após registro não retornou token. Verifique seu e-mail e tente novamente.");
     }
 
-    api.defaults.headers.common["Authorization"] = `Bearer ${userResponse.token}`;
-    console.log("4. Header setado:", api.defaults.headers.common["Authorization"]);
+    api.defaults.headers.common["Authorization"] = `Bearer ${loginResponse.token}`;
+    console.log("3. Token obtido e header configurado.");
 
-    console.log("5. Criando endereço...");
+    console.log("4. Criando endereço...");
     const enderecoResponse = await createEndereco(fullData);
 
-    console.log("6. Criando perfil do estabelecimento...");
+    console.log("5. Criando perfil do estabelecimento...");
     await createEstabelecimento({
       ...fullData,
       endereco_id: enderecoResponse.id,
