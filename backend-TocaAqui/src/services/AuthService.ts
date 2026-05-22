@@ -211,6 +211,15 @@ export class AuthService {
       await profile.update({ latitude: coords.latitude, longitude: coords.longitude });
     }
 
+    // Adicionar role 'establishment_owner' ao usuário sem sobrescrever roles existentes
+    const user = await UserModel.findByPk(userId);
+    if (user) {
+      const currentRoles: string[] = Array.isArray(user.roles) ? user.roles : [user.role as string];
+      if (!currentRoles.includes('establishment_owner')) {
+        await user.update({ roles: [...currentRoles, 'establishment_owner'] });
+      }
+    }
+
     return profile;
   }
 
@@ -231,6 +240,15 @@ export class AuthService {
     estado?: string;
     links_sociais?: string[];
   }) {
+    // Adicionar role 'artist' ao usuário sem sobrescrever roles existentes
+    const user = await UserModel.findByPk(userId);
+    if (user) {
+      const currentRoles: string[] = Array.isArray(user.roles) ? user.roles : [user.role as string];
+      if (!currentRoles.includes('artist')) {
+        await user.update({ roles: [...currentRoles, 'artist'] });
+      }
+    }
+
     return ArtistProfileModel.create({
       usuario_id: userId,
       nome_artistico: data.nome_artistico,
