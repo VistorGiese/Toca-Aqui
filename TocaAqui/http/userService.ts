@@ -8,17 +8,20 @@ interface LoginResponse {
     id: number;
     nome_completo: string;
     email: string;
-    role: string;
+    roles: string[];
+    /** @deprecated */
+    role?: string;
   };
 }
 
-// getUserProfile retorna: { user: { id, nome, email, role, establishment_profiles, artist_profiles } }
+// getUserProfile retorna: { user: { id, nome, email, roles, role, establishment_profiles, artist_profiles } }
 interface ProfileResponse {
   user: {
     id: number;
     nome_completo: string;
     email: string;
-    role: string;
+    roles?: string[];
+    role?: string;
     foto_perfil: string | null;
     establishment_profiles: any[];
     artist_profiles: any[];
