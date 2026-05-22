@@ -22,7 +22,7 @@ export interface RegisterParams {
 
 export interface LoginResult {
   token: string;
-  user: { id: number; nome_completo: string; email: string; role: string };
+  user: { id: number; nome_completo: string; email: string; roles: string[] };
 }
 
 export class AuthService {
@@ -43,17 +43,10 @@ export class AuthService {
     if (existingUser) throw new AppError('Email já está em uso', 400);
 
     const hashedPassword = await bcrypt.hash(senha, 10);
-    const user = await UserModel.create({ nome_completo, email, senha: hashedPassword, role: role as any, email_verificado: false });
+    // DEV/TCC: verificação de email desativada — conta já criada como verificada
+    const user = await UserModel.create({ nome_completo, email, senha: hashedPassword, role: role as any, roles: [role], email_verificado: true });
 
-    const verifyToken = crypto.randomBytes(32).toString('hex');
-    try {
-      await redisService.getClient().setex(`verify:${verifyToken}`, 60 * 60 * 24, String(user.id));
-      await sendVerificationEmail(email, verifyToken);
-    } catch (err) {
-      console.error('[AuthService] Falha ao armazenar token ou enviar email de verificação:', err);
-    }
-
-    return { id: user.id, nome_completo: user.nome_completo, email: user.email, role: user.role, email_verificado: false };
+    return { id: user.id, nome_completo: user.nome_completo, email: user.email, role: user.role, roles: user.roles, email_verificado: true };
   }
 
   async login(email: string, senha: string): Promise<LoginResult> {
@@ -66,8 +59,19 @@ export class AuthService {
     // DEV/TCC: verificação de email desativada
     // if (!user.email_verificado) throw new AppError('Email não verificado. Verifique sua caixa de entrada.', 403);
 
-    const token = generateToken({ id: user.id, email: user.email, role: user.role });
-    return { token, user: { id: user.id!, nome_completo: user.nome_completo, email: user.email, role: user.role } };
+    const userRoles: string[] = Array.isArray(user.roles) && user.roles.length > 0
+      ? user.roles
+      : [user.role as string];
+    const token = generateToken({ id: user.id, email: user.email, roles: userRoles, role: user.role });
+    return {
+      token,
+      user: {
+        id: user.id!,
+        nome_completo: user.nome_completo,
+        email: user.email,
+        roles: userRoles,
+      },
+    };
   }
 
   async logout(token: string, exp: number) {
@@ -231,6 +235,15 @@ export class AuthService {
       await profile.update({ latitude: coords.latitude, longitude: coords.longitude });
     }
 
+    // Adicionar role 'establishment_owner' ao usuário sem sobrescrever roles existentes
+    const user = await UserModel.findByPk(userId);
+    if (user) {
+      const currentRoles: string[] = Array.isArray(user.roles) ? user.roles : [user.role as string];
+      if (!currentRoles.includes('establishment_owner')) {
+        await user.update({ roles: [...currentRoles, 'establishment_owner'] });
+      }
+    }
+
     return profile;
   }
 
@@ -251,6 +264,15 @@ export class AuthService {
     estado?: string;
     links_sociais?: string[];
   }) {
+    // Adicionar role 'artist' ao usuário sem sobrescrever roles existentes
+    const user = await UserModel.findByPk(userId);
+    if (user) {
+      const currentRoles: string[] = Array.isArray(user.roles) ? user.roles : [user.role as string];
+      if (!currentRoles.includes('artist')) {
+        await user.update({ roles: [...currentRoles, 'artist'] });
+      }
+    }
+
     return ArtistProfileModel.create({
       usuario_id: userId,
       nome_artistico: data.nome_artistico,

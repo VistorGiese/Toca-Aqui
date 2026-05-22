@@ -1,0 +1,20 @@
+%% C4 Model - Level 1: Context Diagram
+
+C4Context
+    title Sistema "Toca Aqui" - Contexto
+
+    Person(artista, "Artista / Banda", "Gerencia perfil artístico, busca vagas, se candidata a eventos e assina mini-contratos.")
+    Person(estabelecimento, "Dono do Estabelecimento", "Publica vagas de shows, seleciona artistas, gera contratos e avalia apresentações.")
+    Person(usuario, "Usuário Comum (Fã)", "Descobre shows, compra ingressos, avalia e comenta apresentações.")
+
+    System(tocaAqui, "Toca Aqui", "Plataforma mobile que conecta artistas a estabelecimentos para shows ao vivo, com mini-contrato automático.")
+
+    System_Ext(gmail, "Gmail SMTP", "Serviço de envio de e-mails transacionais via smtp.gmail.com.")
+    System_Ext(stripe, "Stripe", "Gateway de pagamento para ingressos e assinaturas. [planejado]")
+
+    Rel(artista, tocaAqui, "Usa via app mobile")
+    Rel(estabelecimento, tocaAqui, "Usa via app mobile")
+    Rel(usuario, tocaAqui, "Usa via app mobile")
+
+    Rel(tocaAqui, gmail, "Envia e-mails transacionais", "SMTP/TLS")
+    Rel(tocaAqui, stripe, "Processa pagamentos", "HTTPS / Webhooks [planejado]")

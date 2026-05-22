@@ -1,0 +1,7 @@
+# Arquivos internos de desenvolvimento
+.agents/
+.claude/
+.claude-memoria.md
+.planning/
+prompt.txt
+skills-lock.json

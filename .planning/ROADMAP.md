@@ -123,10 +123,28 @@ Plans:
 - [x] 06-04-PLAN.md — Nova tela EstEditProfile: edição de perfil do estabelecimento com campos nome, descrição, tipo, telefone
 **UI hint**: yes
 
+### Phase 7: Multi-Role Auth
+**Goal**: Refatorar o sistema de autenticação para suportar múltiplas roles por usuário — um único login pode ter roles: common_user, artist, establishment_owner e admin — sem sobrescrever roles existentes ao criar novo perfil, com token JWT refletindo todas as roles ativas e middlewares de autorização validando corretamente arrays de roles
+**Depends on**: Phase 1
+**Requirements**: REQ-28, REQ-29, REQ-30, REQ-31
+**Success Criteria** (what must be TRUE):
+  1. Coluna `role` ENUM na tabela `usuarios` migrada para `roles TEXT[]` (PostgreSQL array) contendo todas as roles do usuário
+  2. Token JWT contém campo `roles: string[]` com todas as roles do usuário — `req.user.roles` está disponível em todos os middlewares
+  3. Criar perfil de artista adiciona `'artist'` ao array de roles sem remover roles existentes (idem para `establishment_owner`)
+  4. `checkRole(UserRole.ARTIST)` e variantes verificam se `roles.includes(role)` — não comparam string única
+  5. Frontend: `User.roles: UserRole[]` no contexto, `Navigate.tsx` usa `roles.includes()` para roteamento
+**Plans**: 4 plans
+
+Plans:
+- [x] 07-01: db-migration-roles — Migration que converte `role ENUM` em `roles TEXT[]` e popula dados existentes; atualiza UserModel
+- [x] 07-02: jwt-authservice-roles — Atualiza TokenPayload, generateToken, AuthService.login/register/createArtistProfile/createEstablishmentProfile para usar roles[]
+- [x] 07-03: auth-middlewares-roles — Atualiza authmiddleware e authorizationMiddleware para ler e validar roles[] em vez de role único
+- [x] 07-04: frontend-roles — Atualiza types/index.ts, userService, AuthContext e Navigate.tsx para suportar roles[]
+
 ## Progress
 
 **Execution Order:**
-Phases execute in dependency order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in dependency order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 (Phases 2 and 4 can run in parallel once Phase 1 is complete)
 
 | Phase | Plans Complete | Status | Completed |
@@ -137,3 +155,4 @@ Phases execute in dependency order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. User Feed | 1/2 | In Progress|  |
 | 5. Integration Polish | 3/3 | Complete   | 2026-04-03 |
 | 6. Bug Fixes & UX | 4/4 | Complete   | 2026-04-03 |
+| 7. Multi-Role Auth | 4/4 | Complete   | 2026-05-21 |

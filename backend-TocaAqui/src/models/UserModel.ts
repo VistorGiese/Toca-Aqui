@@ -9,6 +9,7 @@ export interface UserAttributes {
   senha: string;
   nome_completo: string;
   role?: UserRole;
+  roles?: string[];
   email_verificado?: boolean;
   foto_perfil?: string;
   created_at?: Date;
@@ -21,6 +22,7 @@ class UserModel extends Model<UserAttributes> implements UserAttributes {
   public senha!: string;
   public nome_completo!: string;
   public role!: UserRole;
+  public roles!: string[];
   public email_verificado!: boolean;
   public foto_perfil?: string;
   public readonly created_at!: Date;
@@ -52,6 +54,11 @@ UserModel.init(
       allowNull: false,
       defaultValue: UserRole.COMMON_USER,
       comment: 'Role do usuário para RBAC (admin, establishment_owner, artist, common_user)'
+    },
+    roles: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: ['common_user'],
     },
     email_verificado: {
       type: DataTypes.BOOLEAN,
