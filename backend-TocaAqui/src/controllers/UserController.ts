@@ -4,7 +4,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { authService } from '../services/AuthService';
 import { uploadService } from '../services/UploadService';
 import { AppError } from '../errors/AppError';
-import { verifyToken } from '../utils/jwt';
+import { verifyToken, generateToken } from '../utils/jwt';
 import ArtistProfileModel from '../models/ArtistProfileModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import PreferenciaUsuarioModel from '../models/PreferenciaUsuarioModel';
@@ -14,8 +14,10 @@ import { unauthorized } from '../errors/AppError';
 
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await authService.register(req.body);
+  const token = generateToken({ id: user.id, email: user.email, roles: user.roles, role: user.role });
   res.status(201).json({
     message: 'Usuário criado com sucesso. Verifique seu email para ativar a conta.',
+    token,
     user,
   });
 });

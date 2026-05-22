@@ -56,17 +56,9 @@ UserModel.init(
       comment: 'Role do usuário para RBAC (admin, establishment_owner, artist, common_user)'
     },
     roles: {
-      type: DataTypes.TEXT,
+      type: DataTypes.JSON,
       allowNull: false,
-      defaultValue: '["common_user"]',
-      get() {
-        const raw = (this as any).getDataValue('roles');
-        if (!raw) return ['common_user'];
-        try { return JSON.parse(raw); } catch { return ['common_user']; }
-      },
-      set(value: string[]) {
-        (this as any).setDataValue('roles', JSON.stringify(value));
-      },
+      defaultValue: ['common_user'],
     },
     email_verificado: {
       type: DataTypes.BOOLEAN,
