@@ -27,15 +27,16 @@ export const checkRole = (...allowedRoles: UserRole[]) => {
         });
       }
 
-      const userRole = req.user.role;
-      if (!userRole) {
+      const userRoles: string[] = req.user.roles || (req.user.role ? [req.user.role] : []);
+      if (userRoles.length === 0) {
         return res.status(403).json({
           error: "Role Não Definida",
           message: "Seu perfil de usuário não possui uma role atribuída"
         });
       }
 
-      if (!allowedRoles.includes(userRole as UserRole)) {
+      const hasRole = allowedRoles.some(r => userRoles.includes(r));
+      if (!hasRole) {
         return res.status(403).json({
           error: "Acesso Negado",
           message: `Esta ação requer uma das seguintes permissões: ${allowedRoles.join(', ')}`
@@ -70,7 +71,8 @@ export const checkOwnership = (
         });
       }
 
-      if (req.user.role === UserRole.ADMIN) {
+      const userRoles = req.user.roles || (req.user.role ? [req.user.role] : []);
+      if (userRoles.includes(UserRole.ADMIN)) {
         return next();
       }
 
@@ -115,7 +117,8 @@ export const checkOwnershipOrAdmin = (
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      if (user.role === UserRole.ADMIN) {
+      const userRoles = user.roles || (user.role ? [user.role] : []);
+      if (userRoles.includes(UserRole.ADMIN)) {
         return next();
       }
 
@@ -164,7 +167,8 @@ export const checkEstablishmentAccess = () => {
       }
 
       // Admin global tem acesso irrestrito
-      if (user.role === UserRole.ADMIN) {
+      const userRoles = user.roles || (user.role ? [user.role] : []);
+      if (userRoles.includes(UserRole.ADMIN)) {
         return next();
       }
 
@@ -212,7 +216,8 @@ export const checkEstablishmentOwnerOnly = () => {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      if (user.role === UserRole.ADMIN) {
+      const userRoles = user.roles || (user.role ? [user.role] : []);
+      if (userRoles.includes(UserRole.ADMIN)) {
         return next();
       }
 
@@ -244,11 +249,13 @@ export const checkRolesOrAdmin = (...allowedRoles: UserRole[]) => {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
-    if (user.role === UserRole.ADMIN) {
+    const userRoles: string[] = user.roles || (user.role ? [user.role] : []);
+    if (userRoles.includes(UserRole.ADMIN)) {
       return next();
     }
 
-    if (!allowedRoles.includes(user.role as UserRole)) {
+    const hasRole = allowedRoles.some(r => userRoles.includes(r as string));
+    if (!hasRole) {
       return res.status(403).json({
         error: 'Você não tem permissão para acessar este recurso'
       });
@@ -270,7 +277,7 @@ export const checkHasArtistProfile = () => {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
-    if (user.role === UserRole.ADMIN) {
+    if ((user.roles || [user.role]).includes(UserRole.ADMIN)) {
       return next();
     }
 
@@ -298,7 +305,7 @@ export const checkHasEstablishmentProfile = () => {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
-    if (user.role === UserRole.ADMIN) {
+    if ((user.roles || [user.role]).includes(UserRole.ADMIN)) {
       return next();
     }
 
