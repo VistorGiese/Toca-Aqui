@@ -37,11 +37,8 @@ import UserNavigator from "./UserNavigator";
 import UserOnboardingGenres from "../screens/user/UserOnboardingGenres";
 import UserOnboardingLocation from "../screens/user/UserOnboardingLocation";
 
-// Estabelecimento — onboarding
-import OnboardingEstIdentidade from "../screens/OnboardingEstIdentidade";
-import OnboardingEstFuncionamento from "../screens/OnboardingEstFuncionamento";
-import OnboardingEstPerfil from "../screens/OnboardingEstPerfil";
-import OnboardingEstApresentacao from "../screens/OnboardingEstApresentacao";
+// Estabelecimento — onboarding (wizard com provider interno)
+import { EstablishmentOnboardingNavigator } from "../screens/establishment/onboarding";
 
 // Estabelecimento — navigator (bottom tabs + detail stack)
 import EstablishmentNavigator from "./EstablishmentNavigator";
@@ -56,11 +53,10 @@ export type RootStackParamList = {
   VerifyEmail: { token: string };
   ResetPassword: { token: string };
 
-  // Estabelecimento — onboarding
+  // Estabelecimento — onboarding (fluxo em stack aninhado)
+  EstablishmentOnboarding: undefined;
+  /** @deprecated Use EstablishmentOnboarding — mantido para compatibilidade de deep links */
   OnboardingEstIdentidade: undefined;
-  OnboardingEstFuncionamento: { nome: string; tipo: string; telefone: string };
-  OnboardingEstPerfil: { nome: string; tipo: string; telefone: string; endereco: string; numero: string; cidade: string; estado: string; diasHorarios: string };
-  OnboardingEstApresentacao: { nome: string; tipo: string; telefone: string; endereco: string; numero: string; cidade: string; estado: string; diasHorarios: string; generos: string; temEstrutura: boolean; estrutura: string; capacidade: string };
 
   // Estabelecimento — app principal
   EstablishmentNavigator: undefined;
@@ -137,9 +133,12 @@ export const linking: LinkingOptions<RootStackParamList> = {
 
 function getInitialRoute(user: import("@/types").User | null, paginas: import("@/types").MinhasPaginas | null): keyof RootStackParamList {
   if (!user) return "UserNavigator";
-  const hasArtistProfile = user.role === "artist" || !!user.perfilArtistaId || !!paginas?.pagina_artista;
+  const hasArtistProfile = !!paginas?.pagina_artista || user.role === "artist" || !!user.perfilArtistaId;
   if (hasArtistProfile) return "ArtistNavigator";
-  const hasEstProfile = user.role === "establishment" || !!paginas?.pagina_estabelecimento;
+  const hasEstProfile =
+    !!paginas?.pagina_estabelecimento ||
+    user.role === "establishment_owner" ||
+    user.role === "establishment";
   if (hasEstProfile) return "EstablishmentNavigator";
   return "UserNavigator";
 }
@@ -180,10 +179,8 @@ export default function Navigate() {
 
           {/* Estabelecimento — onboarding e app */}
           <Stack.Screen name="EstablishmentNavigator" component={EstablishmentNavigator} />
-          <Stack.Screen name="OnboardingEstIdentidade" component={OnboardingEstIdentidade} />
-          <Stack.Screen name="OnboardingEstFuncionamento" component={OnboardingEstFuncionamento} />
-          <Stack.Screen name="OnboardingEstPerfil" component={OnboardingEstPerfil} />
-          <Stack.Screen name="OnboardingEstApresentacao" component={OnboardingEstApresentacao} />
+          <Stack.Screen name="EstablishmentOnboarding" component={EstablishmentOnboardingNavigator} />
+          <Stack.Screen name="OnboardingEstIdentidade" component={EstablishmentOnboardingNavigator} />
 
           {/* Artista — onboarding e app */}
           <Stack.Screen name="ArtistNavigator" component={ArtistNavigator} />

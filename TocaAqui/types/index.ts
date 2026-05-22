@@ -1,6 +1,6 @@
 // Tipos globais da aplicação Toca Aqui
 
-export type UserRole = "common_user" | "artist" | "establishment" | "admin";
+export type UserRole = "common_user" | "artist" | "establishment" | "establishment_owner" | "admin";
 
 export interface User {
   id: number;
