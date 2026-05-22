@@ -137,10 +137,9 @@ export const linking: LinkingOptions<RootStackParamList> = {
 
 function getInitialRoute(user: import("@/types").User | null, paginas: import("@/types").MinhasPaginas | null): keyof RootStackParamList {
   if (!user) return "UserNavigator";
-  const userRoles: string[] = user.roles || (user.role ? [user.role] : []);
-  const hasArtistProfile = userRoles.includes("artist") || !!user.perfilArtistaId || !!paginas?.pagina_artista;
+  const hasArtistProfile = user.role === "artist" || !!user.perfilArtistaId || !!paginas?.pagina_artista;
   if (hasArtistProfile) return "ArtistNavigator";
-  const hasEstProfile = userRoles.includes("establishment_owner") || userRoles.includes("establishment") || !!paginas?.pagina_estabelecimento;
+  const hasEstProfile = user.role === "establishment" || !!paginas?.pagina_estabelecimento;
   if (hasEstProfile) return "EstablishmentNavigator";
   return "UserNavigator";
 }

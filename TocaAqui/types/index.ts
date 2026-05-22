@@ -6,9 +6,7 @@ export interface User {
   id: number;
   nome_completo: string;
   email: string;
-  roles: UserRole[];
-  /** @deprecated Use roles[]. Mantido para compat com tokens antigos. */
-  role?: UserRole;
+  role: UserRole;
   perfilArtistaId?: number;
 }
 
