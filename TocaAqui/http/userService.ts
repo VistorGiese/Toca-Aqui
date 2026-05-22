@@ -119,6 +119,30 @@ export const userService = {
     return response.data;
   },
 
+  async createEstablishmentProfile(data: {
+    nome_estabelecimento: string;
+    tipo_estabelecimento?: string;
+    descricao?: string;
+    generos_musicais: string;
+    horario_abertura: string;
+    horario_fechamento: string;
+    telefone_contato: string;
+    endereco: {
+      rua: string;
+      numero: string;
+      bairro: string;
+      cidade: string;
+      estado: string;
+      cep: string;
+    };
+  }): Promise<{ message: string; profile: { id: number } }> {
+    const response = await api.post<{ message: string; profile: { id: number } }>(
+      "/usuarios/perfil-estabelecimento",
+      data
+    );
+    return response.data;
+  },
+
   async uploadFoto(uri: string): Promise<{ foto_perfil: string }> {
     const token = await AsyncStorage.getItem("token");
     const filename = uri.split("/").pop() ?? "photo.jpg";

@@ -39,7 +39,7 @@ export function useRegister() {
 
       Alert.alert(
         "Conta criada!",
-        "Verifique seu email para ativar a conta antes de fazer login.",
+        "Faça login para continuar. Depois, em Configurações, você pode criar o perfil do seu estabelecimento.",
         [{ text: "Ir para login", onPress: () => navigation.navigate("Login") }]
       );
     } catch (error: unknown) {

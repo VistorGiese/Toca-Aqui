@@ -54,6 +54,9 @@ export default function UserSettings({ navigation }: Props) {
     }).catch(() => {});
     userService.getProfile().then(res => {
       setHasArtistProfile((res.user.artist_profiles?.length ?? 0) > 0);
+      if (!paginas?.pagina_estabelecimento) {
+        setHasEstablishment((res.user.establishment_profiles?.length ?? 0) > 0);
+      }
     }).catch(() => {});
   }, [paginas]);
 
@@ -168,7 +171,7 @@ export default function UserSettings({ navigation }: Props) {
   }
 
   function goToVenueRegister() {
-    (navigation as any).getParent()?.navigate("OnboardingEstIdentidade");
+    (navigation as any).getParent()?.navigate("EstablishmentOnboarding");
   }
 
   return (
