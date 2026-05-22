@@ -7,7 +7,8 @@ export interface AuthRequest extends Request {
   user?: {
     id: number;
     email?: string;
-    role?: UserRole;
+    role?: UserRole;     // mantido para compat com código existente
+    roles?: string[];    // novo: array de roles
   };
   token?: string;
 }
@@ -38,7 +39,19 @@ export const authMiddleware = async (
       return res.status(401).json({ error: "Token revogado. Faça login novamente." });
     }
 
-    req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
+    // Montar roles: prioriza decoded.roles (novo), cai em [decoded.role] (tokens antigos)
+    const roles: string[] = Array.isArray(decoded.roles) && decoded.roles.length > 0
+      ? decoded.roles
+      : decoded.role
+      ? [decoded.role as string]
+      : ['common_user'];
+
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: (roles[0] as UserRole),   // compat legado
+      roles,                           // novo
+    };
     req.token = token;
     next();
   } catch (error) {
