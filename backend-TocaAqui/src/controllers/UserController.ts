@@ -65,11 +65,19 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
   const userId = req.user?.id;
   if (!userId) throw new AppError('Usuário não identificado', 401);
   const user = await authService.getUserProfile(userId);
+
+  const userRoles: string[] = Array.isArray((user as any).roles) && (user as any).roles.length > 0
+    ? (user as any).roles
+    : (user as any).role
+    ? [(user as any).role]
+    : ['common_user'];
+
   res.json({
     user: {
       id: user.id,
       nome_completo: user.nome_completo,
       email: user.email,
+      roles: userRoles,
       foto_perfil: user.foto_perfil || null,
       establishment_profiles: (user as any).EstablishmentProfiles || [],
       artist_profiles: (user as any).ArtistProfiles || [],
