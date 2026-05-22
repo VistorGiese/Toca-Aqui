@@ -11,7 +11,7 @@ interface AuthContextData {
   isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, senha: string) => Promise<void>;
-  signInWithToken: (tokenValue: string, userData: { id: number; nome_completo: string; email: string; role: string; perfil_artista_id?: number }) => Promise<MinhasPaginas | null>;
+  signInWithToken: (tokenValue: string, userData: { id: number; nome_completo: string; email: string; roles: string[]; role?: string; perfil_artista_id?: number }) => Promise<MinhasPaginas | null>;
   signOut: () => Promise<void>;
   updateUser: () => Promise<void>;
 }
@@ -50,11 +50,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const profile = await userService.getProfile();
           const u = profile.user;
+          const roles = u.roles && u.roles.length > 0
+            ? u.roles as UserRole[]
+            : u.role
+            ? [u.role as UserRole]
+            : ['common_user' as UserRole];
           setUser({
             id: u.id,
             nome_completo: u.nome_completo,
             email: u.email,
-            role: u.role as UserRole,
+            roles,
             perfilArtistaId: u.artist_profiles?.[0]?.id,
           });
           if (u.establishment_profiles && u.establishment_profiles.length > 0) {
@@ -68,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch { /* ignore */ }
         } catch {
           // Token expired or invalid — clear it
-          await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
+          await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRoles"]);
           delete api.defaults.headers.common["Authorization"];
           setToken(null);
         }
@@ -87,8 +92,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(response.token);
     const u = response.user;
 
-    // Persiste o role para restauração de sessão futura
-    await AsyncStorage.setItem("userRole", u.role);
+    const loginRoles = u.roles && u.roles.length > 0
+      ? u.roles as UserRole[]
+      : u.role
+      ? [u.role as UserRole]
+      : ['common_user' as UserRole];
+
+    // Persiste as roles para referência futura
+    await AsyncStorage.setItem("userRoles", JSON.stringify(loginRoles));
 
     try {
       const profile = await userService.getProfile();
@@ -96,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: u.id,
         nome_completo: u.nome_completo,
         email: u.email,
-        role: u.role as UserRole,
+        roles: loginRoles,
         perfilArtistaId: profile.user.artist_profiles?.[0]?.id,
       });
       if (
@@ -121,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: u.id,
         nome_completo: u.nome_completo,
         email: u.email,
-        role: u.role as UserRole,
+        roles: loginRoles,
       });
     }
     try {
@@ -130,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
   }, []);
 
-  const signInWithToken = useCallback(async (tokenValue: string, userData: { id: number; nome_completo: string; email: string; role: string; perfil_artista_id?: number }) => {
+  const signInWithToken = useCallback(async (tokenValue: string, userData: { id: number; nome_completo: string; email: string; roles: string[]; role?: string; perfil_artista_id?: number }) => {
     api.defaults.headers.common["Authorization"] = `Bearer ${tokenValue}`;
     setToken(tokenValue);
 
@@ -140,11 +151,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       perfilArtistaId = profile.user.artist_profiles?.[0]?.id;
     } catch { /* ignore */ }
 
+    const tokenRoles = userData.roles && userData.roles.length > 0
+      ? userData.roles as UserRole[]
+      : userData.role
+      ? [userData.role as UserRole]
+      : ['common_user' as UserRole];
     setUser({
       id: userData.id,
       nome_completo: userData.nome_completo,
       email: userData.email,
-      role: userData.role as UserRole,
+      roles: tokenRoles,
       perfilArtistaId,
     });
     try {
@@ -157,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     isSigningOut.current = true;
     await userService.logout();
-    await AsyncStorage.removeItem("userRole");
+    await AsyncStorage.removeItem("userRoles");
     setPaginas(null);
     clearAuth();
     isSigningOut.current = false;
@@ -167,11 +183,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const profile = await userService.getProfile();
       const u = profile.user;
+      const updatedRoles = u.roles && u.roles.length > 0
+        ? u.roles as UserRole[]
+        : u.role
+        ? [u.role as UserRole]
+        : ['common_user' as UserRole];
       setUser({
         id: u.id,
         nome_completo: u.nome_completo,
         email: u.email,
-        role: u.role as UserRole,
+        roles: updatedRoles,
         perfilArtistaId: u.artist_profiles?.[0]?.id,
       });
     } catch {
