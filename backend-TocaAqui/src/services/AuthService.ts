@@ -22,7 +22,7 @@ export interface RegisterParams {
 
 export interface LoginResult {
   token: string;
-  user: { id: number; nome_completo: string; email: string; roles: string[] };
+  user: { id: number; nome_completo: string; email: string; role: string; roles: string[] };
 }
 
 export class AuthService {
@@ -69,6 +69,7 @@ export class AuthService {
         id: user.id!,
         nome_completo: user.nome_completo,
         email: user.email,
+        role: user.role as string,
         roles: userRoles,
       },
     };
