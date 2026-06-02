@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { User, UserRole, MinhasPaginas } from "@/types";
 import { userService } from "@/http/userService";
 import api, { setOnUnauthorized } from "@/http/api";
+import { resolvePrimaryRole } from "@/utils/resolveUserRole";
 
 interface AuthContextData {
   user: User | null;
@@ -11,7 +12,17 @@ interface AuthContextData {
   isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, senha: string) => Promise<void>;
-  signInWithToken: (tokenValue: string, userData: { id: number; nome_completo: string; email: string; role: string; perfil_artista_id?: number }) => Promise<MinhasPaginas | null>;
+  signInWithToken: (
+    tokenValue: string,
+    userData: {
+      id: number;
+      nome_completo: string;
+      email: string;
+      role?: string;
+      roles?: string[];
+      perfil_artista_id?: number;
+    }
+  ) => Promise<MinhasPaginas | null>;
   signOut: () => Promise<void>;
   updateUser: () => Promise<void>;
   refreshPaginas: () => Promise<MinhasPaginas | null>;
@@ -75,11 +86,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const profile = await userService.getProfile();
           const u = profile.user;
           const storedRole = await AsyncStorage.getItem("userRole");
+          const role = resolvePrimaryRole(
+            u,
+            (storedRole as UserRole) || "common_user"
+          );
           setUser({
             id: u.id,
             nome_completo: u.nome_completo,
             email: u.email,
-            role: ((u as { role?: string }).role ?? storedRole ?? "common_user") as UserRole,
+            role,
             perfilArtistaId: u.artist_profiles?.[0]?.id,
           });
           await syncEstablishmentIdFromProfile(profile);
@@ -103,16 +118,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await userService.login(email, senha);
     setToken(response.token);
     const u = response.user;
+    const role = resolvePrimaryRole(u);
 
-    await AsyncStorage.setItem("userRole", u.role);
+    await AsyncStorage.setItem("userRole", role);
 
     try {
       const profile = await userService.getProfile();
+      const profileRole = resolvePrimaryRole(profile.user, role);
       setUser({
         id: u.id,
         nome_completo: u.nome_completo,
         email: u.email,
-        role: u.role as UserRole,
+        role: profileRole,
         perfilArtistaId: profile.user.artist_profiles?.[0]?.id,
       });
       await syncEstablishmentIdFromProfile(profile);
@@ -121,17 +138,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: u.id,
         nome_completo: u.nome_completo,
         email: u.email,
-        role: u.role as UserRole,
+        role,
       });
     }
     await refreshPaginas();
   }, [refreshPaginas]);
 
-  const signInWithToken = useCallback(async (tokenValue: string, userData: { id: number; nome_completo: string; email: string; role: string; perfil_artista_id?: number }) => {
+  const signInWithToken = useCallback(async (
+    tokenValue: string,
+    userData: {
+      id: number;
+      nome_completo: string;
+      email: string;
+      role?: string;
+      roles?: string[];
+      perfil_artista_id?: number;
+    }
+  ) => {
+    const role = resolvePrimaryRole(userData);
+
     await AsyncStorage.setItem("token", tokenValue);
     api.defaults.headers.common["Authorization"] = `Bearer ${tokenValue}`;
     setToken(tokenValue);
-    await AsyncStorage.setItem("userRole", userData.role);
+    await AsyncStorage.setItem("userRole", role);
 
     let perfilArtistaId: number | undefined = userData.perfil_artista_id;
     try {
@@ -144,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: userData.id,
       nome_completo: userData.nome_completo,
       email: userData.email,
-      role: userData.role as UserRole,
+      role,
       perfilArtistaId,
     });
 
@@ -168,7 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: u.id,
         nome_completo: u.nome_completo,
         email: u.email,
-        role: u.role as UserRole,
+        role: resolvePrimaryRole(u),
         perfilArtistaId: u.artist_profiles?.[0]?.id,
       });
       await refreshPaginas();

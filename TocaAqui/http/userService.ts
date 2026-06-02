@@ -8,7 +8,8 @@ interface LoginResponse {
     id: number;
     nome_completo: string;
     email: string;
-    role: string;
+    role?: string;
+    roles?: string[];
   };
 }
 
@@ -18,7 +19,8 @@ interface ProfileResponse {
     id: number;
     nome_completo: string;
     email: string;
-    role: string;
+    role?: string;
+    roles?: string[];
     foto_perfil: string | null;
     establishment_profiles: any[];
     artist_profiles: any[];
