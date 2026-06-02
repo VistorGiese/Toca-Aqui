@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { isAxiosError } from "axios";
-import { AccountProps } from "../contexts/AccountFromContexto";
 import api from "./api";
 
 interface EnderecoResponse {
@@ -11,28 +10,6 @@ interface EnderecoResponse {
   cidade: string;
   estado: string;
   cep: string;
-}
-
-interface EstabelecimentoResponse {
-  id: number;
-}
-
-interface LoginResponse {
-  token: string;
-  estabelecimentoId?: number;
-  user?: any;
-  message?: string;
-}
-
-interface RegisterUserResponse {
-  token: string;
-  user: {
-    id: number;
-    nome: string;
-    email: string;
-    role: string;
-  };
-  message: string;
 }
 
 interface ApiProfileResponse {
@@ -49,130 +26,19 @@ interface ApiProfileResponse {
   endereco: EnderecoResponse;
 }
 
-interface ProfileResponse {
+export interface ProfileResponse {
   estabelecimento: Omit<ApiProfileResponse, "endereco">;
   endereco: EnderecoResponse;
 }
 
-type LoginPayload = {
-  email_responsavel?: string;
-  email?: string;
-  senha?: string;
-};
-
-const salvarTokenEConfigurarAxios = async (token: string) => {
-  try {
-    await AsyncStorage.setItem("token", token);
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    console.log("Token salvo e header configurado com sucesso.");
-  } catch (error) {
-    console.error("Erro ao salvar token internamente:", error);
-  }
-};
-
-const salvarRoleUsuario = async (role?: string) => {
-  try {
-    if (role) {
-      await AsyncStorage.setItem("userRole", role);
-    }
-  } catch (error) {
-    console.warn("Nao foi possivel salvar o role do usuario.", error);
-  }
-};
-
-export const registerUser = async (
-  userData: Partial<AccountProps>
-): Promise<RegisterUserResponse> => {
-  try {
-    const selectedRole = userData.tipo_usuario || "establishment_owner";
-    const payload = {
-      nome_completo: userData.nome_dono,
-      email: userData.email_responsavel,
-      senha: userData.password,
-      tipo_usuario: selectedRole,
-    };
-
-    const response = await api.post<RegisterUserResponse>(
-      "/usuarios/registro",
-      payload
-    );
-
-    if (response.data.token) {
-      await salvarTokenEConfigurarAxios(response.data.token);
-      await salvarRoleUsuario(response.data.user?.role);
-    }
-
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error(
-        "Detalhes do erro ao criar usuário:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    throw error;
-  }
-};
-
-export const createEndereco = async (
-  enderecoData: Partial<AccountProps>
-): Promise<EnderecoResponse> => {
-  try {
-    const response = await api.post<EnderecoResponse>(
-      "/enderecos",
-      enderecoData
-    );
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error(
-        "Detalhes do erro ao criar endereço:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    console.error("Erro ao criar endereço:", error);
-    throw error;
-  }
-};
-
-export const createEstabelecimento = async (
-  estabelecimentoData: Partial<AccountProps> & { endereco_id: number }
-): Promise<EstabelecimentoResponse> => {
-  try {
-    const payloadNovo = {
-      nome_estabelecimento: estabelecimentoData.nome_estabelecimento,
-      tipo_estabelecimento: "bar",
-      descricao: "Cadastrado via App",
-      generos_musicais: estabelecimentoData.generos_musicais,
-      horario_abertura: estabelecimentoData.horario_funcionamento_inicio,
-      horario_fechamento: estabelecimentoData.horario_funcionamento_fim,
-      endereco_id: estabelecimentoData.endereco_id,
-      telefone_contato: estabelecimentoData.celular_responsavel,
-    };
-
-    const response = await api.post<EstabelecimentoResponse>(
-      "/usuarios/perfil-estabelecimento",
-      payloadNovo
-    );
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error(
-        "Detalhes do erro ao criar estabelecimento:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    console.error("Erro ao criar estabelecimento:", error);
-    throw error;
-  }
-};
-
-export const createArtistProfile = async (
-  artistData: Partial<AccountProps>
-): Promise<void> => {
+/** Perfil de artista mínimo (tela legada HomePage). */
+export const createArtistProfile = async (data: {
+  nome_dono?: string;
+  nome?: string;
+}): Promise<void> => {
   try {
     const payload = {
-      nome_artistico: artistData.nome_dono || artistData.nome || "Artista",
+      nome_artistico: data.nome_dono || data.nome || "Artista",
       biografia: "Perfil criado via app",
       instrumentos: [],
       generos: [],
@@ -191,133 +57,19 @@ export const createArtistProfile = async (
   }
 };
 
-export const loginEstabelecimento = async (
-  loginData: LoginPayload
-): Promise<LoginResponse> => {
-  try {
-    delete api.defaults.headers.common["Authorization"];
-
-    const emailRaw = loginData.email_responsavel || loginData.email || "";
-
-    const payload = {
-      email: emailRaw.trim(), // Remove espaços em branco
-      senha: loginData.senha,
-    };
-
-    console.log("Tentando login com:", payload.email);
-
-    const response = await api.post<LoginResponse>("/usuarios/login", payload);
-    const { token } = response.data;
-    let estabelecimentoId = 0;
-
-    if (token) {
-      await salvarTokenEConfigurarAxios(token);
-      await salvarRoleUsuario(response.data.user?.role);
-
-      try {
-        const perfilResponse = await api.get("/usuarios/perfil");
-        const userData: any = perfilResponse.data.user;
-
-        if (
-          userData.establishment_profiles &&
-          userData.establishment_profiles.length > 0
-        ) {
-          estabelecimentoId = userData.establishment_profiles[0].id;
-          await AsyncStorage.setItem(
-            "estabelecimentoId",
-            String(estabelecimentoId)
-          );
-        }
-      } catch (err) {
-        console.warn(
-          "Aviso: Login ok, mas falha ao buscar ID do estabelecimento (pode não ter perfil ainda)."
-        );
-      }
-    }
-
-    return {
-      token: token,
-      estabelecimentoId: estabelecimentoId,
-      user: response.data.user,
-    };
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error("--- ERRO DE LOGIN (401) ---");
-      console.error("URL:", error.config?.url);
-      console.error("Status:", error.response?.status);
-      console.error(
-        "Resposta do Backend:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    throw error;
-  }
-};
-
-export const cadastrarEstabelecimentoCompleto = async (
-  fullData: AccountProps
-): Promise<void> => {
-  try {
-    console.log("1. Iniciando registro do usuário...");
-    await registerUser(fullData);
-
-    // O backend não retorna token no registro — é preciso fazer login para obtê-lo
-    console.log("2. Fazendo login para obter token...");
-    const loginData: LoginPayload = {
-      email: fullData.email_responsavel,
-      senha: fullData.password,
-    };
-    const loginResponse = await loginEstabelecimento(loginData);
-
-    if (!loginResponse?.token) {
-      throw new Error("Login após registro não retornou token. Verifique seu e-mail e tente novamente.");
-    }
-
-    api.defaults.headers.common["Authorization"] = `Bearer ${loginResponse.token}`;
-    console.log("3. Token obtido e header configurado.");
-
-    console.log("4. Criando endereço...");
-    const enderecoResponse = await createEndereco(fullData);
-
-    console.log("5. Criando perfil do estabelecimento...");
-    await createEstabelecimento({
-      ...fullData,
-      endereco_id: enderecoResponse.id,
-    });
-
-    console.log("CADASTRO COMPLETO COM SUCESSO!");
-  } catch (error) {
-    console.error("Erro no fluxo completo de cadastro:", error);
-    throw error;
-  }
-};
-
-export const cadastrarUsuarioSimples = async (
-  fullData: AccountProps
-): Promise<RegisterUserResponse> => {
-  const response = await registerUser(fullData);
-
-  if (fullData.tipo_usuario === "artist") {
-    await createArtistProfile(fullData);
-  }
-
-  return response;
-};
-
 export const getEstabelecimentoProfile = async (): Promise<ProfileResponse> => {
   try {
     const response = await api.get("/usuarios/perfil");
-    const user = (response.data as any).user;
-    const estab = user.establishment_profiles
-      ? user.establishment_profiles[0]
-      : null;
+    const user = (response.data as { user: Record<string, unknown> }).user;
+    const profiles = user.establishment_profiles as Array<Record<string, unknown>> | undefined;
+    const estab = profiles?.[0] ?? null;
 
     if (!estab) {
       throw new Error("Perfil de estabelecimento não encontrado.");
     }
 
-    const enderecoData = estab.Address || {
-      id: estab.endereco_id || 0,
+    const enderecoData = (estab.Address as EnderecoResponse | undefined) ?? {
+      id: (estab.endereco_id as number) || 0,
       rua: "",
       numero: "",
       bairro: "",
@@ -328,15 +80,15 @@ export const getEstabelecimentoProfile = async (): Promise<ProfileResponse> => {
 
     return {
       estabelecimento: {
-        id: estab.id,
-        nome_estabelecimento: estab.nome_estabelecimento,
-        nome_dono: user.nome_completo,
-        email_responsavel: user.email,
-        celular_responsavel: estab.telefone_contato,
-        generos_musicais: estab.generos_musicais,
-        horario_funcionamento_inicio: estab.horario_abertura,
-        horario_funcionamento_fim: estab.horario_fechamento,
-        endereco_id: estab.endereco_id,
+        id: estab.id as number,
+        nome_estabelecimento: estab.nome_estabelecimento as string,
+        nome_dono: user.nome_completo as string,
+        email_responsavel: user.email as string,
+        celular_responsavel: estab.telefone_contato as string,
+        generos_musicais: estab.generos_musicais as string,
+        horario_funcionamento_inicio: estab.horario_abertura as string,
+        horario_funcionamento_fim: estab.horario_fechamento as string,
+        endereco_id: estab.endereco_id as number,
         senha: "",
       },
       endereco: enderecoData,
@@ -348,80 +100,35 @@ export const getEstabelecimentoProfile = async (): Promise<ProfileResponse> => {
         JSON.stringify(error.response?.data, null, 2)
       );
     }
-    console.error("Erro ao buscar perfil:", error);
     throw error;
   }
 };
 
 export const updateEstabelecimento = async (
-  updateData: Partial<AccountProps>
+  updateData: Record<string, unknown>
 ): Promise<void> => {
-  try {
-    const estabelecimentoId = await AsyncStorage.getItem("estabelecimentoId");
-    if (!estabelecimentoId) {
-      throw new Error("ID do estabelecimento não encontrado.");
-    }
-    await api.put(`/estabelecimentos/${estabelecimentoId}`, updateData);
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error(
-        "Detalhes do erro ao atualizar estabelecimento:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    console.error("Erro ao atualizar estabelecimento:", error);
-    throw error;
+  const estabelecimentoId = await AsyncStorage.getItem("estabelecimentoId");
+  if (!estabelecimentoId) {
+    throw new Error("ID do estabelecimento não encontrado.");
   }
+  await api.put(`/estabelecimentos/${estabelecimentoId}`, updateData);
 };
 
 export const updateEndereco = async (
   enderecoId: number,
-  updateData: Partial<AccountProps>
+  updateData: Record<string, unknown>
 ): Promise<void> => {
-  try {
-    await api.put(`/enderecos/${enderecoId}`, updateData);
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error(
-        "Detalhes do erro ao atualizar endereço:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    console.error("Erro ao atualizar endereço:", error);
-    throw error;
-  }
+  await api.put(`/enderecos/${enderecoId}`, updateData);
 };
 
 export const deleteEstabelecimento = async (): Promise<void> => {
-  try {
-    const estabelecimentoId = await AsyncStorage.getItem("estabelecimentoId");
-    if (!estabelecimentoId) {
-      throw new Error("ID do estabelecimento não encontrado.");
-    }
-    await api.delete(`/estabelecimentos/${estabelecimentoId}`);
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error(
-        "Detalhes do erro ao deletar estabelecimento:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    console.error("Erro ao deletar estabelecimento:", error);
-    throw error;
+  const estabelecimentoId = await AsyncStorage.getItem("estabelecimentoId");
+  if (!estabelecimentoId) {
+    throw new Error("ID do estabelecimento não encontrado.");
   }
+  await api.delete(`/estabelecimentos/${estabelecimentoId}`);
 };
 
 export const deleteEndereco = async (enderecoId: number): Promise<void> => {
-  try {
-    await api.delete(`/enderecos/${enderecoId}`);
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.error(
-        "Detalhes do erro ao deletar endereço:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-    }
-    console.error("Erro ao deletar endereço:", error);
-    throw error;
-  }
+  await api.delete(`/enderecos/${enderecoId}`);
 };

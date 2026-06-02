@@ -5,7 +5,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { NavigationContainer, NavigationIndependentTree } from "@react-navigation/native";
-import { AccountProvider } from '../contexts/AccountFromContexto';
 import { AuthProvider } from '../contexts/AuthContext';
 import Navigate, { linking } from "../navigation/Navigate";
 import { customFonts } from "../assets/fonts/fonts";
@@ -108,9 +107,7 @@ export default function App() {
       <NavigationIndependentTree>
         <NavigationContainer linking={linking}>
           <AuthProvider>
-            <AccountProvider>
-              <Navigate />
-            </AccountProvider>
+            <Navigate />
           </AuthProvider>
         </NavigationContainer>
       </NavigationIndependentTree>

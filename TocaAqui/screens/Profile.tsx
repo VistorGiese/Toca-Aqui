@@ -17,7 +17,7 @@ import {
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { AccountProps } from "../contexts/AccountFromContexto";
+import { AccountProps } from "@/types";
 import { RootStackParamList } from "../navigation/Navigate";
 import {
     deleteEstabelecimento,

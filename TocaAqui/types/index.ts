@@ -42,3 +42,24 @@ export interface MinhasPaginas {
   pagina_artista: { id: number; nome_artistico: string; foto_perfil: string | null } | null;
   pagina_estabelecimento: { id: number; nome_estabelecimento: string; tipo_estabelecimento: string } | null;
 }
+
+/** Formulário legado (tela Profile / HomePage). */
+export type AccountProps = {
+  nome?: string;
+  tipo_usuario?: "establishment_owner" | "artist" | "common_user";
+  email_responsavel?: string;
+  password?: string;
+  passwordConfirm?: string;
+  celular_responsavel?: string;
+  nome_estabelecimento?: string;
+  cidade?: string;
+  estado?: string;
+  rua?: string;
+  numero?: string;
+  bairro?: string;
+  cep?: string;
+  generos_musicais?: string;
+  horario_funcionamento_inicio?: string;
+  horario_funcionamento_fim?: string;
+  nome_dono?: string;
+};

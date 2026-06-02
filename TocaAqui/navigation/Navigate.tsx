@@ -17,7 +17,6 @@ import InfoEvent from "../screens/InfoEvent";
 import Initial from "../screens/Initial";
 import Login from "../screens/login";
 import Profile from "../screens/Profile";
-import RoleSelection from "../screens/RoleSelection";
 import Schedulling from "../screens/Schedulling";
 import SearchArtists from "../screens/SearchArtists";
 
@@ -49,7 +48,6 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  RoleSelection: undefined;
   VerifyEmail: { token: string };
   ResetPassword: { token: string };
 
@@ -166,7 +164,6 @@ export default function Navigate() {
           <Stack.Screen name="Register" component={Register} />
           <Stack.Screen name="RegisterArtist" component={RegisterArtist} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-          <Stack.Screen name="RoleSelection" component={RoleSelection} />
           <Stack.Screen name="VerifyEmail" component={VerifyEmail} />
           <Stack.Screen name="ResetPassword" component={ResetPassword} />
         </>
