@@ -60,7 +60,7 @@ describe('BandManagementController', () => {
   // ─── createBand ───────────────────────────────────────────────────────────
   describe('createBand', () => {
     it('cria banda com artista como líder e retorna 201', async () => {
-      const band = { id: 1, nome_banda: 'Minha Banda', descricao: 'Desc', generos_musicais: ['rock'], esta_ativo: true };
+      const band = { id: 1, nome_banda: 'Minha Banda', descricao: 'Desc', generos_musicais: ['rock'], esta_ativo: true, reload: jest.fn().mockResolvedValue(undefined) };
       const member = { id: 1, banda_id: 1, perfil_artista_id: 5 };
       const req = makeReq({
         user: { id: 1 },

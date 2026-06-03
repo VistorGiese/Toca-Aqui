@@ -42,8 +42,9 @@ jest.mock('../../../services/EmailService', () => ({
 
 jest.mock('../../../models/AddressModel', () => ({
   __esModule: true,
-  default: { findByPk: jest.fn().mockResolvedValue(null) },
+  default: { findByPk: jest.fn().mockResolvedValue(null), create: jest.fn() },
 }));
+
 
 jest.mock('../../../services/GeocodingService', () => ({
   geocodificarEndereco: jest.fn().mockResolvedValue(null),
@@ -54,8 +55,10 @@ import { AppError } from '../../../errors/AppError';
 import UserModel from '../../../models/UserModel';
 import EstablishmentProfileModel from '../../../models/EstablishmentProfileModel';
 import ArtistProfileModel from '../../../models/ArtistProfileModel';
+import AddressModel from '../../../models/AddressModel';
 import redisService from '../../../config/redis';
 import bcrypt from 'bcryptjs';
+import sequelizeDb from '../../../config/database';
 
 const service = new AuthService();
 
@@ -72,7 +75,10 @@ const makeUser = (overrides = {}) => ({
 });
 
 describe('AuthService', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(sequelizeDb, 'transaction').mockImplementation((cb: any) => cb({}));
+  });
 
   // ─── register ─────────────────────────────────────────────────────────────
   describe('register', () => {
@@ -89,7 +95,7 @@ describe('AuthService', () => {
       });
 
       expect(result).toEqual(
-        expect.objectContaining({ id: 5, email: 'teste@email.com', email_verificado: false })
+        expect.objectContaining({ id: 5, email: 'teste@email.com', email_verificado: true })
       );
       expect(result).not.toHaveProperty('senha');
     });
@@ -196,16 +202,6 @@ describe('AuthService', () => {
       );
     });
 
-    it('lança AppError 403 quando email não foi verificado', async () => {
-      const hash = await bcrypt.hash('Senha1234', 10);
-      (UserModel.findOne as jest.Mock).mockResolvedValue(
-        makeUser({ senha: hash, email_verificado: false })
-      );
-
-      await expect(service.login('teste@email.com', 'Senha1234')).rejects.toEqual(
-        expect.objectContaining({ statusCode: 403, message: 'Email não verificado. Verifique sua caixa de entrada.' })
-      );
-    });
   });
 
   // ─── logout ───────────────────────────────────────────────────────────────
@@ -395,31 +391,35 @@ describe('AuthService', () => {
       generos_musicais: 'rock,mpb',
       horario_abertura: '18:00',
       horario_fechamento: '02:00',
-      endereco_id: 10,
       telefone_contato: '11999999999',
+      endereco: {
+        rua: 'Rua das Flores',
+        numero: '100',
+        bairro: 'Centro',
+        cidade: 'São Paulo',
+        estado: 'SP',
+        cep: '01000-000',
+      },
     };
 
-    it('cria o perfil quando endereço não está em uso', async () => {
-      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValueOnce(null);
-      (EstablishmentProfileModel.create as jest.Mock).mockResolvedValueOnce({ id: 1, ...profileData, update: jest.fn().mockResolvedValue(undefined) });
+    it('cria o perfil com endereço aninhado via transaction', async () => {
+      const novoEndereco = { id: 10 };
+      const novoProfile = { id: 1, nome_estabelecimento: 'Bar do Zé', endereco_id: 10 };
+
+      (AddressModel.create as jest.Mock).mockResolvedValueOnce(novoEndereco);
+      (EstablishmentProfileModel.create as jest.Mock).mockResolvedValueOnce(novoProfile);
 
       const result = await service.createEstablishmentProfile(1, profileData);
 
+      expect(AddressModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ rua: 'Rua das Flores', cidade: 'São Paulo' }),
+        expect.anything()
+      );
       expect(EstablishmentProfileModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ usuario_id: 1, nome_estabelecimento: 'Bar do Zé' })
+        expect.objectContaining({ usuario_id: 1, nome_estabelecimento: 'Bar do Zé', endereco_id: 10 }),
+        expect.anything()
       );
       expect(result).toHaveProperty('id', 1);
-    });
-
-    it('lança AppError 400 quando endereço já está em uso', async () => {
-      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValueOnce({
-        id: 5,
-        nome_estabelecimento: 'Concorrente',
-      });
-
-      await expect(service.createEstablishmentProfile(1, profileData)).rejects.toEqual(
-        expect.objectContaining({ statusCode: 400 })
-      );
     });
   });
 

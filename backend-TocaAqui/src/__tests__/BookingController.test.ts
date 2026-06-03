@@ -132,11 +132,12 @@ describe('BookingController', () => {
           data_show: '2026-06-15',
           horario_inicio: '20:00',
           horario_fim: '23:00',
+          perfil_estabelecimento_id: 2,
         },
       });
       const res = mockRes();
 
-      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 1 });
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 1 });
       (BookingModel.findOne as jest.Mock).mockResolvedValue(null);
       (BookingModel.create as jest.Mock).mockResolvedValue(booking);
 
@@ -155,11 +156,12 @@ describe('BookingController', () => {
           data_show: '2026-06-15',
           horario_inicio: '20:00',
           horario_fim: '23:00',
+          perfil_estabelecimento_id: 2,
         },
       });
       const res = mockRes();
 
-      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 1 });
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 1 });
       (BookingModel.findOne as jest.Mock).mockResolvedValue(makeBooking());
 
       createBooking(req, res, mockNext as unknown as NextFunction);
@@ -185,11 +187,11 @@ describe('BookingController', () => {
     it('passa AppError 403 quando usuário não tem perfil de estabelecimento nem é membro', async () => {
       const req = makeReq({
         user: { id: 1 },
-        body: { titulo_evento: 'Sem Estab', data_show: '2026-06-15', horario_inicio: '20:00', horario_fim: '23:00' },
+        body: { titulo_evento: 'Sem Estab', data_show: '2026-06-15', horario_inicio: '20:00', horario_fim: '23:00', perfil_estabelecimento_id: 2 },
       });
       const res = mockRes();
 
-      (EstablishmentProfileModel.findOne as jest.Mock).mockResolvedValue(null);
+      (EstablishmentProfileModel.findByPk as jest.Mock).mockResolvedValue({ id: 2, usuario_id: 99 });
       (EstablishmentMemberModel.findOne as jest.Mock).mockResolvedValue(null);
 
       createBooking(req, res, mockNext as unknown as NextFunction);

@@ -27,6 +27,7 @@ jest.mock('../services/UploadService', () => ({
 
 jest.mock('../utils/jwt', () => ({
   verifyToken: jest.fn(),
+  generateToken: jest.fn().mockReturnValue('mocked-token'),
 }));
 
 jest.mock('../models/ArtistProfileModel', () => ({

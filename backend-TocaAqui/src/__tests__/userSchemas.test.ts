@@ -61,8 +61,15 @@ describe('createEstablishmentProfileSchema', () => {
     generos_musicais: 'rock, jazz',
     horario_abertura: '18:00',
     horario_fechamento: '02:00',
-    endereco_id: 1,
     telefone_contato: '11999999999',
+    endereco: {
+      rua: 'Rua das Flores',
+      numero: '100',
+      bairro: 'Centro',
+      cidade: 'São Paulo',
+      estado: 'SP',
+      cep: '01000-000',
+    },
   };
 
   it('aceita dados válidos', () => {
@@ -72,11 +79,6 @@ describe('createEstablishmentProfileSchema', () => {
   it('aplica default bar ao tipo_estabelecimento', () => {
     const result = createEstablishmentProfileSchema.safeParse(base);
     expect(result.success && result.data.tipo_estabelecimento).toBe('bar');
-  });
-
-  it('rejeita endereco_id não numérico', () => {
-    const result = createEstablishmentProfileSchema.safeParse({ ...base, endereco_id: 'abc' });
-    expect(result.success).toBe(false);
   });
 
   it('rejeita telefone muito curto', () => {
