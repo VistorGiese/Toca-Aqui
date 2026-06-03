@@ -1,4 +1,3 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
@@ -9,7 +8,16 @@ module.exports = {
     '!src/index.ts',
     '!src/config/**',
     '!src/models/**',
+    '!src/scripts/**',
   ],
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 60,
+      lines: 60,
+      statements: 60,
+    },
+  },
   projects: [
     {
       displayName: 'unit',
@@ -17,7 +25,25 @@ module.exports = {
       testEnvironment: 'node',
       roots: ['<rootDir>/src'],
       testMatch: ['**/__tests__/**/*.test.ts'],
-      testPathIgnorePatterns: ['/__tests__/integration/'],
+      testPathIgnorePatterns: [
+        '/__tests__/integration/',
+        // Arquivos movidos para unit/ — ignorar duplicatas na raiz
+        '/__tests__/AuthService\\.test\\.ts$',
+        '/__tests__/authMiddleware\\.test\\.ts$',
+        '/__tests__/authorizationMiddleware\\.test\\.ts$',
+        '/__tests__/jwt\\.test\\.ts$',
+        '/__tests__/ContractController\\.test\\.ts$',
+        '/__tests__/ContractService\\.test\\.ts$',
+        '/__tests__/BandApplicationController\\.test\\.ts$',
+        '/__tests__/BandApplicationService\\.test\\.ts$',
+        '/__tests__/BandApplicationSchemas\\.test\\.ts$',
+        '/__tests__/NotificationController\\.test\\.ts$',
+        '/__tests__/NotificationService\\.test\\.ts$',
+        '/__tests__/AppError\\.test\\.ts$',
+        '/__tests__/errorHandler\\.test\\.ts$',
+        '/__tests__/validate\\.middleware\\.test\\.ts$',
+        '/__tests__/rateLimiter\\.middleware\\.test\\.ts$',
+      ],
       moduleFileExtensions: ['ts', 'js', 'json'],
     },
     {
