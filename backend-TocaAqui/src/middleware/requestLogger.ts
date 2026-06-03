@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger';
+import { metricsService } from '../services/MetricsService';
 
 /**
  * Loga cada requisição HTTP com método, rota, status e duração.
@@ -17,6 +18,9 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
       statusCode: res.statusCode,
       durationMs,
     };
+
+    const normalizedRoute = `${req.method} ${req.route?.path ?? req.path}`;
+    metricsService.record(normalizedRoute, durationMs, res.statusCode);
 
     if (res.statusCode >= 500) {
       logger.error('request', meta);

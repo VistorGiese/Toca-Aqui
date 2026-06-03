@@ -26,6 +26,7 @@ import AvaliacaoShowRoutes from "./routes/AvaliacaoShowRoutes";
 import ComentarioShowRoutes from "./routes/ComentarioShowRoutes";
 import ArtistaPublicoRoutes from "./routes/ArtistaPublicoRoutes";
 import MockPaymentRoutes from "./routes/MockPaymentRoutes";
+import MetricsRoutes from "./routes/MetricsRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import { traceIdMiddleware } from "./middleware/traceId";
 import { requestLoggerMiddleware } from "./middleware/requestLogger";
@@ -111,6 +112,8 @@ app.use("/artistas", ArtistaPublicoRoutes);
 if (env.NODE_ENV !== 'production') {
   app.use("/dev", MockPaymentRoutes);
 }
+
+app.use('/api/metrics', MetricsRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "API funcionando!" });

@@ -22,7 +22,8 @@
     "test:unit": "jest --selectProjects unit",
     "test:integration": "jest --selectProjects integration",
     "test:all": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "seed:metrics": "ts-node scripts/seed-demo-metrics.ts"
   },
   "keywords": [],
   "author": "",
