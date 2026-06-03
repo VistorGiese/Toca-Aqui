@@ -3,6 +3,7 @@ import { contractService } from '../services/ContractService';
 import { asyncHandler } from '../middleware/errorHandler';
 import { AppError } from '../errors/AppError';
 import { AuthRequest } from '../middleware/authmiddleware';
+import logger from '../utils/logger';
 import { createNotification } from '../services/NotificationService';
 import { NotificationType } from '../models/NotificationModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
@@ -17,8 +18,14 @@ export const getContract = asyncHandler(async (req: AuthRequest, res: Response) 
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
   const contractId = parseInt(req.params.id as string);
+
+  logger.info('contrato.get', { traceId: req.traceId, contratoId: contractId, userId: req.user.id });
+
   const role = await contractService.getUserRole(contractId, req.user.id);
-  if (!role) throw new AppError('Você não tem acesso a este contrato', 403);
+  if (!role) {
+    logger.warn('contrato.get.forbidden', { traceId: req.traceId, contratoId: contractId, userId: req.user.id });
+    throw new AppError('Você não tem acesso a este contrato', 403);
+  }
 
   const contrato = await contractService.getById(contractId);
   res.json(contrato);
@@ -39,6 +46,8 @@ export const getContractByEvent = asyncHandler(async (req: AuthRequest, res: Res
 
 export const getMyContracts = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
+  logger.info('contrato.list', { traceId: req.traceId, userId: req.user.id });
 
   const contratos = await contractService.getByUser(req.user.id);
   res.json({ data: contratos });

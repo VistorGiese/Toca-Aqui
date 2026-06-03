@@ -27,6 +27,8 @@ import ComentarioShowRoutes from "./routes/ComentarioShowRoutes";
 import ArtistaPublicoRoutes from "./routes/ArtistaPublicoRoutes";
 import MockPaymentRoutes from "./routes/MockPaymentRoutes";
 import { errorHandler } from "./middleware/errorHandler";
+import { traceIdMiddleware } from "./middleware/traceId";
+import { requestLoggerMiddleware } from "./middleware/requestLogger";
 
 import './models/associations';
 import sequelize from "./config/database";
@@ -43,6 +45,11 @@ if (env.NODE_ENV === 'production') {
 }
 
 app.disable('x-powered-by');
+
+// TraceID — injeta x-trace-id em cada requisição (antes de qualquer rota)
+app.use(traceIdMiddleware);
+// Request logger — loga método, rota, status e duração de cada requisição
+app.use(requestLoggerMiddleware);
 
 // CORS — em desenvolvimento libera todas as origens (mobile app não envia origin)
 app.use(cors({
