@@ -57,8 +57,11 @@ export default function EstNewGig() {
       setDataISO(g.data_show);
       setInicio(g.horario_inicio);
       setFim(g.horario_fim);
-      if (g.cache_minimo) setCache(String(g.cache_minimo));
-      if (g.generos_musicais) setGeneros(g.generos_musicais.split(",").map(s => s.trim()));
+      if (g.preco_ingresso_inteira != null || g.cache_minimo != null) {
+        setCache(String(g.preco_ingresso_inteira ?? g.cache_minimo));
+      }
+      const generosRaw = g.genero_musical ?? g.generos_musicais;
+      if (generosRaw) setGeneros(generosRaw.split(",").map(s => s.trim()).filter(Boolean));
     } catch {
       Alert.alert("Erro", "Não foi possível carregar a data.");
     } finally {
@@ -83,8 +86,9 @@ export default function EstNewGig() {
         data_show: dataISO,
         horario_inicio: inicio,
         horario_fim: fim,
-        cache_minimo: cache ? Number(cache) : undefined,
-        generos_musicais: generos.join(", ") || undefined,
+        preco_ingresso_inteira: cache ? Number(cache) : undefined,
+        genero_musical: generos.join(", ") || undefined,
+        esta_publico: true,
       };
       if (gigId) await establishmentService.updateGig(gigId, payload);
       else await establishmentService.createGig(payload);

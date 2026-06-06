@@ -7,7 +7,7 @@ import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
-import { establishmentService, ArtistPublicProfile } from "@/http/establishmentService";
+import { establishmentService, ArtistPublicProfile, BandPublicProfile } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
 
 const DS = {
@@ -27,26 +27,85 @@ const TIPO_LABEL: Record<string, string> = {
 type NavProp = NativeStackNavigationProp<EstStackParamList>;
 type RouteType = RouteProp<EstStackParamList, "EstArtistProfile">;
 
+type ProfileView = {
+  id: number;
+  nome: string;
+  tipo: string;
+  generos: string[];
+  nota_media?: number;
+  shows_realizados?: number;
+  cache_minimo?: number;
+  cache_maximo?: number;
+  biografia?: string;
+  cidade?: string;
+  estado?: string;
+  isBanda: boolean;
+};
+
+function mapArtistProfile(artist: ArtistPublicProfile): ProfileView {
+  return {
+    id: artist.id,
+    nome: artist.nome_artistico ?? artist.nome ?? "Artista",
+    tipo: TIPO_LABEL[artist.tipo_atuacao ?? artist.tipo ?? ""] ?? "ARTISTA",
+    generos: Array.isArray(artist.generos) ? artist.generos : [],
+    nota_media: artist.nota_media,
+    shows_realizados: artist.shows_realizados,
+    cache_minimo: artist.cache_minimo,
+    cache_maximo: artist.cache_maximo ?? artist.cache_medio,
+    biografia: artist.biografia,
+    cidade: artist.cidade,
+    estado: artist.estado,
+    isBanda: false,
+  };
+}
+
+function mapBandProfile(band: BandPublicProfile): ProfileView {
+  const generos = Array.isArray(band.generos_musicais) ? band.generos_musicais : [];
+  return {
+    id: band.id,
+    nome: band.nome_banda ?? "Banda",
+    tipo: "BANDA",
+    generos,
+    nota_media: band.nota_media,
+    shows_realizados: band.shows_realizados,
+    cache_minimo: band.cache_minimo,
+    cache_maximo: band.cache_maximo,
+    biografia: band.descricao,
+    cidade: band.cidade,
+    estado: band.estado,
+    isBanda: true,
+  };
+}
+
 export default function EstArtistProfile() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteType>();
-  const { artistId } = route.params;
+  const { artistId, bandaId } = route.params;
 
-  const [artist, setArtist] = useState<ArtistPublicProfile | null>(null);
+  const [profile, setProfile] = useState<ProfileView | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const data = await establishmentService.getArtistPublicProfile(artistId);
-      setArtist(data);
+      if (bandaId) {
+        const data = await establishmentService.getBandById(bandaId);
+        setProfile(mapBandProfile(data));
+        return;
+      }
+      if (artistId) {
+        const data = await establishmentService.getArtistPublicProfile(artistId);
+        setProfile(mapArtistProfile(data));
+        return;
+      }
+      throw new Error("Identificador de perfil ausente");
     } catch {
-      Alert.alert("Erro", "Não foi possível carregar o perfil do artista.", [
+      Alert.alert("Erro", "Não foi possível carregar o perfil.", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } finally {
       setLoading(false);
     }
-  }, [artistId, navigation]);
+  }, [artistId, bandaId, navigation]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -58,41 +117,36 @@ export default function EstArtistProfile() {
     );
   }
 
-  if (!artist) return null;
+  if (!profile) return null;
 
-  const nome = artist.nome_artistico ?? artist.nome ?? "Artista";
-  const tipo = TIPO_LABEL[artist.tipo_atuacao ?? artist.tipo ?? ""] ?? "ARTISTA";
-  const generos: string[] = Array.isArray(artist.generos) ? artist.generos : [];
-  const cacheMin = artist.cache_minimo;
-  const cacheMax = artist.cache_maximo ?? artist.cache_medio;
+  const cacheMin = profile.cache_minimo;
+  const cacheMax = profile.cache_maximo;
   const cacheFormatted = cacheMin
     ? cacheMax && cacheMax !== cacheMin
       ? `R$ ${Number(cacheMin).toLocaleString("pt-BR")} – R$ ${Number(cacheMax).toLocaleString("pt-BR")}`
       : `R$ ${Number(cacheMin).toLocaleString("pt-BR")}`
     : "A negociar";
-  const localizacao = [artist.cidade, artist.estado].filter(Boolean).join(" · ");
+  const localizacao = [profile.cidade, profile.estado].filter(Boolean).join(" · ");
 
   return (
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <FontAwesome5 name="arrow-left" size={18} color={DS.textPrimary} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Perfil do Artista</Text>
+        <Text style={s.headerTitle}>{profile.isBanda ? "Perfil da Banda" : "Perfil do Artista"}</Text>
         <View style={{ width: 18 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        {/* Avatar hero */}
         <View style={s.heroSection}>
           <View style={s.avatarCircle}>
-            <FontAwesome5 name="user" size={44} color={DS.accent} />
+            <FontAwesome5 name={profile.isBanda ? "users" : "user"} size={44} color={DS.accent} />
           </View>
-          <Text style={s.artistName}>{nome.toUpperCase()}</Text>
-          <Text style={s.tipoLabel}>{tipo}</Text>
+          <Text style={s.artistName}>{profile.nome.toUpperCase()}</Text>
+          <Text style={s.tipoLabel}>{profile.tipo}</Text>
           {localizacao ? (
             <View style={s.locationRow}>
               <Ionicons name="location-outline" size={13} color={DS.textSecondary} />
@@ -101,17 +155,16 @@ export default function EstArtistProfile() {
           ) : null}
         </View>
 
-        {/* Stats */}
         <View style={s.statsRow}>
           <View style={s.statItem}>
             <Text style={[s.statValue, { color: DS.amber }]}>
-              {artist.nota_media != null ? `${artist.nota_media.toFixed(1)} ★` : "— ★"}
+              {profile.nota_media != null ? `${profile.nota_media.toFixed(1)} ★` : "— ★"}
             </Text>
             <Text style={s.statLabel}>AVALIAÇÃO</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statItem}>
-            <Text style={s.statValue}>{artist.shows_realizados ?? 0}</Text>
+            <Text style={s.statValue}>{profile.shows_realizados ?? 0}</Text>
             <Text style={s.statLabel}>SHOWS</Text>
           </View>
           <View style={s.statDivider} />
@@ -121,20 +174,18 @@ export default function EstArtistProfile() {
           </View>
         </View>
 
-        {/* Bio */}
-        {artist.biografia ? (
+        {profile.biografia ? (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Sobre</Text>
-            <Text style={s.bioText}>{artist.biografia}</Text>
+            <Text style={s.bioText}>{profile.biografia}</Text>
           </View>
         ) : null}
 
-        {/* Gêneros */}
-        {generos.length > 0 && (
+        {profile.generos.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Gêneros</Text>
             <View style={s.chipsWrap}>
-              {generos.map((g) => {
+              {profile.generos.map((g) => {
                 const color = getGenreColor(g);
                 return (
                   <View key={g} style={[s.chip, { backgroundColor: color + "22", borderColor: color + "55" }]}>
@@ -146,21 +197,22 @@ export default function EstArtistProfile() {
           </View>
         )}
 
-        {/* CTA convidar */}
-        <View style={s.section}>
-          <TouchableOpacity
-            style={s.ctaCard}
-            onPress={() => navigation.navigate("EstNewGig", { artistaConvidadoId: artist.id })}
-            activeOpacity={0.85}
-          >
-            <FontAwesome5 name="paper-plane" size={16} color={DS.cyan} />
-            <View style={{ flex: 1 }}>
-              <Text style={s.ctaTitle}>Convidar para show</Text>
-              <Text style={s.ctaText}>Crie uma vaga direcionada a este artista.</Text>
-            </View>
-            <FontAwesome5 name="chevron-right" size={12} color={DS.cyan} />
-          </TouchableOpacity>
-        </View>
+        {!profile.isBanda && (
+          <View style={s.section}>
+            <TouchableOpacity
+              style={s.ctaCard}
+              onPress={() => navigation.navigate("EstNewGig", { artistaConvidadoId: profile.id })}
+              activeOpacity={0.85}
+            >
+              <FontAwesome5 name="paper-plane" size={16} color={DS.cyan} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.ctaTitle}>Convidar para show</Text>
+                <Text style={s.ctaText}>Crie uma vaga direcionada a este artista.</Text>
+              </View>
+              <FontAwesome5 name="chevron-right" size={12} color={DS.cyan} />
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </View>
   );

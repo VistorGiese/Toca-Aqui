@@ -12,9 +12,15 @@ import { establishmentService } from "@/http/establishmentService";
 const DS = {
   bg: "#09090F", card: "#13101F", surface: "#0F0B1E",
   border: "#1E1A30", accent: "#7B61FF", cyan: "#00CEC9",
-  success: "#00C853", danger: "#EF4444",
+  success: "#00C853", danger: "#EF4444", amber: "#F59E0B",
   textPrimary: "#FFFFFF", textSecondary: "#8888AA", textMuted: "#555577",
 };
+
+const STATUS_LABEL = {
+  pendente: { label: "PENDENTE", color: DS.amber },
+  aceito: { label: "ACEITA", color: DS.success },
+  rejeitado: { label: "RECUSADA", color: DS.danger },
+} as const;
 
 type NavProp = NativeStackNavigationProp<EstStackParamList>;
 type RouteType = RouteProp<EstStackParamList, "EstAcceptContract">;
@@ -22,14 +28,55 @@ type RouteType = RouteProp<EstStackParamList, "EstAcceptContract">;
 export default function EstAcceptContract() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteType>();
-  const { applicationId, artistId, artistName, gigTitle, valorProposto } = route.params;
+  const {
+    applicationId,
+    status,
+    artistaId,
+    bandaId,
+    artistName,
+    gigTitle,
+    valorProposto,
+    mensagem,
+    eventClosed,
+  } = route.params;
 
   const [loading, setLoading] = useState(false);
 
+  const isBanda = Boolean(bandaId && !artistaId);
+  const contratadoLabel = isBanda ? "BANDA" : "ARTISTA";
+  const canAccept = !eventClosed && (status === "pendente" || status === "rejeitado") && applicationId > 0;
+  const canReject = !eventClosed && status === "pendente" && applicationId > 0;
+  const isReaccept = status === "rejeitado";
+  const statusInfo = STATUS_LABEL[status];
+
+  const openProfile = () => {
+    if (artistaId) {
+      navigation.navigate("EstArtistProfile", { artistId: artistaId });
+      return;
+    }
+    if (bandaId) {
+      navigation.navigate("EstArtistProfile", { bandaId });
+      return;
+    }
+    Alert.alert("Erro", "Perfil indisponível para esta candidatura.");
+  };
+
   const handleAccept = () => {
+    if (!canAccept) {
+      Alert.alert(
+        "Indisponível",
+        eventClosed
+          ? "Este evento já possui candidatura aceita."
+          : "Esta candidatura não pode mais ser aceita."
+      );
+      return;
+    }
+
     Alert.alert(
-      "Aceitar candidatura",
-      `Confirmar a contratação de ${artistName} para "${gigTitle}"?`,
+      isReaccept ? "Aceitar artista recusado" : "Aceitar candidatura",
+      isReaccept
+        ? `${artistName} foi recusado(a) anteriormente. Deseja aceitar e contratar para "${gigTitle}"?`
+        : `Confirmar a contratação de ${artistName} para "${gigTitle}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -41,7 +88,9 @@ export default function EstAcceptContract() {
               const contractId = response?.contrato?.id;
               Alert.alert(
                 "Candidatura aceita!",
-                `${artistName} foi contratado(a) para o show.`,
+                contractId
+                  ? `${artistName} foi contratado(a). Um contrato foi gerado — revise os termos.`
+                  : `${artistName} foi contratado(a) para o show.`,
                 [{
                   text: "OK",
                   onPress: () => {
@@ -66,6 +115,16 @@ export default function EstAcceptContract() {
   };
 
   const handleReject = () => {
+    if (!canReject) {
+      Alert.alert(
+        "Indisponível",
+        eventClosed
+          ? "Este evento já possui candidatura aceita."
+          : "Esta candidatura não pode mais ser recusada."
+      );
+      return;
+    }
+
     Alert.alert(
       "Recusar candidatura",
       `Deseja recusar a candidatura de ${artistName}?`,
@@ -99,7 +158,6 @@ export default function EstAcceptContract() {
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor={DS.bg} />
 
-      {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <FontAwesome5 name="arrow-left" size={18} color={DS.textPrimary} />
@@ -109,7 +167,22 @@ export default function EstAcceptContract() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        {/* Ícone */}
+        {eventClosed && (
+          <View style={s.closedBanner}>
+            <FontAwesome5 name="lock" size={14} color={DS.amber} />
+            <Text style={s.closedBannerText}>Este evento já possui candidatura aceita.</Text>
+          </View>
+        )}
+
+        {isReaccept && !eventClosed && (
+          <View style={s.rejectedBanner}>
+            <FontAwesome5 name="user-times" size={14} color={DS.danger} />
+            <Text style={s.rejectedBannerText}>
+              Este artista foi recusado anteriormente. Você pode aceitar a candidatura novamente.
+            </Text>
+          </View>
+        )}
+
         <View style={s.iconWrap}>
           <View style={s.iconCircle}>
             <FontAwesome5 name="file-alt" size={32} color={DS.accent} />
@@ -119,14 +192,17 @@ export default function EstAcceptContract() {
         <Text style={s.title}>Candidatura para</Text>
         <Text style={s.gigTitle}>{gigTitle}</Text>
 
-        {/* Info do artista */}
+        <View style={[s.statusPill, { borderColor: statusInfo.color + "55", backgroundColor: statusInfo.color + "18" }]}>
+          <Text style={[s.statusPillText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+        </View>
+
         <View style={s.infoCard}>
           <View style={s.infoRow}>
             <View style={s.avatar}>
-              <FontAwesome5 name="user" size={22} color={DS.accent} />
+              <FontAwesome5 name={isBanda ? "users" : "user"} size={22} color={DS.accent} />
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={s.label}>ARTISTA</Text>
+              <Text style={s.label}>{contratadoLabel}</Text>
               <Text style={s.value}>{artistName}</Text>
             </View>
           </View>
@@ -140,28 +216,35 @@ export default function EstAcceptContract() {
           </View>
         </View>
 
-        {/* Referência */}
+        {mensagem ? (
+          <View style={s.messageCard}>
+            <Text style={s.label}>MENSAGEM DO CANDIDATO</Text>
+            <Text style={s.messageText}>{mensagem}</Text>
+          </View>
+        ) : null}
+
         <View style={s.refCard}>
           <FontAwesome5 name="hashtag" size={12} color={DS.textMuted} />
           <Text style={s.refText}>Candidatura #{applicationId}</Text>
         </View>
 
-        {/* Aviso */}
         <View style={s.warningCard}>
           <FontAwesome5 name="info-circle" size={16} color={DS.cyan} />
           <View style={{ flex: 1 }}>
             <Text style={s.warningTitle}>SOBRE A CONTRATAÇÃO</Text>
             <Text style={s.warningText}>
-              Ao aceitar, um contrato será gerado automaticamente. O artista precisará assinar o contrato para confirmar o show.
+              Ao aceitar, o artista será confirmado para este evento, um contrato será gerado automaticamente e as demais candidaturas pendentes serão recusadas.
             </Text>
           </View>
         </View>
 
-        {/* Botões */}
         <TouchableOpacity
-          style={[s.btnAccept, loading && s.disabled]}
+          style={[
+            isReaccept ? s.btnReaccept : s.btnAccept,
+            (!canAccept || loading) && s.disabled,
+          ]}
           onPress={handleAccept}
-          disabled={loading}
+          disabled={!canAccept || loading}
           activeOpacity={0.85}
         >
           {loading ? (
@@ -169,27 +252,33 @@ export default function EstAcceptContract() {
           ) : (
             <>
               <FontAwesome5 name="check" size={14} color="#fff" />
-              <Text style={s.btnAcceptText}>ACEITAR E GERAR CONTRATO</Text>
+              <Text style={s.btnAcceptText}>
+                {isReaccept ? "SIM, DESEJO ACEITAR" : "ACEITAR E GERAR CONTRATO"}
+              </Text>
             </>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[s.btnReject, loading && s.disabled]}
-          onPress={handleReject}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          <FontAwesome5 name="times" size={14} color={DS.danger} />
-          <Text style={s.btnRejectText}>RECUSAR CANDIDATURA</Text>
-        </TouchableOpacity>
+        {canReject && (
+          <TouchableOpacity
+            style={[s.btnReject, loading && s.disabled]}
+            onPress={handleReject}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <FontAwesome5 name="times" size={14} color={DS.danger} />
+            <Text style={s.btnRejectText}>RECUSAR CANDIDATURA</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={s.btnProfile}
-          onPress={() => navigation.navigate("EstArtistProfile", { artistId: artistId ?? 0 })}
+          onPress={openProfile}
           activeOpacity={0.8}
         >
-          <Text style={s.btnProfileText}>Ver perfil completo do artista</Text>
+          <Text style={s.btnProfileText}>
+            Ver perfil completo {isBanda ? "da banda" : "do artista"}
+          </Text>
           <FontAwesome5 name="chevron-right" size={12} color={DS.accent} />
         </TouchableOpacity>
       </ScrollView>
@@ -207,6 +296,20 @@ const s = StyleSheet.create({
   headerTitle: { fontFamily: "Montserrat-Bold", fontSize: 17, color: DS.textPrimary },
   scroll: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 
+  closedBanner: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    backgroundColor: DS.amber + "18", borderRadius: 10, borderWidth: 1, borderColor: DS.amber + "44",
+    padding: 12, marginBottom: 20,
+  },
+  closedBannerText: { flex: 1, fontFamily: "Montserrat-Regular", fontSize: 12, color: DS.textSecondary, lineHeight: 18 },
+
+  rejectedBanner: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    backgroundColor: DS.danger + "18", borderRadius: 10, borderWidth: 1, borderColor: DS.danger + "44",
+    padding: 12, marginBottom: 20,
+  },
+  rejectedBannerText: { flex: 1, fontFamily: "Montserrat-Regular", fontSize: 12, color: DS.textSecondary, lineHeight: 18 },
+
   iconWrap: { alignItems: "center", marginBottom: 20 },
   iconCircle: {
     width: 80, height: 80, borderRadius: 40,
@@ -215,7 +318,13 @@ const s = StyleSheet.create({
   },
 
   title: { fontFamily: "Montserrat-Regular", fontSize: 14, color: DS.textSecondary, textAlign: "center", marginBottom: 6 },
-  gigTitle: { fontFamily: "Montserrat-Bold", fontSize: 20, color: DS.textPrimary, textAlign: "center", marginBottom: 28 },
+  gigTitle: { fontFamily: "Montserrat-Bold", fontSize: 20, color: DS.textPrimary, textAlign: "center", marginBottom: 12 },
+
+  statusPill: {
+    alignSelf: "center", paddingHorizontal: 12, paddingVertical: 5,
+    borderRadius: 20, borderWidth: 1, marginBottom: 24,
+  },
+  statusPillText: { fontFamily: "Montserrat-Bold", fontSize: 10, letterSpacing: 1.2 },
 
   infoCard: {
     backgroundColor: DS.card, borderRadius: 14, borderWidth: 1, borderColor: DS.border, padding: 16, marginBottom: 12,
@@ -227,6 +336,12 @@ const s = StyleSheet.create({
   },
   label: { fontFamily: "Montserrat-SemiBold", fontSize: 10, color: DS.textMuted, letterSpacing: 1.5, marginBottom: 4 },
   value: { fontFamily: "Montserrat-Bold", fontSize: 16, color: DS.textPrimary },
+
+  messageCard: {
+    backgroundColor: DS.card, borderRadius: 14, borderWidth: 1, borderColor: DS.border,
+    padding: 16, marginBottom: 12,
+  },
+  messageText: { fontFamily: "Montserrat-Regular", fontSize: 13, color: DS.textSecondary, lineHeight: 20 },
 
   refCard: {
     flexDirection: "row", alignItems: "center", gap: 6,
@@ -244,6 +359,10 @@ const s = StyleSheet.create({
 
   btnAccept: {
     backgroundColor: DS.accent, borderRadius: 12, paddingVertical: 16,
+    flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, marginBottom: 12,
+  },
+  btnReaccept: {
+    backgroundColor: DS.danger, borderRadius: 12, paddingVertical: 16,
     flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, marginBottom: 12,
   },
   btnAcceptText: { fontFamily: "Montserrat-Bold", fontSize: 13, color: "#fff", letterSpacing: 0.5 },

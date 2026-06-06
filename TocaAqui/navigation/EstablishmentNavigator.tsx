@@ -38,8 +38,18 @@ export type EstStackParamList = {
   EstTabs: undefined;
   EstNewGig: { gigId?: number; artistaConvidadoId?: number };
   EstGigApplications: { gigId: number; gigTitle: string };
-  EstArtistProfile: { artistId: number };
-  EstAcceptContract: { applicationId: number; artistId?: number; artistName: string; gigTitle: string; valorProposto?: number };
+  EstArtistProfile: { artistId?: number; bandaId?: number };
+  EstAcceptContract: {
+    applicationId: number;
+    status: "pendente" | "aceito" | "rejeitado";
+    artistaId?: number;
+    bandaId?: number;
+    artistName: string;
+    gigTitle: string;
+    valorProposto?: number;
+    mensagem?: string;
+    eventClosed?: boolean;
+  };
   EstShowDetail: { contractId: number };
   EstNotifications: undefined;
   EstRateArtist: { contractId: number; artistName: string; showDate: string };

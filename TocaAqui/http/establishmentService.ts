@@ -8,11 +8,13 @@ export interface Gig {
   data_show: string;
   horario_inicio: string;
   horario_fim: string;
+  // Campos legados mantidos para compatibilidade de payload antigo
   cache_minimo?: number;
   cache_maximo?: number;
-  preco_ingresso_inteira?: number; // campo real do backend (equivale ao cache_minimo)
   generos_musicais?: string;
-  genero_musical?: string;         // campo real do backend (singular)
+  // Campos canônicos persistidos pelo backend
+  preco_ingresso_inteira?: number;
+  genero_musical?: string;
   status: "aberta" | "encerrada" | "rascunho" | "pendente" | "aceito" | "rejeitado" | "cancelado" | "realizado";
   candidaturas_count?: number;
   estabelecimento_id?: number;
@@ -33,6 +35,61 @@ export interface Candidatura {
   shows_realizados?: number;
   favorited?: boolean;
   valor_proposto?: number;
+}
+
+export interface GigApplicationsResult {
+  closed: boolean;
+  message?: string;
+  candidaturas: Candidatura[];
+}
+
+/** ID da candidatura em aplicacoes_banda_evento — nunca evento_id, artista_id ou banda_id. */
+function resolveApplicationId(raw: any): number {
+  const candidates = [
+    raw?.id,
+    raw?.aplicacao_id,
+    raw?.candidatura_id,
+    raw?.application_id,
+    raw?.aplicacao?.id,
+    raw?.candidatura?.id,
+  ];
+  for (const value of candidates) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return 0;
+}
+
+function normalizeCandidatura(raw: any): Candidatura {
+  const applicationId = resolveApplicationId(raw);
+  const normalizedEventoId = Number(raw?.evento_id ?? raw?.event_id ?? 0);
+  const normalizedStatus = raw?.status === "recusado" ? "rejeitado" : raw?.status;
+  const generosBanda: string[] = Array.isArray(raw?.Band?.generos_musicais)
+    ? raw.Band.generos_musicais
+    : [];
+
+  return {
+    id: applicationId,
+    evento_id: normalizedEventoId,
+    artista_id: raw?.artista_id ?? raw?.artist_id,
+    banda_id: raw?.banda_id ?? raw?.band_id,
+    mensagem: raw?.mensagem ?? raw?.message,
+    status: (normalizedStatus ?? "pendente") as Candidatura["status"],
+    nome_artista:
+      raw?.nome_artista ??
+      raw?.nome_artistico ??
+      raw?.ArtistProfile?.nome_artistico ??
+      raw?.Band?.nome_banda,
+    foto_artista: raw?.foto_artista ?? raw?.ArtistProfile?.foto_perfil,
+    genero:
+      raw?.genero ??
+      (Array.isArray(raw?.ArtistProfile?.generos) ? raw.ArtistProfile.generos[0] : undefined) ??
+      generosBanda[0],
+    nota_media: raw?.nota_media,
+    shows_realizados: raw?.shows_realizados,
+    favorited: raw?.favorited,
+    valor_proposto: raw?.valor_proposto,
+  };
 }
 
 export interface EstablishmentProfile {
@@ -70,6 +127,21 @@ export interface ArtistPublicProfile {
   estado?: string;
 }
 
+export interface BandPublicProfile {
+  id: number;
+  nome_banda?: string;
+  descricao?: string;
+  imagem?: string;
+  generos_musicais?: string[];
+  nota_media?: number;
+  shows_realizados?: number;
+  cache_minimo?: number;
+  cache_maximo?: number;
+  cidade?: string;
+  estado?: string;
+  telefone_contato?: string;
+}
+
 function toArray<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data as T[];
   if (data && typeof data === "object") {
@@ -97,11 +169,26 @@ async function resolveEstablishmentProfileId(): Promise<number> {
 
 const createGig = async (data: {
   titulo_evento: string; data_show: string; horario_inicio: string; horario_fim: string;
-  cache_minimo?: number; cache_maximo?: number; generos_musicais?: string; descricao_evento?: string;
+  preco_ingresso_inteira?: number;
+  genero_musical?: string;
+  // Compatibilidade para chamadas antigas
+  cache_minimo?: number;
+  cache_maximo?: number;
+  generos_musicais?: string;
+  descricao_evento?: string;
   perfil_estabelecimento_id?: number;
+  esta_publico?: boolean;
 }): Promise<Gig> => {
   const perfil_estabelecimento_id = data.perfil_estabelecimento_id ?? (await resolveEstablishmentProfileId());
-  const r = await api.post<Gig>("/agendamentos", { ...data, perfil_estabelecimento_id });
+  const preco_ingresso_inteira = data.preco_ingresso_inteira ?? data.cache_minimo;
+  const genero_musical = data.genero_musical ?? data.generos_musicais;
+  const r = await api.post<Gig>("/agendamentos", {
+    ...data,
+    perfil_estabelecimento_id,
+    preco_ingresso_inteira,
+    genero_musical,
+    esta_publico: data.esta_publico ?? true,
+  });
   return r.data;
 };
 
@@ -119,9 +206,21 @@ const deleteGig = async (id: number): Promise<void> => {
   await api.delete(`/agendamentos/${id}`);
 };
 
-const getGigApplications = async (eventoId: number): Promise<Candidatura[]> => {
+const getGigApplications = async (eventoId: number): Promise<GigApplicationsResult> => {
   const r = await api.get(`/eventos/${eventoId}`);
-  return toArray<Candidatura>(r.data);
+  const data = r.data;
+
+  if (data && typeof data === "object" && !Array.isArray(data) && (data as any).closed) {
+    const payload = data as { closed: boolean; message?: string; candidaturas?: unknown[] };
+    return {
+      closed: true,
+      message: payload.message,
+      candidaturas: (payload.candidaturas ?? []).map(normalizeCandidatura),
+    };
+  }
+
+  const list = Array.isArray(data) ? data : toArray<any>(data);
+  return { closed: false, candidaturas: list.map(normalizeCandidatura) };
 };
 
 const acceptApplication = async (applicationId: number): Promise<any> => {
@@ -144,6 +243,12 @@ const getArtistPublicProfile = async (artistId: number): Promise<ArtistPublicPro
   // Backend retorna { message, perfil } — extrair o perfil
   const data = r.data as any;
   return data?.perfil ?? data;
+};
+
+const getBandById = async (bandaId: number): Promise<BandPublicProfile> => {
+  const r = await api.get(`/bandas/${bandaId}`);
+  const data = r.data as any;
+  return data?.data ?? data;
 };
 
 const getMyContracts = async (): Promise<any[]> => {
@@ -241,7 +346,7 @@ const removeMember = async (estabelecimentoId: number, usuarioId: number): Promi
 export const establishmentService = {
   getMyGigs, createGig, getGigById, updateGig, deleteGig,
   getGigApplications, acceptApplication, rejectApplication,
-  searchArtists, getArtistPublicProfile,
+  searchArtists, getArtistPublicProfile, getBandById,
   getMyContracts, getContractById,
   getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,

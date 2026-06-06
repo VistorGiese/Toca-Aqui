@@ -41,6 +41,7 @@ import { EstablishmentOnboardingNavigator } from "../screens/establishment/onboa
 
 // Estabelecimento — navigator (bottom tabs + detail stack)
 import EstablishmentNavigator from "./EstablishmentNavigator";
+import { resolveAppRoute } from "./resolveAppRoute";
 
 export type RootStackParamList = {
   // Antes do login
@@ -129,18 +130,6 @@ export const linking: LinkingOptions<RootStackParamList> = {
   },
 };
 
-function getInitialRoute(user: import("@/types").User | null, paginas: import("@/types").MinhasPaginas | null): keyof RootStackParamList {
-  if (!user) return "UserNavigator";
-  const hasArtistProfile = !!paginas?.pagina_artista || user.role === "artist" || !!user.perfilArtistaId;
-  if (hasArtistProfile) return "ArtistNavigator";
-  const hasEstProfile =
-    !!paginas?.pagina_estabelecimento ||
-    user.role === "establishment_owner" ||
-    user.role === "establishment";
-  if (hasEstProfile) return "EstablishmentNavigator";
-  return "UserNavigator";
-}
-
 export default function Navigate() {
   const { isAuthenticated, isLoading, user, paginas } = useAuth();
 
@@ -152,7 +141,7 @@ export default function Navigate() {
     );
   }
 
-  const initialRoute = getInitialRoute(user, paginas);
+  const initialRoute = resolveAppRoute(user, paginas);
 
   return (
     <Stack.Navigator key={isAuthenticated ? "app" : "auth"} initialRouteName={isAuthenticated ? initialRoute : "Login"} screenOptions={{ headerShown: false }}>

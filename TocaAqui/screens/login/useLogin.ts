@@ -7,8 +7,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/contexts/AuthContext";
 import { userService } from "@/http/userService";
 import { RootStackParamList } from "../../navigation/Navigate";
+import { resolveAppRoute } from "../../navigation/resolveAppRoute";
 import { LoginFormData } from "./types";
 import { getApiErrorMessage } from "@/utils/errorHandler";
+import { UserRole } from "@/types";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -37,15 +39,18 @@ export function useLogin() {
         );
       }
 
-      if (pags?.pagina_artista && pags?.pagina_estabelecimento) {
-        navigation.reset({ index: 0, routes: [{ name: "ArtistNavigator" }] });
-      } else if (pags?.pagina_artista) {
-        navigation.reset({ index: 0, routes: [{ name: "ArtistNavigator" }] });
-      } else if (pags?.pagina_estabelecimento) {
-        navigation.reset({ index: 0, routes: [{ name: "EstablishmentNavigator" }] });
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: "UserNavigator" }] });
-      }
+      const initialRoute = resolveAppRoute(
+        {
+          id: response.user.id,
+          nome_completo: response.user.nome_completo,
+          email: response.user.email,
+          role: response.user.role as UserRole,
+          perfilArtistaId: pags?.pagina_artista?.id,
+        },
+        pags
+      );
+
+      navigation.reset({ index: 0, routes: [{ name: initialRoute }] });
     } catch (error: unknown) {
       const message = getApiErrorMessage(error, "E-mail ou senha inválidos.");
       setError("email", { type: "manual", message });

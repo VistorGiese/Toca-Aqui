@@ -1,15 +1,21 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService, Candidatura } from "@/http/establishmentService";
 
-const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", textPrimary:"#FFFFFF", textSecondary:"#8888AA" };
+const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", danger:"#EF4444", success:"#00C853", textPrimary:"#FFFFFF", textSecondary:"#8888AA", amber:"#F59E0B" };
 type NavProp = NativeStackNavigationProp<EstStackParamList>;
 type RoutePropType = RouteProp<EstStackParamList, "EstGigApplications">;
 type TabType = "todas" | "pendente" | "favoritas";
+
+const STATUS_LABEL: Record<Candidatura["status"], string> = {
+  pendente: "Pendente",
+  aceito: "Aceita",
+  rejeitado: "Recusada",
+};
 
 export default function EstGigApplications() {
   const navigation = useNavigation<NavProp>();
@@ -18,33 +24,98 @@ export default function EstGigApplications() {
 
   const [tab, setTab] = useState<TabType>("todas");
   const [candidates, setCandidates] = useState<Candidatura[]>([]);
+  const [eventClosed, setEventClosed] = useState(false);
+  const [closedMessage, setClosedMessage] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await establishmentService.getGigApplications(gigId);
-      setCandidates(data);
+      const result = await establishmentService.getGigApplications(gigId);
+      if (__DEV__) {
+        console.log("[EST_GIG_APPLICATIONS] fetched", result);
+      }
+      setCandidates(Array.isArray(result?.candidaturas) ? result.candidaturas : []);
+      setEventClosed(result.closed);
+      setClosedMessage(result.message);
     } catch { Alert.alert("Erro", "Não foi possível carregar as candidaturas."); }
     finally { setLoading(false); setRefreshing(false); }
   }, [gigId]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
-  const filtered = candidates.filter(c => {
+  const filtered = (candidates ?? []).filter(c => {
     if (tab === "pendente") return c.status === "pendente";
     if (tab === "favoritas") return c.favorited;
     return true;
   });
 
-  const renderItem = ({ item }: { item: Candidatura }) => (
-    <View style={s.card}>
+  const canAcceptNew = (item: Candidatura) =>
+    !eventClosed && item.status === "pendente" && item.id > 0;
+
+  const canReaccept = (item: Candidatura) =>
+    !eventClosed && item.status === "rejeitado" && item.id > 0;
+
+  const navigateToReview = (item: Candidatura, artistName: string) => {
+    navigation.navigate("EstAcceptContract", {
+      applicationId: item.id,
+      status: item.status,
+      artistaId: item.artista_id,
+      bandaId: item.banda_id,
+      artistName,
+      gigTitle,
+      valorProposto: item.valor_proposto,
+      mensagem: item.mensagem,
+      eventClosed,
+    });
+  };
+
+  const openProfile = (item: Candidatura) => {
+    if (item.artista_id) {
+      navigation.navigate("EstArtistProfile", { artistId: item.artista_id });
+      return;
+    }
+    if (item.banda_id) {
+      navigation.navigate("EstArtistProfile", { bandaId: item.banda_id });
+      return;
+    }
+    Alert.alert("Erro", "Perfil indisponível para esta candidatura.");
+  };
+
+  const renderItem = ({ item }: { item: Candidatura }) => {
+    const artistName =
+      item.nome_artista ??
+      `Artista #${item.artista_id ?? item.banda_id ?? item.id}`;
+    const isBanda = Boolean(item.banda_id && !item.artista_id);
+    const showAccept = canAcceptNew(item);
+    const showReaccept = canReaccept(item);
+
+    return (
+      <View style={s.card}>
       <View style={s.cardTop}>
         <View style={s.avatar}><FontAwesome5 name="user" size={20} color={DS.accent} /></View>
         <View style={{flex:1,marginLeft:12}}>
-          <Text style={s.name}>{item.nome_artista ?? `Artista #${item.artista_id ?? item.banda_id}`}</Text>
-          {item.genero && <View style={s.genreBadge}><Text style={s.genreBadgeText}>{item.genero.toUpperCase()}</Text></View>}
+          <Text style={s.name}>{artistName}</Text>
+          <View style={s.badgesRow}>
+            {item.genero && <View style={s.genreBadge}><Text style={s.genreBadgeText}>{item.genero.toUpperCase()}</Text></View>}
+            <View style={[
+              s.statusBadge,
+              item.status === "rejeitado" && s.statusBadgeRejected,
+              item.status === "aceito" && s.statusBadgeAccepted,
+              item.status !== "pendente" && item.status !== "rejeitado" && item.status !== "aceito" && s.statusBadgeMuted,
+            ]}>
+              <Text style={[
+                s.statusBadgeText,
+                item.status === "rejeitado" && s.statusBadgeTextRejected,
+                item.status === "aceito" && s.statusBadgeTextAccepted,
+              ]}>{STATUS_LABEL[item.status]}</Text>
+            </View>
+          </View>
           <View style={s.meta}>
             {item.nota_media != null && <Text style={s.rating}>★ {item.nota_media.toFixed(1)}</Text>}
             {item.shows_realizados != null && <Text style={s.metaText}>· {item.shows_realizados} shows</Text>}
@@ -61,15 +132,37 @@ export default function EstGigApplications() {
           : "A combinar"}
       </Text>
       <View style={s.actions}>
-        <TouchableOpacity style={s.viewBtn} onPress={() => navigation.navigate("EstArtistProfile", { artistId: item.artista_id ?? item.banda_id ?? 0 })} activeOpacity={0.8}>
+        <TouchableOpacity style={s.viewBtn} onPress={() => openProfile(item)} activeOpacity={0.8}>
           <Text style={s.viewBtnText}>VER PERFIL</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.acceptBtn} onPress={() => navigation.navigate("EstAcceptContract", { applicationId: item.id, artistId: item.artista_id ?? item.banda_id, artistName: item.nome_artista ?? "Artista", gigTitle, valorProposto: item.valor_proposto })} activeOpacity={0.8}>
-          <Text style={s.acceptBtnText}>ACEITAR</Text>
-        </TouchableOpacity>
+        {showAccept && (
+          <TouchableOpacity
+            style={s.acceptBtn}
+            onPress={() => navigateToReview(item, artistName)}
+            activeOpacity={0.8}
+          >
+            <Text style={s.acceptBtnText}>{isBanda ? "ACEITAR BANDA" : "ACEITAR"}</Text>
+          </TouchableOpacity>
+        )}
+        {showReaccept && (
+          <TouchableOpacity
+            style={s.reacceptBtn}
+            onPress={() => navigateToReview(item, artistName)}
+            activeOpacity={0.8}
+          >
+            <Text style={s.reacceptBtnText}>ARTISTA RECUSADO, DESEJA ACEITAR?</Text>
+          </TouchableOpacity>
+        )}
+        {item.status === "aceito" && (
+          <View style={s.acceptedPill}>
+            <FontAwesome5 name="check" size={11} color={DS.success} />
+            <Text style={s.acceptedPillText}>CONTRATADO</Text>
+          </View>
+        )}
       </View>
-    </View>
-  );
+      </View>
+    );
+  };
 
   return (
     <View style={s.root}>
@@ -82,6 +175,15 @@ export default function EstGigApplications() {
         </View>
         <FontAwesome5 name="bell" size={18} color={DS.textSecondary} />
       </View>
+
+      {eventClosed && (
+        <View style={s.closedBanner}>
+          <FontAwesome5 name="lock" size={14} color={DS.amber} />
+          <Text style={s.closedBannerText}>
+            {closedMessage ?? "Evento fechado — candidatura já aceita."}
+          </Text>
+        </View>
+      )}
 
       <View style={s.tabs}>
         {(["todas","pendente","favoritas"] as TabType[]).map(t => (
@@ -110,6 +212,12 @@ const s = StyleSheet.create({
   root:{flex:1,backgroundColor:DS.bg},
   header:{flexDirection:"row",alignItems:"center",paddingHorizontal:20,paddingTop:52,paddingBottom:16},
   title:{fontFamily:"Montserrat-Bold",fontSize:18,color:DS.textPrimary},
+  closedBanner:{
+    flexDirection:"row",alignItems:"center",gap:10,
+    marginHorizontal:20,marginBottom:12,padding:12,
+    backgroundColor:"rgba(245,158,11,0.12)",borderRadius:10,borderWidth:1,borderColor:"rgba(245,158,11,0.35)",
+  },
+  closedBannerText:{flex:1,fontFamily:"Montserrat-Regular",fontSize:12,color:DS.textSecondary,lineHeight:18},
   tabs:{flexDirection:"row",paddingHorizontal:20,gap:8,marginBottom:16},
   tabBtn:{paddingHorizontal:14,paddingVertical:8,borderRadius:20,borderWidth:1,borderColor:DS.border},
   tabBtnOn:{backgroundColor:DS.accent,borderColor:DS.accent},
@@ -120,8 +228,16 @@ const s = StyleSheet.create({
   cardTop:{flexDirection:"row",alignItems:"center"},
   avatar:{width:52,height:52,borderRadius:26,backgroundColor:DS.surface,justifyContent:"center",alignItems:"center"},
   name:{fontFamily:"Montserrat-Bold",fontSize:15,color:DS.textPrimary,marginBottom:4},
-  genreBadge:{backgroundColor:"rgba(123,97,255,0.2)",paddingHorizontal:8,paddingVertical:2,borderRadius:6,alignSelf:"flex-start",marginBottom:4},
+  badgesRow:{flexDirection:"row",flexWrap:"wrap",gap:6,marginBottom:4},
+  genreBadge:{backgroundColor:"rgba(123,97,255,0.2)",paddingHorizontal:8,paddingVertical:2,borderRadius:6},
   genreBadgeText:{fontFamily:"Montserrat-Bold",fontSize:9,color:DS.accent,letterSpacing:1},
+  statusBadge:{backgroundColor:"rgba(0,206,201,0.15)",paddingHorizontal:8,paddingVertical:2,borderRadius:6},
+  statusBadgeMuted:{backgroundColor:"rgba(136,136,170,0.15)"},
+  statusBadgeRejected:{backgroundColor:"rgba(239,68,68,0.18)",borderWidth:1,borderColor:"rgba(239,68,68,0.35)"},
+  statusBadgeAccepted:{backgroundColor:"rgba(0,200,83,0.15)",borderWidth:1,borderColor:"rgba(0,200,83,0.35)"},
+  statusBadgeText:{fontFamily:"Montserrat-Bold",fontSize:9,color:DS.cyan,letterSpacing:0.5},
+  statusBadgeTextRejected:{color:DS.danger},
+  statusBadgeTextAccepted:{color:DS.success},
   meta:{flexDirection:"row",alignItems:"center",gap:4},
   rating:{fontFamily:"Montserrat-SemiBold",fontSize:12,color:"#F39C12"},
   metaText:{fontFamily:"Montserrat-Regular",fontSize:12,color:DS.textSecondary},
@@ -132,5 +248,17 @@ const s = StyleSheet.create({
   viewBtnText:{fontFamily:"Montserrat-Bold",fontSize:12,color:DS.accent},
   acceptBtn:{flex:1,backgroundColor:DS.accent,borderRadius:10,paddingVertical:10,alignItems:"center"},
   acceptBtnText:{fontFamily:"Montserrat-Bold",fontSize:12,color:DS.textPrimary},
+  reacceptBtn:{
+    flex:1,backgroundColor:DS.danger,borderRadius:10,paddingVertical:10,paddingHorizontal:6,
+    alignItems:"center",justifyContent:"center",
+  },
+  reacceptBtnText:{
+    fontFamily:"Montserrat-Bold",fontSize:9,color:DS.textPrimary,textAlign:"center",letterSpacing:0.3,lineHeight:14,
+  },
+  acceptedPill:{
+    flex:1,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:6,
+    borderWidth:1,borderColor:DS.success,borderRadius:10,paddingVertical:10,backgroundColor:"rgba(0,200,83,0.1)",
+  },
+  acceptedPillText:{fontFamily:"Montserrat-Bold",fontSize:11,color:DS.success},
   empty:{fontFamily:"Montserrat-Regular",fontSize:14,color:DS.textSecondary,textAlign:"center",paddingTop:40},
 });

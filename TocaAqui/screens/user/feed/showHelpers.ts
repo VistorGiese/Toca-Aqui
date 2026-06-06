@@ -33,7 +33,10 @@ export function getShowVenue(show: Show): string {
 }
 
 export function getShowPrice(show: Show): number {
-  return show.preco_ingresso_inteira ?? 0;
+  const price = show.preco_ingresso_inteira;
+  if (price == null) return 0;
+  const n = Number(price);
+  return Number.isFinite(n) ? n : 0;
 }
 
 export function getShowCardColor(show: Show, alpha = "55"): string {

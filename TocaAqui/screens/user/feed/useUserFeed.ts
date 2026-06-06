@@ -35,8 +35,9 @@ export function useUserFeed(): UserFeedViewModel {
     setLoadingFeatured(true);
     try {
       const data = await showService.getShowsDestaque();
-      setFeaturedShows(data);
-    } catch {
+      setFeaturedShows(Array.isArray(data) ? data : []);
+    } catch (error: unknown) {
+      Alert.alert("Erro", getApiErrorMessage(error, "Não foi possível carregar os destaques."));
       setFeaturedShows([]);
     } finally {
       setLoadingFeatured(false);
@@ -48,7 +49,8 @@ export function useUserFeed(): UserFeedViewModel {
     try {
       const params = buildShowsParams(filter);
       const response = await showService.getPublicShows(params);
-      setShows(applyClientFilter(response.shows, filter));
+      const list = Array.isArray(response.shows) ? response.shows : [];
+      setShows(applyClientFilter(list, filter));
     } catch (error: unknown) {
       Alert.alert("Erro", getApiErrorMessage(error, "Não foi possível carregar os shows."));
       setShows([]);
