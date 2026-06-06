@@ -2,12 +2,13 @@ import { Router } from "express";
 import {
 	applyBandToEvent,
 	getBandApplicationsForEvent,
-	acceptBandApplication,
-	rejectBandApplication,
 	getMyApplications,
+	rejectBandApplication,
 } from "../controllers/BandApplicationController";
+import { acceptBandApplication } from "../controllers/BandApplicationController";
 import { authMiddleware, AuthRequest } from "../middleware/authmiddleware";
-import { checkOwnership } from "../middleware/authorizationMiddleware";
+import { checkRolesOrAdmin, checkOwnership } from "../middleware/authorizationMiddleware";
+import { UserRole } from "../models/UserModel";
 import BandApplicationModel from "../models/BandApplicationModel";
 import BookingModel from "../models/BookingModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
@@ -18,14 +19,13 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.post("/", validate(applyBandSchema), applyBandToEvent);
+router.post("/", checkRolesOrAdmin(UserRole.ARTIST), validate(applyBandSchema), applyBandToEvent);
 
 router.get("/minhas", getMyApplications);
-
 router.get("/:evento_id", getBandApplicationsForEvent);
 
 const checkEventOwnership = checkOwnership(async (req: AuthRequest) => {
-	const application = await BandApplicationModel.findByPk(req.params.candidaturaId as string);
+	const application = await BandApplicationModel.findByPk(req.params.id as string);
 	if (!application) return undefined;
 
 	const booking = await BookingModel.findByPk(application.evento_id);
@@ -37,7 +37,7 @@ const checkEventOwnership = checkOwnership(async (req: AuthRequest) => {
 	return establishment.usuario_id;
 });
 
-router.put("/:candidaturaId/aceitar", checkEventOwnership, acceptBandApplication);
-router.put("/:candidaturaId/recusar", checkEventOwnership, rejectBandApplication);
+router.put("/:id/aceitar", checkEventOwnership, acceptBandApplication);
+router.put("/:id/recusar", checkEventOwnership, rejectBandApplication);
 
 export default router;

@@ -189,9 +189,7 @@ describe('BandApplicationService', () => {
         { status: 'aceito' },
         expect.objectContaining({ where: { id: 10 } })
       );
-      // Phase 3: accept() deve retornar composite { aplicacao, contrato }
-      expect(result).toEqual(expect.objectContaining({ aplicacao }));
-      expect(result).toHaveProperty('contrato');
+      expect(result).toEqual(expect.objectContaining({ aplicacao, contrato: null }));
     });
 
     it('lança AppError 404 quando candidatura não existe', async () => {
