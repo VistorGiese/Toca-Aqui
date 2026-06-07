@@ -23,6 +23,7 @@ export const createBand = asyncHandler(async (req: AuthRequest, res: Response) =
   } = req.body;
 
   if (!userId) throw new AppError('Usuário não identificado', 401);
+  if (!nome_banda || !perfil_artista_id) throw new AppError('nome_banda e perfil_artista_id são obrigatórios', 400);
 
   const artistProfile = await ArtistProfileModel.findOne({
     where: { id: perfil_artista_id, usuario_id: userId },
