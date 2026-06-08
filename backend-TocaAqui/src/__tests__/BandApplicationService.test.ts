@@ -52,6 +52,14 @@ jest.mock('../services/NotificationService', () => ({
   createNotification: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../config/redis', () => ({
+  __esModule: true,
+  default: {
+    invalidate: jest.fn().mockResolvedValue(undefined),
+    invalidatePattern: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { BandApplicationService } from '../services/BandApplicationService';
 import { AppError } from '../errors/AppError';
 import BandModel from '../models/BandModel';
@@ -186,10 +194,11 @@ describe('BandApplicationService', () => {
 
       expect(aplicacao.update).toHaveBeenCalledWith({ status: 'aceito' });
       expect(BookingModel.update).toHaveBeenCalledWith(
-        { status: 'aceito' },
+        { status: 'aceito', esta_publico: true },
         expect.objectContaining({ where: { id: 10 } })
       );
-      expect(result).toEqual(expect.objectContaining({ aplicacao, contrato: null }));
+      expect(result).toEqual(expect.objectContaining({ aplicacao }));
+      expect(result).toHaveProperty('contrato');
     });
 
     it('lança AppError 404 quando candidatura não existe', async () => {

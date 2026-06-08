@@ -7,6 +7,7 @@ process.env.NODE_ENV = 'test';
 jest.mock('../models/BookingModel', () => ({
   __esModule: true,
   default: { findAndCountAll: jest.fn(), findOne: jest.fn(), findAll: jest.fn() },
+  BookingStatus: { ACEITO: 'aceito', PENDENTE: 'pendente', REJEITADO: 'rejeitado' },
 }));
 
 jest.mock('../models/EstablishmentProfileModel', () => ({
@@ -102,24 +103,29 @@ describe('ShowService', () => {
   // ─── getShowsDestaque ─────────────────────────────────────────────────────
   describe('getShowsDestaque', () => {
     it('retorna lista de shows em destaque', async () => {
-      const shows = [{ id: 1 }, { id: 2 }];
-      (BookingModel.findAll as jest.Mock).mockResolvedValue(shows);
+      const row = {
+        toJSON: () => ({ id: 1, Applications: [] }),
+      };
+      (BookingModel.findAndCountAll as jest.Mock).mockResolvedValue({
+        count: 2,
+        rows: [row, { toJSON: () => ({ id: 2, Applications: [] }) }],
+      });
 
       const result = await showService.getShowsDestaque();
 
-      expect(result).toBe(shows);
-      expect(BookingModel.findAll).toHaveBeenCalledWith(
+      expect(result).toHaveLength(2);
+      expect(BookingModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 10 })
       );
     });
 
     it('retorna lista vazia quando não há shows', async () => {
-      (BookingModel.findAll as jest.Mock).mockResolvedValue([]);
+      mockEmpty();
 
       const result = await showService.getShowsDestaque(5);
 
       expect(result).toEqual([]);
-      expect(BookingModel.findAll).toHaveBeenCalledWith(
+      expect(BookingModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 5 })
       );
     });

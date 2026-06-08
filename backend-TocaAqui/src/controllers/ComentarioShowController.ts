@@ -50,3 +50,13 @@ export const curtirComentario = asyncHandler(async (req: AuthRequest, res: Respo
     ...resultado,
   });
 });
+
+export const excluirComentario = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const usuario_id = req.user?.id;
+  if (!usuario_id) throw unauthorized('Usuário não identificado');
+
+  const comentario_id = parseInt(req.params.id as string, 10);
+  await comentarioShowService.excluirComentario(comentario_id, usuario_id);
+
+  res.json({ message: 'Comentário excluído com sucesso' });
+});

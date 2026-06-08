@@ -18,6 +18,7 @@ jest.mock('../models/ComentarioShowModel', () => ({
     findOne: jest.fn(),
     findByPk: jest.fn(),
     create: jest.fn(),
+    destroy: jest.fn(),
   },
 }));
 
@@ -27,6 +28,7 @@ jest.mock('../models/CurtidaComentarioModel', () => ({
     findAll: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
+    destroy: jest.fn(),
   },
 }));
 
@@ -199,6 +201,38 @@ describe('ComentarioShowService', () => {
       const result = await comentarioShowService.curtirComentario(1, 10);
 
       expect(result.curtidas_count).toBe(0);
+    });
+  });
+
+  // ─── excluirComentario ────────────────────────────────────────────────────
+  describe('excluirComentario', () => {
+    it('exclui comentário do próprio usuário', async () => {
+      const comentario = makeComentario({ id: 5, usuario_id: 10 });
+      (ComentarioShowModel.findByPk as jest.Mock).mockResolvedValue(comentario);
+      (ComentarioShowModel.findAll as jest.Mock).mockResolvedValue([]);
+      (CurtidaComentarioModel.destroy as jest.Mock).mockResolvedValue(0);
+      (ComentarioShowModel.destroy as jest.Mock).mockResolvedValue(0);
+
+      await comentarioShowService.excluirComentario(5, 10);
+
+      expect(comentario.destroy).toHaveBeenCalled();
+    });
+
+    it('lança 404 quando comentário não encontrado', async () => {
+      (ComentarioShowModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+      await expect(comentarioShowService.excluirComentario(999, 1)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404 })
+      );
+    });
+
+    it('lança 403 quando usuário não é o autor', async () => {
+      const comentario = makeComentario({ id: 5, usuario_id: 10 });
+      (ComentarioShowModel.findByPk as jest.Mock).mockResolvedValue(comentario);
+
+      await expect(comentarioShowService.excluirComentario(5, 99)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 403 })
+      );
     });
   });
 });

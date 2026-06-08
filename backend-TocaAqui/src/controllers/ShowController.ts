@@ -58,6 +58,37 @@ export const getShowsDestaque = asyncHandler(async (req: Request, res: Response)
   });
 });
 
+export const getConfirmedShows = asyncHandler(async (req: Request, res: Response) => {
+  const {
+    cidade,
+    genero,
+    data_inicio,
+    data_fim,
+    esta_semana,
+    fim_de_semana,
+    esta_hoje,
+    page,
+    limit,
+  } = req.query as Record<string, string>;
+
+  const resultado = await showService.getConfirmedShows({
+    cidade,
+    genero,
+    data_inicio,
+    data_fim,
+    esta_semana: esta_semana === 'true',
+    fim_de_semana: fim_de_semana === 'true',
+    esta_hoje: esta_hoje === 'true',
+    page: page ? parseInt(page, 10) : undefined,
+    limit: limit ? parseInt(limit, 10) : undefined,
+  });
+
+  res.json({
+    message: 'Shows confirmados listados com sucesso',
+    ...resultado,
+  });
+});
+
 export const searchShows = asyncHandler(async (req: Request, res: Response) => {
   const { q, tipo } = req.query as Record<string, string>;
 
