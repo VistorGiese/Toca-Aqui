@@ -13,6 +13,8 @@ export interface Show {
   preco_ingresso_meia?: number;
   capacidade_maxima?: number;
   ingressos_vendidos?: number;
+  ingressos_disponiveis?: number | null;
+  esgotado?: boolean;
   classificacao_etaria?: string;
   esta_publico: boolean;
   EstablishmentProfile?: {
@@ -25,6 +27,8 @@ export interface Show {
   Contract?: {
     Band?: { id: number; nome_banda: string; generos_musicais?: string[] };
   } | null;
+  nome_artista?: string | null;
+  foto_artista?: string | null;
 }
 
 export interface ShowsResponse {
@@ -50,6 +54,30 @@ export function normalizeShow(raw: Record<string, unknown>): Show {
   const profile = raw.EstablishmentProfile as Record<string, unknown> | undefined;
   const contract = raw.Contract as Record<string, unknown> | null | undefined;
   const band = contract?.Band as Record<string, unknown> | undefined;
+  const apps = raw.Applications as Array<Record<string, unknown>> | undefined;
+  const acceptedApp = apps?.find((a) => a.status === "aceito") ?? apps?.[0];
+  const appArtist = acceptedApp?.ArtistProfile as Record<string, unknown> | undefined;
+  const appBand = acceptedApp?.Band as Record<string, unknown> | undefined;
+
+  const nomeArtista =
+    raw.nome_artista != null
+      ? String(raw.nome_artista)
+      : appArtist?.nome_artistico != null
+        ? String(appArtist.nome_artistico)
+        : appBand?.nome_banda != null
+          ? String(appBand.nome_banda)
+          : band?.nome_banda != null
+            ? String(band.nome_banda)
+            : undefined;
+
+  const fotoArtista =
+    raw.foto_artista != null
+      ? String(raw.foto_artista)
+      : appArtist?.foto_perfil != null
+        ? String(appArtist.foto_perfil)
+        : appBand?.imagem != null
+          ? String(appBand.imagem)
+          : undefined;
 
   return {
     id: Number(raw.id),
@@ -68,6 +96,9 @@ export function normalizeShow(raw: Record<string, unknown>): Show {
       raw.capacidade_maxima != null ? Number(raw.capacidade_maxima) : undefined,
     ingressos_vendidos:
       raw.ingressos_vendidos != null ? Number(raw.ingressos_vendidos) : undefined,
+    ingressos_disponiveis:
+      raw.ingressos_disponiveis != null ? Number(raw.ingressos_disponiveis) : undefined,
+    esgotado: raw.esgotado != null ? Boolean(raw.esgotado) : undefined,
     classificacao_etaria:
       raw.classificacao_etaria != null ? String(raw.classificacao_etaria) : undefined,
     esta_publico: Boolean(raw.esta_publico),
@@ -92,6 +123,28 @@ export function normalizeShow(raw: Record<string, unknown>): Show {
             : undefined,
         }
       : null,
+    nome_artista: nomeArtista ?? null,
+    foto_artista: fotoArtista ?? null,
+  };
+}
+
+export interface ShowDetailParams {
+  nomeEvento: string;
+  nomeArtista?: string;
+  fotoArtista?: string;
+  horarioInicio: string;
+  horarioFim?: string;
+  dataShow: string;
+}
+
+export function showToDetailParams(show: Show): ShowDetailParams {
+  return {
+    nomeEvento: show.titulo_evento,
+    nomeArtista: show.nome_artista ?? show.Contract?.Band?.nome_banda ?? undefined,
+    fotoArtista: show.foto_artista ?? undefined,
+    horarioInicio: show.horario_inicio,
+    horarioFim: show.horario_fim,
+    dataShow: show.data_show,
   };
 }
 
@@ -125,6 +178,19 @@ function serializeShowsParams(params?: ShowsParams): Record<string, string | num
 }
 
 export const showService = {
+  async getConfirmedShows(params?: ShowsParams): Promise<ShowsResponse> {
+    const response = await api.get("/shows/confirmados", { params: serializeShowsParams(params) });
+    const body = response.data as Record<string, unknown>;
+    const shows = extractShowsFromResponse(body);
+    return {
+      shows,
+      total: Number(body.total ?? shows.length),
+      page: Number(body.page ?? 1),
+      totalPages: Number(body.totalPages ?? 1),
+      message: body.message != null ? String(body.message) : undefined,
+    };
+  },
+
   async getPublicShows(params?: ShowsParams): Promise<ShowsResponse> {
     const response = await api.get("/shows", { params: serializeShowsParams(params) });
     const body = response.data as Record<string, unknown>;

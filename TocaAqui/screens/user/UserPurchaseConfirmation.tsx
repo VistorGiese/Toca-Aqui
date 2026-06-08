@@ -10,18 +10,62 @@ import {
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
+import { formatBRL } from "@/utils/ticketPricing";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserPurchaseConfirmation">;
 
-export default function UserPurchaseConfirmation({ route, navigation }: Props) {
-  const { showTitle, showDate, venue, price, buyerName } = route.params;
+type EventCardProps = {
+  showTitle: string;
+  showDate: string;
+  venue: string;
+  price: number;
+  buyerName: string;
+};
 
-  function goToTickets() {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "UserTabs" }],
-    });
-  }
+function EventCard({ showTitle, showDate, venue, price, buyerName }: EventCardProps) {
+  const isFree = price === 0;
+
+  return (
+    <View style={styles.showCard}>
+      <View style={styles.showCardImagePlaceholder}>
+        <FontAwesome5 name="music" size={28} color="rgba(167,139,250,0.5)" />
+      </View>
+
+      <View style={styles.infoGrid}>
+        <View style={styles.infoCell}>
+          <FontAwesome5 name="star" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
+          <Text style={styles.infoCellLabel}>EVENTO</Text>
+          <Text style={styles.infoCellValue} numberOfLines={2}>{showTitle}</Text>
+        </View>
+        <View style={styles.infoCell}>
+          <FontAwesome5 name="ticket-alt" size={12} color="#00C896" style={{ marginBottom: 4 }} />
+          <Text style={styles.infoCellLabel}>PREÇO</Text>
+          <Text style={[styles.infoCellValue, { color: "#00C896" }]}>
+            {isFree ? "Gratuito" : formatBRL(price)}
+          </Text>
+        </View>
+        <View style={styles.infoCell}>
+          <FontAwesome5 name="calendar-alt" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
+          <Text style={styles.infoCellLabel}>DATA</Text>
+          <Text style={styles.infoCellValue}>{showDate}</Text>
+        </View>
+        <View style={styles.infoCell}>
+          <FontAwesome5 name="map-marker-alt" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
+          <Text style={styles.infoCellLabel}>LOCAL</Text>
+          <Text style={styles.infoCellValue} numberOfLines={2}>{venue}</Text>
+        </View>
+        <View style={styles.infoCell}>
+          <FontAwesome5 name="user" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
+          <Text style={styles.infoCellLabel}>TITULAR</Text>
+          <Text style={styles.infoCellValue} numberOfLines={2}>{buyerName}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export default function UserPurchaseConfirmation({ route, navigation }: Props) {
+  const { showTitle, showDate, venue, price, buyerName, payMethod } = route.params;
 
   function goToFeed() {
     navigation.reset({
@@ -29,6 +73,9 @@ export default function UserPurchaseConfirmation({ route, navigation }: Props) {
       routes: [{ name: "UserTabs" }],
     });
   }
+
+  const isPix = payMethod === "pix";
+  const isCard = payMethod === "card";
 
   return (
     <View style={styles.container}>
@@ -39,73 +86,46 @@ export default function UserPurchaseConfirmation({ route, navigation }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Success Icon */}
         <View style={styles.successCircle}>
           <FontAwesome5 name="check" size={36} color="#00C896" />
         </View>
 
-        <Text style={styles.successTitle}>Ingresso confirmado!</Text>
-        <Text style={styles.successSubtitle}>
-          Show de {showTitle} no {venue}
-        </Text>
+        <Text style={styles.successTitle}>Ingresso confirmado</Text>
 
-        {/* Show Card */}
-        <View style={styles.showCard}>
-          <View style={styles.showCardImagePlaceholder}>
-            <FontAwesome5 name="music" size={28} color="rgba(167,139,250,0.5)" />
+        {isCard && (
+          <Text style={styles.successSubtitle}>
+            Pagamento efetuado, confira seu cartão
+          </Text>
+        )}
+
+        {payMethod === "free" && (
+          <Text style={styles.successSubtitle}>Sua presença foi confirmada</Text>
+        )}
+
+        {isPix && (
+          <Text style={styles.successSubtitle}>
+            Show de {showTitle} no {venue}
+          </Text>
+        )}
+
+        <EventCard
+          showTitle={showTitle}
+          showDate={showDate}
+          venue={venue}
+          price={price}
+          buyerName={buyerName}
+        />
+
+        {isPix && (
+          <View style={styles.pixNotice}>
+            <FontAwesome5 name="info-circle" size={18} color="#F39C12" style={{ marginTop: 2 }} />
+            <Text style={styles.pixNoticeText}>
+              Boleto com QR code enviado em seu WhatsApp para efetuar o pagamento.
+              O pagamento deve ser efetuado dentro de 5 dias úteis; caso contrário,
+              seu ingresso será cancelado.
+            </Text>
           </View>
-
-          <View style={styles.infoGrid}>
-            <View style={styles.infoCell}>
-              <FontAwesome5 name="star" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
-              <Text style={styles.infoCellLabel}>EVENTO</Text>
-              <Text style={styles.infoCellValue} numberOfLines={2}>{showTitle}</Text>
-            </View>
-            <View style={styles.infoCell}>
-              <FontAwesome5 name="ticket-alt" size={12} color="#00C896" style={{ marginBottom: 4 }} />
-              <Text style={styles.infoCellLabel}>PREÇO</Text>
-              <Text style={[styles.infoCellValue, { color: "#00C896" }]}>
-                R$ {price.toFixed(2)}
-              </Text>
-            </View>
-            <View style={styles.infoCell}>
-              <FontAwesome5 name="calendar-alt" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
-              <Text style={styles.infoCellLabel}>DATA</Text>
-              <Text style={styles.infoCellValue}>{showDate}</Text>
-            </View>
-            <View style={styles.infoCell}>
-              <FontAwesome5 name="clock" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
-              <Text style={styles.infoCellLabel}>INÍCIO</Text>
-              <Text style={styles.infoCellValue}>21:00</Text>
-            </View>
-            <View style={styles.infoCell}>
-              <FontAwesome5 name="map-marker-alt" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
-              <Text style={styles.infoCellLabel}>LOCAL</Text>
-              <Text style={styles.infoCellValue} numberOfLines={2}>{venue}</Text>
-            </View>
-            <View style={styles.infoCell}>
-              <FontAwesome5 name="qrcode" size={12} color="#A78BFA" style={{ marginBottom: 4 }} />
-              <Text style={styles.infoCellLabel}>TITULAR</Text>
-              <Text style={styles.infoCellValue} numberOfLines={2}>{buyerName}</Text>
-            </View>
-          </View>
-
-          {/* QR hint */}
-          <View style={styles.qrHint}>
-            <FontAwesome5 name="qrcode" size={20} color="#A78BFA" />
-            <Text style={styles.qrHintText}>QR Code disponível no ingresso</Text>
-          </View>
-        </View>
-
-        {/* Actions */}
-        <TouchableOpacity style={styles.primaryBtn} onPress={goToTickets} activeOpacity={0.85}>
-          <Text style={styles.primaryBtnText}>VER MEU INGRESSO</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.outlineBtn} activeOpacity={0.85}>
-          <FontAwesome5 name="share-alt" size={14} color="#A78BFA" style={{ marginRight: 8 }} />
-          <Text style={styles.outlineBtnText}>COMPARTILHAR</Text>
-        </TouchableOpacity>
+        )}
 
         <TouchableOpacity onPress={goToFeed} style={styles.backLink}>
           <Text style={styles.backLinkText}>VOLTAR AO FEED</Text>
@@ -190,50 +210,24 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     lineHeight: 17,
   },
-  qrHint: {
+  pixNotice: {
+    width: "100%",
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: 14,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
+    alignItems: "flex-start",
+    gap: 12,
+    backgroundColor: "rgba(243,156,18,0.1)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(243,156,18,0.35)",
+    padding: 16,
+    marginBottom: 20,
   },
-  qrHintText: {
-    fontFamily: "Montserrat-SemiBold",
+  pixNoticeText: {
+    flex: 1,
+    fontFamily: "Montserrat-Regular",
     fontSize: 13,
-    color: "#A78BFA",
-  },
-  primaryBtn: {
-    width: "100%",
-    backgroundColor: "#6C5CE7",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  primaryBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 14,
-    color: "#FFFFFF",
-    letterSpacing: 1.5,
-  },
-  outlineBtn: {
-    width: "100%",
-    borderWidth: 1.5,
-    borderColor: "#A78BFA",
-    borderRadius: 12,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  outlineBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 14,
-    color: "#A78BFA",
-    letterSpacing: 1,
+    color: "#E8D5A3",
+    lineHeight: 20,
   },
   backLink: { paddingVertical: 8 },
   backLinkText: {

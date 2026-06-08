@@ -18,6 +18,8 @@ import EstNotifications from "@/screens/establishment/EstNotifications";
 import EstRateArtist from "@/screens/establishment/EstRateArtist";
 import EstSettings from "@/screens/establishment/EstSettings";
 import EstEditProfile from "@/screens/establishment/EstEditProfile";
+import EstUpcomingShowDetail from "@/screens/establishment/EstUpcomingShowDetail";
+import EstAllConfirmedShows from "@/screens/establishment/EstAllConfirmedShows";
 
 const DS = {
   bg: "#09090F",
@@ -51,6 +53,15 @@ export type EstStackParamList = {
     eventClosed?: boolean;
   };
   EstShowDetail: { contractId: number };
+  EstUpcomingShowDetail: {
+    nomeEvento: string;
+    nomeArtista?: string;
+    fotoArtista?: string;
+    horarioInicio: string;
+    horarioFim?: string;
+    dataShow: string;
+  };
+  EstAllConfirmedShows: undefined;
   EstNotifications: undefined;
   EstRateArtist: { contractId: number; artistName: string; showDate: string };
   EstSettings: undefined;
@@ -135,6 +146,8 @@ export default function EstablishmentNavigator() {
       <Stack.Screen name="EstArtistProfile" component={EstArtistProfile} />
       <Stack.Screen name="EstAcceptContract" component={EstAcceptContract} />
       <Stack.Screen name="EstShowDetail" component={EstShowDetail} />
+      <Stack.Screen name="EstUpcomingShowDetail" component={EstUpcomingShowDetail} />
+      <Stack.Screen name="EstAllConfirmedShows" component={EstAllConfirmedShows} />
       <Stack.Screen name="EstNotifications" component={EstNotifications} />
       <Stack.Screen name="EstRateArtist" component={EstRateArtist} />
       <Stack.Screen name="EstSettings" component={EstSettings} />

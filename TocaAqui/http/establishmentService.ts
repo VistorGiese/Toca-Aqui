@@ -14,12 +14,39 @@ export interface Gig {
   generos_musicais?: string;
   // Campos canônicos persistidos pelo backend
   preco_ingresso_inteira?: number;
+  capacidade_maxima?: number;
   genero_musical?: string;
   status: "aberta" | "encerrada" | "rascunho" | "pendente" | "aceito" | "rejeitado" | "cancelado" | "realizado";
   candidaturas_count?: number;
   estabelecimento_id?: number;
   perfil_estabelecimento_id?: number;
 }
+
+export interface ConfirmedGig extends Gig {
+  nome_artista?: string;
+  foto_artista?: string;
+}
+
+export const isGigAberta = (status: Gig["status"]) =>
+  status === "aberta" || status === "pendente";
+
+export const isGigEncerrada = (status: Gig["status"]) =>
+  status === "aceito" || status === "encerrada" || status === "realizado" || status === "cancelado";
+
+/** Mesmo critério da aba Minhas Vagas > Encerradas (artista contratado). */
+export const isGigConfirmada = (status: Gig["status"]) => status === "aceito";
+
+export const isGigFutura = (dataShow: string): boolean => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const eventDate = new Date(dataShow);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate >= today;
+  } catch {
+    return false;
+  }
+};
 
 export interface Candidatura {
   id: number;
@@ -80,7 +107,10 @@ function normalizeCandidatura(raw: any): Candidatura {
       raw?.nome_artistico ??
       raw?.ArtistProfile?.nome_artistico ??
       raw?.Band?.nome_banda,
-    foto_artista: raw?.foto_artista ?? raw?.ArtistProfile?.foto_perfil,
+    foto_artista:
+      raw?.foto_artista ??
+      raw?.ArtistProfile?.foto_perfil ??
+      raw?.Band?.imagem,
     genero:
       raw?.genero ??
       (Array.isArray(raw?.ArtistProfile?.generos) ? raw.ArtistProfile.generos[0] : undefined) ??
@@ -170,6 +200,7 @@ async function resolveEstablishmentProfileId(): Promise<number> {
 const createGig = async (data: {
   titulo_evento: string; data_show: string; horario_inicio: string; horario_fim: string;
   preco_ingresso_inteira?: number;
+  capacidade_maxima?: number;
   genero_musical?: string;
   // Compatibilidade para chamadas antigas
   cache_minimo?: number;
@@ -251,9 +282,120 @@ const getBandById = async (bandaId: number): Promise<BandPublicProfile> => {
   return data?.data ?? data;
 };
 
+export interface EstablishmentContract {
+  id: number;
+  evento_id?: number;
+  status: string;
+  data_show: string | null;
+  nome_evento: string;
+  nome_artista?: string | null;
+  horario_inicio?: string | null;
+  cache_acordado?: number | null;
+  nome_estabelecimento?: string | null;
+}
+
+export function normalizeEstablishmentContract(raw: Record<string, unknown>): EstablishmentContract {
+  const event = raw.Event as Record<string, unknown> | undefined;
+  const artist = raw.ArtistProfile as Record<string, unknown> | undefined;
+  const band = raw.Band as Record<string, unknown> | undefined;
+  const establishment = raw.EstablishmentProfile as Record<string, unknown> | undefined;
+
+  return {
+    id: Number(raw.id),
+    evento_id: raw.evento_id != null ? Number(raw.evento_id) : undefined,
+    status: String(raw.status ?? "aguardando_aceite"),
+    data_show:
+      (raw.data_show as string | undefined) ??
+      (raw.data_evento as string | undefined) ??
+      (event?.data_show as string | undefined) ??
+      null,
+    nome_evento:
+      (raw.nome_evento as string | undefined) ??
+      (event?.titulo_evento as string | undefined) ??
+      (raw.local_evento as string | undefined) ??
+      `Show #${raw.id}`,
+    nome_artista:
+      (raw.nome_artista as string | undefined) ??
+      (raw.nome_contratado as string | undefined) ??
+      (artist?.nome_artistico as string | undefined) ??
+      (band?.nome_banda as string | undefined) ??
+      null,
+    horario_inicio:
+      (raw.horario_inicio as string | undefined) ??
+      (event?.horario_inicio as string | undefined) ??
+      null,
+    cache_acordado:
+      raw.cache_acordado != null
+        ? Number(raw.cache_acordado)
+        : raw.cache_total != null
+          ? Number(raw.cache_total)
+          : null,
+    nome_estabelecimento:
+      (raw.nome_estabelecimento as string | undefined) ??
+      (establishment?.nome_estabelecimento as string | undefined) ??
+      null,
+  };
+}
+
 const getMyContracts = async (): Promise<any[]> => {
   const r = await api.get("/contratos/meus");
   return toArray<any>(r.data);
+};
+
+const getMyContractsNormalized = async (): Promise<EstablishmentContract[]> => {
+  const raw = await getMyContracts();
+  return raw.map((item) => normalizeEstablishmentContract(item as Record<string, unknown>));
+};
+
+/** Shows futuros com contrato aceito por ambas as partes (artista confirmado). */
+const getUpcomingConfirmedShows = async (limit = 3): Promise<EstablishmentContract[]> => {
+  const contracts = await getMyContractsNormalized();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return contracts
+    .filter((c) => {
+      if (c.status !== "aceito" || !c.data_show) return false;
+      const eventDate = new Date(c.data_show);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= today;
+    })
+    .sort(
+      (a, b) =>
+        new Date(a.data_show!).getTime() - new Date(b.data_show!).getTime()
+    )
+    .slice(0, limit);
+};
+
+async function enrichGigWithAcceptedArtist(gig: Gig): Promise<ConfirmedGig> {
+  try {
+    const result = await getGigApplications(gig.id);
+    const accepted = result.candidaturas.find((c) => c.status === "aceito");
+    return {
+      ...gig,
+      nome_artista: accepted?.nome_artista ?? undefined,
+      foto_artista: accepted?.foto_artista ?? undefined,
+    };
+  } catch {
+    return { ...gig };
+  }
+}
+
+/**
+ * Próximos shows confirmados — mesma fonte da aba Minhas Vagas > Encerradas
+ * (agendamentos com status "aceito"), filtrados por data futura.
+ */
+const getUpcomingConfirmedGigs = async (
+  estabelecimentoId?: number,
+  limit = 3
+): Promise<ConfirmedGig[]> => {
+  const gigs = await getMyGigs(estabelecimentoId);
+  const upcoming = gigs
+    .filter((g) => isGigConfirmada(g.status) && isGigFutura(g.data_show))
+    .sort((a, b) => new Date(a.data_show).getTime() - new Date(b.data_show).getTime())
+    .slice(0, limit);
+
+  return Promise.all(upcoming.map(enrichGigWithAcceptedArtist));
 };
 
 const getContractById = async (id: number): Promise<any> => {
@@ -347,7 +489,7 @@ export const establishmentService = {
   getMyGigs, createGig, getGigById, updateGig, deleteGig,
   getGigApplications, acceptApplication, rejectApplication,
   searchArtists, getArtistPublicProfile, getBandById,
-  getMyContracts, getContractById,
+  getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getContractById,
   getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,
   listMembers, addMember, removeMember,

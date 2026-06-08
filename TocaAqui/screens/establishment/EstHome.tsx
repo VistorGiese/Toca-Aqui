@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, StatusBar } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
-import { establishmentService, Gig, ArtistPublicProfile } from "@/http/establishmentService";
+import { establishmentService, Gig, isGigAberta, ArtistPublicProfile } from "@/http/establishmentService";
+import { showService, Show, showToDetailParams } from "@/http/showService";
+import { getGenreColor } from "@/utils/colors";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", textPrimary:"#FFFFFF", textSecondary:"#8888AA", error:"#E74C3C", success:"#00C853" };
@@ -22,7 +24,8 @@ export default function EstHome() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [gigs, setGigs] = useState<Gig[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [upcomingShows, setUpcomingShows] = useState<Show[]>([]);
+  const [confirmedShowsCount, setConfirmedShowsCount] = useState(0);
   const [artists, setArtists] = useState<ArtistPublicProfile[]>([]);
   const [profile, setProfile] = useState<any>(null);
 
@@ -31,14 +34,17 @@ export default function EstHome() {
     try {
       const storedId = await AsyncStorage.getItem("estabelecimentoId");
       const estId = storedId ? Number(storedId) : undefined;
-      const [g, c, a, p] = await Promise.allSettled([
+      const [g, upcoming, a, p] = await Promise.allSettled([
         establishmentService.getMyGigs(estId),
-        establishmentService.getMyContracts(),
+        showService.getConfirmedShows({ limit: 3 }),
         establishmentService.searchArtists(),
         establishmentService.getMyEstablishmentProfile(),
       ]);
-      if (g.status === "fulfilled") setGigs(g.value);
-      if (c.status === "fulfilled") setContracts(c.value);
+      if (g.status === "fulfilled") {
+        setGigs(g.value);
+        setConfirmedShowsCount(g.value.filter((item) => item.status === "aceito").length);
+      }
+      if (upcoming.status === "fulfilled") setUpcomingShows(upcoming.value.shows);
       if (a.status === "fulfilled") setArtists(a.value.slice(0,5));
       if (p.status === "fulfilled") setProfile(p.value);
     } catch (e) {
@@ -46,13 +52,20 @@ export default function EstHome() {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
-  const abertas = gigs.filter(g => g.status === "aberta" || g.status === "pendente").length;
+  const abertas = gigs.filter((g) => isGigAberta(g.status)).length;
   const candidaturas = gigs.reduce((acc, g) => acc + (g.candidaturas_count || 0), 0);
-  const showsMes = contracts.filter(c => c.status === "aceito").length;
+  const showsMes = confirmedShowsCount;
   const nota = profile?.nota_media ?? 0;
-  const proximos = contracts.filter(c => c.status === "aceito").slice(0,3);
+
+  const goToAllConfirmed = () => {
+    navigation.navigate("EstAllConfirmedShows");
+  };
 
   if (loading) return <View style={[s.root,{justifyContent:"center",alignItems:"center"}]}><ActivityIndicator size="large" color={DS.accent} /></View>;
 
@@ -95,18 +108,43 @@ export default function EstHome() {
         {/* Próximos shows */}
         <View style={s.sectionHeader}>
           <Text style={s.sectionTitle}>Próximos Shows</Text>
-          <TouchableOpacity><Text style={s.sectionLink}>VER TODOS</Text></TouchableOpacity>
+          <TouchableOpacity onPress={goToAllConfirmed} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={s.sectionLink}>VER TODOS</Text>
+          </TouchableOpacity>
         </View>
-        {proximos.length === 0
+        {upcomingShows.length === 0
           ? <Text style={s.emptyText}>Nenhum show confirmado.</Text>
-          : proximos.map(c => {
-              const { dia, mes } = formatDate(c.data_show || "");
+          : upcomingShows.map((show) => {
+              const { dia, mes } = formatDate(show.data_show);
+              const genero = (show.genero_musical ?? "SHOW").split(",")[0]?.trim().toUpperCase() || "SHOW";
+              const genreColor = getGenreColor(genero);
+              const horario = show.horario_inicio?.substring(0, 5) ?? "--:--";
+              const detail = showToDetailParams(show);
               return (
-                <TouchableOpacity key={c.id} style={s.showCard} onPress={() => navigation.navigate("EstShowDetail", { contractId: c.id })} activeOpacity={0.8}>
-                  <View style={s.dateBadge}><Text style={s.dateDay}>{dia}</Text><Text style={s.dateMes}>{mes}</Text></View>
-                  <View style={{flex:1}}>
-                    <Text style={s.showTitle}>{c.nome_evento ?? "Show"}</Text>
-                    <Text style={s.showSub}>{c.horario_inicio ?? "--:--"} · {c.nome_estabelecimento ?? "Local"}</Text>
+                <TouchableOpacity
+                  key={show.id}
+                  style={[s.showCard, { borderLeftColor: genreColor }]}
+                  onPress={() => navigation.navigate("EstUpcomingShowDetail", detail)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[s.dateBadge, { borderColor: genreColor + "55" }]}>
+                    <Text style={s.dateDay}>{dia}</Text>
+                    <Text style={[s.dateMes, { color: genreColor }]}>{mes}</Text>
+                  </View>
+                  <View style={s.showCardBody}>
+                    <Text style={s.showTitle} numberOfLines={1}>{show.titulo_evento}</Text>
+                    <Text style={s.showSub} numberOfLines={1}>
+                      {show.EstablishmentProfile?.nome_estabelecimento
+                        ? `${show.EstablishmentProfile.nome_estabelecimento} · `
+                        : show.nome_artista
+                          ? `${show.nome_artista} · `
+                          : ""}
+                      {horario}
+                    </Text>
+                    <View style={s.confirmedBadge}>
+                      <FontAwesome5 name="check-circle" size={9} color={DS.success} />
+                      <Text style={s.confirmedBadgeText}>Artista contratado</Text>
+                    </View>
                   </View>
                   <FontAwesome5 name="chevron-right" size={12} color={DS.textSecondary} />
                 </TouchableOpacity>
@@ -152,12 +190,46 @@ const s = StyleSheet.create({
   sectionHeader: { flexDirection:"row", justifyContent:"space-between", alignItems:"center", marginBottom:12 },
   sectionTitle: { fontFamily:"Montserrat-Bold", fontSize:17, color:DS.textPrimary },
   sectionLink: { fontFamily:"Montserrat-SemiBold", fontSize:12, color:DS.accent },
-  showCard: { flexDirection:"row", alignItems:"center", backgroundColor:DS.card, borderRadius:12, borderWidth:1, borderColor:DS.border, padding:14, marginBottom:8, gap:12 },
-  dateBadge: { width:44, height:44, backgroundColor:DS.surface, borderRadius:10, justifyContent:"center", alignItems:"center" },
-  dateDay: { fontFamily:"Montserrat-Bold", fontSize:16, color:DS.textPrimary },
-  dateMes: { fontFamily:"Montserrat-SemiBold", fontSize:10, color:DS.textSecondary },
-  showTitle: { fontFamily:"Montserrat-SemiBold", fontSize:14, color:DS.textPrimary },
-  showSub: { fontFamily:"Montserrat-Regular", fontSize:12, color:DS.textSecondary, marginTop:2 },
+  showCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: DS.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: DS.border,
+    borderLeftWidth: 4,
+    padding: 14,
+    marginBottom: 10,
+    gap: 12,
+  },
+  showCardBody: { flex: 1 },
+  dateBadge: {
+    width: 48,
+    height: 52,
+    backgroundColor: DS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dateDay: { fontFamily: "Montserrat-Bold", fontSize: 18, color: DS.textPrimary, lineHeight: 20 },
+  dateMes: { fontFamily: "Montserrat-SemiBold", fontSize: 10, marginTop: 2 },
+  showTitle: { fontFamily: "Montserrat-Bold", fontSize: 15, color: DS.textPrimary },
+  showSub: { fontFamily: "Montserrat-Regular", fontSize: 12, color: DS.textSecondary, marginTop: 3 },
+  confirmedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 5,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,200,83,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(0,200,83,0.25)",
+  },
+  confirmedBadgeText: { fontFamily: "Montserrat-SemiBold", fontSize: 10, color: DS.success },
   emptyText: { fontFamily:"Montserrat-Regular", fontSize:13, color:DS.textSecondary, marginBottom:16 },
   artistCard: { width:150, backgroundColor:DS.card, borderRadius:14, borderWidth:1, borderColor:DS.border, padding:12, alignItems:"center" },
   artistAvatar: { width:64, height:64, borderRadius:32, backgroundColor:DS.surface, justifyContent:"center", alignItems:"center", marginBottom:8 },

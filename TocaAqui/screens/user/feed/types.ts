@@ -1,6 +1,7 @@
 import { Show } from "@/http/showService";
 
 export const FEED_FILTERS = [
+  "Todos",
   "Esta semana",
   "Fim de semana",
   "Hoje",
@@ -12,9 +13,7 @@ export type FeedFilter = (typeof FEED_FILTERS)[number];
 export interface UserFeedViewModel {
   activeFilter: FeedFilter;
   favorites: number[];
-  featured: Show | null;
-  listShows: Show[];
-  loadingFeatured: boolean;
+  shows: Show[];
   loadingShows: boolean;
   setActiveFilter: (filter: FeedFilter) => void;
   toggleFavorite: (showId: number) => void;

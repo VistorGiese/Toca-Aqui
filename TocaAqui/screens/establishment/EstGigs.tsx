@@ -5,18 +5,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
-import { establishmentService, Gig } from "@/http/establishmentService";
+import { establishmentService, Gig, isGigAberta, isGigEncerrada } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
 
 const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", textPrimary:"#FFFFFF", textSecondary:"#8888AA", error:"#E74C3C" };
 type NavProp = NativeStackNavigationProp<EstStackParamList>;
 type Tab = "abertas" | "encerradas" | "rascunhos";
-
-const isGigAberta = (status: Gig["status"]) =>
-  status === "aberta" || status === "pendente";
-
-const isGigEncerrada = (status: Gig["status"]) =>
-  status === "aceito" || status === "encerrada" || status === "realizado" || status === "cancelado";
 
 function formatBRL(v?: number | string) {
   if (v == null) return "—";

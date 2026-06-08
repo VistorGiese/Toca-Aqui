@@ -44,6 +44,7 @@ export default function EstNewGig() {
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
   const [cache, setCache] = useState("");
+  const [capacidade, setCapacidade] = useState("");
   const [generos, setGeneros] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,6 +60,9 @@ export default function EstNewGig() {
       setFim(g.horario_fim);
       if (g.preco_ingresso_inteira != null || g.cache_minimo != null) {
         setCache(String(g.preco_ingresso_inteira ?? g.cache_minimo));
+      }
+      if (g.capacidade_maxima != null) {
+        setCapacidade(String(g.capacidade_maxima));
       }
       const generosRaw = g.genero_musical ?? g.generos_musicais;
       if (generosRaw) setGeneros(generosRaw.split(",").map(s => s.trim()).filter(Boolean));
@@ -87,6 +91,7 @@ export default function EstNewGig() {
         horario_inicio: inicio,
         horario_fim: fim,
         preco_ingresso_inteira: cache ? Number(cache) : undefined,
+        capacidade_maxima: capacidade ? Number(capacidade) : undefined,
         genero_musical: generos.join(", ") || undefined,
         esta_publico: true,
       };
@@ -191,6 +196,20 @@ export default function EstNewGig() {
           keyboardType="numeric"
         />
 
+        {/* Capacidade */}
+        <Text style={s.fieldLabel}>CAPACIDADE MÁXIMA (PESSOAS)</Text>
+        <TextInput
+          style={s.input}
+          placeholder="Ex: 150"
+          placeholderTextColor={DS.border}
+          value={capacidade}
+          onChangeText={(v) => setCapacidade(v.replace(/\D/g, ""))}
+          keyboardType="numeric"
+        />
+        <Text style={s.fieldHint}>
+          Usada para calcular o preço do ingresso e limitar vendas. Deixe vazio se não souber.
+        </Text>
+
         {/* Gêneros */}
         <Text style={s.fieldLabel}>GÊNEROS MUSICAIS</Text>
         <View style={s.chipRow}>
@@ -272,6 +291,7 @@ const s = StyleSheet.create({
   subtitle: { fontFamily: "Montserrat-Regular", fontSize: 13, color: DS.textSecondary, marginTop: 4 },
   cancelBtn: { fontFamily: "Montserrat-SemiBold", fontSize: 13, color: DS.textSecondary, paddingTop: 6 },
   fieldLabel: { fontFamily: "Montserrat-SemiBold", fontSize: 11, color: DS.textSecondary, letterSpacing: 2, marginBottom: 8, marginTop: 16 },
+  fieldHint: { fontFamily: "Montserrat-Regular", fontSize: 11, color: DS.textSecondary, marginTop: 6, lineHeight: 16 },
   input: { backgroundColor: DS.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, color: DS.textPrimary, fontFamily: "Montserrat-Regular", fontSize: 14, borderWidth: 1, borderColor: DS.border },
   dateBtn: { flexDirection: "row", alignItems: "center", backgroundColor: DS.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: DS.border, gap: 10 },
   dateBtnText: { flex: 1, fontFamily: "Montserrat-Regular", fontSize: 14, color: DS.textPrimary },

@@ -6,10 +6,13 @@ import { colors, getGenreColor, genreColorWithAlpha } from "@/utils/colors";
 import {
   formatShowDate,
   getShowCardColor,
-  getShowPrice,
+  getShowCtaLabel,
+  getShowPriceLabel,
   getShowTitle,
   getShowVenue,
+  isShowFree,
 } from "@/screens/user/feed/showHelpers";
+import ShowPurchaseCta from "./ShowPurchaseCta";
 
 interface FeedShowCardProps {
   show: Show;
@@ -24,8 +27,8 @@ export default function FeedShowCard({
   onPress,
   onToggleFavorite,
 }: FeedShowCardProps) {
-  const price = getShowPrice(show);
   const genreColor = getGenreColor(show.genero_musical ?? "");
+  const isFree = isShowFree(show);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
@@ -68,17 +71,13 @@ export default function FeedShowCard({
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.price}>
-            {price === 0 ? "Free Entry" : `R$ ${price}`}
-          </Text>
-          <TouchableOpacity
-            style={price === 0 ? styles.confirmBtn : styles.buyBtn}
+          <Text style={styles.price}>{getShowPriceLabel(show)}</Text>
+          <ShowPurchaseCta
+            label={getShowCtaLabel(show)}
+            variant={isFree ? "free" : "paid"}
             onPress={onPress}
-          >
-            <Text style={price === 0 ? styles.confirmBtnText : styles.buyBtnText}>
-              {price === 0 ? "CONFIRMAR PRESENÇA" : "GARANTIR INGRESSO"}
-            </Text>
-          </TouchableOpacity>
+            stopPropagation
+          />
         </View>
       </View>
     </TouchableOpacity>
@@ -156,30 +155,5 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Bold",
     fontSize: 16,
     color: colors.priceFree,
-  },
-  buyBtn: {
-    backgroundColor: colors.purplePrimary,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  buyBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 11,
-    color: colors.white,
-    letterSpacing: 0.5,
-  },
-  confirmBtn: {
-    borderWidth: 1,
-    borderColor: colors.purpleLight,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  confirmBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 11,
-    color: colors.purpleLight,
-    letterSpacing: 0.5,
   },
 });

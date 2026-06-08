@@ -28,7 +28,7 @@ export interface ComprarIngressoPayload {
   tipo: "inteira" | "meia_entrada" | "vip";
   nome_comprador: string;
   cpf: string;
-  telefone: string;
+  telefone?: string;
 }
 
 export const ingressoService = {

@@ -15,6 +15,12 @@ import { UserStackParamList } from "@/navigation/UserNavigator";
 import { getGenreColor } from "@/utils/colors";
 import { showService, Show } from "@/http/showService";
 import { avaliacaoService, AvaliacoesResponse } from "@/http/avaliacaoService";
+import {
+  getShowArtistName,
+  getShowCtaLabel,
+  getShowPriceLabel,
+  isShowFree,
+} from "./feed/showHelpers";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserShowDetail">;
 
@@ -89,8 +95,9 @@ export default function UserShowDetail({ route, navigation }: Props) {
     );
   }
 
-  const price = show.preco_ingresso_inteira ?? 0;
-  const isFree = price === 0;
+  const isFree = isShowFree(show);
+  const soldOut = show.esgotado === true;
+  const artistName = getShowArtistName(show);
   const genreColor = getGenreColor(show.genero_musical ?? "");
   const imageColor = show.genero_musical
     ? getGenreColor(show.genero_musical) + "55"
@@ -104,6 +111,7 @@ export default function UserShowDetail({ route, navigation }: Props) {
     avaliacoes && avaliacoes.total > 0 ? avaliacoes.media_artista : null;
 
   function goToCheckout() {
+    if (soldOut) return;
     navigation.navigate("UserCheckout", {
       showId,
       showTitle: show!.titulo_evento,
@@ -166,22 +174,6 @@ export default function UserShowDetail({ route, navigation }: Props) {
               <Text style={styles.infoValue}>{formatTime(show.horario_inicio)}</Text>
             </View>
           </View>
-          <View style={styles.infoItem}>
-            <FontAwesome5 name="users" size={14} color="#A78BFA" />
-            <View>
-              <Text style={styles.infoLabel}>Capacidade</Text>
-              <Text style={styles.infoValue}>
-                {show.capacidade_maxima ? `${show.capacidade_maxima} pessoas` : "—"}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.infoItem}>
-            <FontAwesome5 name="exclamation-circle" size={14} color="#A78BFA" />
-            <View>
-              <Text style={styles.infoLabel}>Classificação</Text>
-              <Text style={styles.infoValue}>{show.classificacao_etaria ?? "Livre"}</Text>
-            </View>
-          </View>
         </View>
 
         {show.descricao_evento ? (
@@ -233,13 +225,13 @@ export default function UserShowDetail({ route, navigation }: Props) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>O Artista</Text>
-          {confirmedBand ? (
+          {artistId ? (
             <TouchableOpacity style={styles.artistCard} onPress={goToArtist} activeOpacity={0.85}>
               <View style={styles.artistAvatar}>
                 <FontAwesome5 name="microphone" size={20} color="#A78BFA" />
               </View>
               <View style={styles.artistInfo}>
-                <Text style={styles.artistName}>{confirmedBand.nome_banda}</Text>
+                <Text style={styles.artistName}>{artistName}</Text>
                 {confirmedBand.generos_musicais?.length ? (
                   <Text style={styles.artistBio} numberOfLines={2}>
                     {confirmedBand.generos_musicais.join(", ")}
@@ -251,6 +243,15 @@ export default function UserShowDetail({ route, navigation }: Props) {
                 <FontAwesome5 name="chevron-right" size={10} color="#A78BFA" />
               </TouchableOpacity>
             </TouchableOpacity>
+          ) : artistName ? (
+            <View style={styles.artistCard}>
+              <View style={styles.artistAvatar}>
+                <FontAwesome5 name="microphone" size={20} color="#A78BFA" />
+              </View>
+              <View style={styles.artistInfo}>
+                <Text style={styles.artistName}>{artistName}</Text>
+              </View>
+            </View>
           ) : (
             <View style={styles.artistCard}>
               <View style={styles.artistAvatar}>
@@ -275,18 +276,6 @@ export default function UserShowDetail({ route, navigation }: Props) {
                 <Text style={styles.venueAddressText}>{address}</Text>
               </View>
             ) : null}
-            <View style={styles.venueActions}>
-              <View style={styles.venueBtn}>
-                <FontAwesome5 name="directions" size={12} color="#A78BFA" />
-                <Text style={styles.venueBtnText}>Como chegar</Text>
-              </View>
-              {show.EstablishmentProfile?.telefone_contato ? (
-                <View style={styles.venueBtn}>
-                  <FontAwesome5 name="phone" size={12} color="#A78BFA" />
-                  <Text style={styles.venueBtnText}>Contato</Text>
-                </View>
-              ) : null}
-            </View>
           </View>
         </View>
 
@@ -302,18 +291,15 @@ export default function UserShowDetail({ route, navigation }: Props) {
       <View style={styles.stickyBottom}>
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>A partir de</Text>
-          <Text style={styles.priceValue}>
-            {isFree ? "GRATUITO" : `R$ ${price}`}
-          </Text>
+          <Text style={styles.priceValue}>{getShowPriceLabel(show).toUpperCase()}</Text>
         </View>
         <TouchableOpacity
-          style={isFree ? styles.confirmBtn : styles.buyBtn}
+          style={soldOut ? styles.disabledBtn : isFree ? styles.confirmBtn : styles.buyBtn}
           onPress={goToCheckout}
+          disabled={soldOut}
           activeOpacity={0.85}
         >
-          <Text style={styles.buyBtnText}>
-            {isFree ? "CONFIRMAR PRESENÇA" : "COMPRAR INGRESSO"}
-          </Text>
+          <Text style={styles.buyBtnText}>{soldOut ? "ESGOTADO" : getShowCtaLabel(show)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -511,22 +497,6 @@ const styles = StyleSheet.create({
     color: "#A0A0B8",
     flex: 1,
   },
-  venueActions: { flexDirection: "row", gap: 10 },
-  venueBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.3)",
-  },
-  venueBtnText: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: 12,
-    color: "#A78BFA",
-  },
   commentsLink: {
     flexDirection: "row",
     alignItems: "center",
@@ -581,6 +551,13 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1.5,
     borderColor: "#A78BFA",
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  disabledBtn: {
+    flex: 1,
+    backgroundColor: "#3A3650",
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
