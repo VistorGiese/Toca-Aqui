@@ -196,18 +196,41 @@ export default function EstShowDetail() {
           </View>
         )}
 
-        {/* Artista */}
-        {(contract.nome_artista || contract.artista_id) && (
+        {/* Partes do contrato */}
+        {(contract.nome_contratado || contract.nome_artista || contract.artista_id) && (
           <View style={s.infoCard}>
-            <Text style={s.infoLabel}>ARTISTA</Text>
+            <Text style={s.infoLabel}>CONTRATADO</Text>
             <View style={s.artistRow}>
               <View style={s.artistAvatar}>
                 <FontAwesome5 name="user" size={16} color={DS.accent} />
               </View>
               <Text style={s.infoValue}>
-                {contract.nome_artista ?? `Artista #${contract.artista_id}`}
+                {contract.nome_contratado ?? contract.nome_artista ?? `Artista #${contract.artista_id}`}
               </Text>
             </View>
+          </View>
+        )}
+
+        {contract.nome_contratante && (
+          <View style={s.infoCard}>
+            <Text style={s.infoLabel}>CONTRATANTE</Text>
+            <Text style={s.infoValue}>{contract.nome_contratante}</Text>
+          </View>
+        )}
+
+        {contract.local_evento && (
+          <View style={s.infoCard}>
+            <Text style={s.infoLabel}>LOCAL DO EVENTO</Text>
+            <Text style={s.infoValueSm}>{contract.local_evento}</Text>
+          </View>
+        )}
+
+        {contract.valor_sinal != null && (
+          <View style={s.infoCard}>
+            <Text style={s.infoLabel}>SINAL ({contract.percentual_sinal ?? 50}%)</Text>
+            <Text style={[s.infoValueSm, { color: DS.amber }]}>
+              R$ {Number(contract.valor_sinal).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            </Text>
           </View>
         )}
 

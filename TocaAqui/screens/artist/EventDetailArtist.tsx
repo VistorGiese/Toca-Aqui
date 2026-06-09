@@ -36,6 +36,21 @@ const DS = {
 type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 type RouteType = RouteProp<ArtistStackParamList, "EventDetailArtist">;
 
+function parseEventGenres(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => item.toUpperCase());
+}
+
+function statusLabel(status: Booking["status"] | undefined): string {
+  if (status === "pendente") return "VAGA ABERTA";
+  if (status === "aceito") return "VAGA FECHADA";
+  return "EM ANÁLISE";
+}
+
 export default function EventDetailArtist() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteType>();
@@ -84,13 +99,14 @@ export default function EventDetailArtist() {
 
     const timeStr = `${booking.horario_inicio || ""} — ${booking.horario_fim || ""}`;
 
+    const offeredCache = booking.preco_ingresso_inteira ?? (booking as any).cache_minimo;
     navigation.navigate("ApplyConfirmation", {
       eventId: booking.id,
       eventName: booking.titulo_evento || `Vaga #${booking.id}`,
       date: formattedDate,
       time: timeStr,
-      cache: booking.preco_ingresso_inteira
-        ? `R$ ${Number(booking.preco_ingresso_inteira).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+      cache: offeredCache != null
+        ? `R$ ${Number(offeredCache).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
         : "A combinar",
     });
   };
@@ -112,6 +128,11 @@ export default function EventDetailArtist() {
         month: "long",
       })
     : "Data não informada";
+  const eventGenres = parseEventGenres(booking.genero_musical);
+  const mainGenre = eventGenres[0] ?? "SEM GÊNERO";
+  const venueName = estabelecimento?.nome_estabelecimento ?? booking.nome_estabelecimento;
+  const venueLocation = estabelecimento?.cidade ? `${venueName ?? "Estabelecimento"} · ${estabelecimento.cidade}` : venueName;
+  const offeredCache = booking.preco_ingresso_inteira ?? (booking as any).cache_minimo;
 
   return (
     <View style={styles.root}>
@@ -140,11 +161,11 @@ export default function EventDetailArtist() {
           <FontAwesome5 name="music" size={40} color={DS.textDis} />
           <View style={styles.heroBadgeRow}>
             <View style={styles.genreBadge}>
-              <Text style={styles.genreBadgeText}>JAZZ & BLUES</Text>
+              <Text style={styles.genreBadgeText}>{mainGenre}</Text>
             </View>
             <View style={styles.liveBadge}>
               <View style={styles.liveDot} />
-              <Text style={styles.liveBadgeText}>LIVE NOW</Text>
+              <Text style={styles.liveBadgeText}>{statusLabel(booking.status)}</Text>
             </View>
           </View>
         </View>
@@ -155,11 +176,7 @@ export default function EventDetailArtist() {
           <View style={styles.locationRow}>
             <FontAwesome5 name="map-marker-alt" size={13} color={DS.textSec} />
             <Text style={styles.locationText}>
-              {estabelecimento?.nome_estabelecimento
-                ? `${estabelecimento.nome_estabelecimento}${estabelecimento.cidade ? ` · ${estabelecimento.cidade}` : ""}`
-                : booking.estabelecimento_id
-                  ? `Estabelecimento #${booking.estabelecimento_id}`
-                  : "Local não informado"}
+              {venueLocation || (booking.estabelecimento_id ? `Estabelecimento #${booking.estabelecimento_id}` : "Local a confirmar")}
             </Text>
           </View>
 
@@ -168,8 +185,8 @@ export default function EventDetailArtist() {
             <View>
               <Text style={styles.cacheLabel}>CACHÊ OFERECIDO</Text>
               <Text style={styles.cacheValue}>
-                {booking.preco_ingresso_inteira
-                  ? `R$ ${Number(booking.preco_ingresso_inteira).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                {offeredCache != null
+                  ? `R$ ${Number(offeredCache).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
                   : "A combinar"}
               </Text>
             </View>
@@ -207,7 +224,7 @@ export default function EventDetailArtist() {
               <Text style={styles.detailLabel}>Gêneros Aceitos</Text>
             </View>
             <View style={styles.genrePillsRow}>
-              {["JAZZ", "BLUES", "MPB"].map((g) => (
+              {(eventGenres.length > 0 ? eventGenres : ["NÃO INFORMADO"]).map((g) => (
                 <View key={g} style={styles.genrePill}>
                   <Text style={styles.genrePillText}>{g}</Text>
                 </View>
@@ -227,9 +244,9 @@ export default function EventDetailArtist() {
           <Text style={styles.sectionTitle}>Sobre o local</Text>
           <View style={styles.localCard}>
             <Text style={styles.localText}>
-              {estabelecimento?.descricao || estabelecimento?.nome_estabelecimento
-                ? `${estabelecimento.nome_estabelecimento}${estabelecimento.descricao ? ` — ${estabelecimento.descricao}` : ""}`
-                : "Local do evento."}
+              {estabelecimento?.descricao || venueName
+                ? `${venueName ?? "Estabelecimento"}${estabelecimento?.descricao ? ` — ${estabelecimento.descricao}` : ""}`
+                : "Informações do local serão disponibilizadas pelo estabelecimento."}
             </Text>
             <View style={styles.localImagePlaceholder}>
               <FontAwesome5 name="building" size={28} color={DS.textDis} />

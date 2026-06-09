@@ -57,6 +57,7 @@ export type UserStackParamList = {
     venue: string;
     price: number;
     buyerName: string;
+    payMethod: "card" | "pix" | "free";
   };
   UserTicketDetail: { ticketId: number };
   UserArtistProfile: { artistId: number };

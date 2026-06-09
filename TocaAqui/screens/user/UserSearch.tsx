@@ -16,8 +16,15 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
+import { ShowPurchaseCta } from "@/components/feed";
 import { getGenreColor, genreColors } from "@/utils/colors";
 import { showService, Show } from "@/http/showService";
+import {
+  getShowArtistName,
+  getShowCtaLabel,
+  getShowPriceLabel,
+  isShowFree,
+} from "@/screens/user/feed/showHelpers";
 
 LocaleConfig.locales["pt-br"] = {
   monthNames: ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"],
@@ -48,11 +55,6 @@ function formatShowDate(dataShow: string, horarioInicio: string): string {
   } catch {
     return dataShow;
   }
-}
-
-function formatPrice(preco?: number): string {
-  if (preco === 0 || !preco) return "Gratuito";
-  return `R$ ${preco}`;
 }
 
 export default function UserSearch() {
@@ -88,12 +90,7 @@ export default function UserSearch() {
     setLoading(true);
     try {
       const data = await showService.searchShows(q);
-      // Backend retorna { tipo: 'shows', resultados: [...] } via spread no controller
-      // Suportar também formatos legados: array direto ou { shows: [...] }
-      const shows: Show[] = Array.isArray(data)
-        ? data
-        : (data?.resultados ?? data?.shows ?? data?.data ?? []);
-      setResults(shows);
+      setResults(data.resultados ?? []);
     } catch {
       Alert.alert("Erro", "Não foi possível buscar resultados.");
       setResults([]);
@@ -347,12 +344,11 @@ export default function UserSearch() {
                 filteredResults.map((show) => {
                   const genre = show.genero_musical?.toUpperCase() ?? "";
                   const genreColor = getGenreColor(genre || "OUTROS");
-                  const artists =
-                    show.Contract?.Band?.nome_banda ?? "Artista";
+                  const artistName = getShowArtistName(show) ?? "Artista";
                   const venue =
                     show.EstablishmentProfile?.nome_estabelecimento ?? "Local não informado";
                   const date = formatShowDate(show.data_show, show.horario_inicio);
-                  const priceLabel = formatPrice(show.preco_ingresso_inteira);
+                  const isFree = isShowFree(show);
                   const imageColor = genreColor + "44";
 
                   return (
@@ -377,7 +373,7 @@ export default function UserSearch() {
                           </Text>
                         </View>
                         <Text style={styles.resultTitle}>{show.titulo_evento}</Text>
-                        <Text style={styles.resultArtists}>{artists}</Text>
+                        <Text style={styles.resultArtists}>{artistName}</Text>
                         <View style={styles.resultMeta}>
                           <FontAwesome5 name="map-marker-alt" size={10} color="#555577" />
                           <Text style={styles.resultMetaText}>{venue}</Text>
@@ -387,13 +383,13 @@ export default function UserSearch() {
                           <Text style={styles.resultMetaText}>{date}</Text>
                         </View>
                         <View style={styles.resultFooter}>
-                          <Text style={styles.resultPrice}>{priceLabel}</Text>
-                          <TouchableOpacity
-                            style={styles.buyBtn}
+                          <Text style={styles.resultPrice}>{getShowPriceLabel(show)}</Text>
+                          <ShowPurchaseCta
+                            label={getShowCtaLabel(show)}
+                            variant={isFree ? "free" : "paid"}
                             onPress={() => goToDetail(show.id)}
-                          >
-                            <Text style={styles.buyBtnText}>BUY TICKETS</Text>
-                          </TouchableOpacity>
+                            stopPropagation
+                          />
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -597,18 +593,6 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Bold",
     fontSize: 14,
     color: "#00C896",
-  },
-  buyBtn: {
-    backgroundColor: "#6C5CE7",
-    borderRadius: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  buyBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 10,
-    color: "#FFFFFF",
-    letterSpacing: 0.5,
   },
   emptyContent: { paddingHorizontal: 20, paddingTop: 8 },
   emptySection: {

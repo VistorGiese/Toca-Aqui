@@ -7,7 +7,10 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
-import { establishmentService } from "@/http/establishmentService";
+import {
+  establishmentService,
+  EstablishmentContract,
+} from "@/http/establishmentService";
 
 const DS = {
   bg: "#09090F", card: "#13101F", surface: "#0F0B1E",
@@ -55,7 +58,7 @@ function formatData(d: string) {
 
 export default function EstSchedule() {
   const navigation = useNavigation<NavProp>();
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<EstablishmentContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<TabType>("proximos");
@@ -63,17 +66,8 @@ export default function EstSchedule() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await establishmentService.getMyContracts();
-      const raw = Array.isArray(data) ? data : [];
-      const normalized = raw.map((c: any) => ({
-        ...c,
-        data_show: c.data_show ?? c.data_evento ?? c.Event?.data_show ?? null,
-        nome_evento: c.nome_evento ?? c.Event?.titulo_evento ?? c.local_evento ?? `Show #${c.id}`,
-        nome_artista: c.nome_artista ?? c.nome_contratado ?? c.ArtistProfile?.nome_artistico ?? c.Band?.nome_banda,
-        horario_inicio: c.horario_inicio ?? c.Event?.horario_inicio,
-        cache_acordado: c.cache_acordado ?? c.cache_total,
-      }));
-      setContracts(normalized);
+      const data = await establishmentService.getMyContractsNormalized();
+      setContracts(data);
     } catch {
       Alert.alert("Erro", "Não foi possível carregar a agenda.");
     } finally {

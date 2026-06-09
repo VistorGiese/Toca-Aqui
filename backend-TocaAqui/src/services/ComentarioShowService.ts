@@ -2,7 +2,7 @@ import sequelize from '../config/database';
 import ComentarioShowModel from '../models/ComentarioShowModel';
 import CurtidaComentarioModel from '../models/CurtidaComentarioModel';
 import UserModel from '../models/UserModel';
-import { badRequest, notFound } from '../errors/AppError';
+import { badRequest, notFound, AppError } from '../errors/AppError';
 
 class ComentarioShowService {
   async getComentariosByShow(agendamento_id: number, usuario_id?: number): Promise<any[]> {
@@ -12,7 +12,7 @@ class ComentarioShowService {
         {
           model: UserModel,
           as: 'Usuario',
-          attributes: ['id', 'nome_completo'],
+          attributes: ['id', 'nome_completo', 'foto_perfil'],
         },
         {
           model: ComentarioShowModel,
@@ -21,7 +21,7 @@ class ComentarioShowService {
             {
               model: UserModel,
               as: 'Usuario',
-              attributes: ['id', 'nome_completo'],
+              attributes: ['id', 'nome_completo', 'foto_perfil'],
             },
           ],
           order: [['created_at', 'ASC']],
@@ -80,7 +80,7 @@ class ComentarioShowService {
         {
           model: UserModel,
           as: 'Usuario',
-          attributes: ['id', 'nome_completo'],
+          attributes: ['id', 'nome_completo', 'foto_perfil'],
         },
       ],
     });
@@ -120,6 +120,40 @@ class ComentarioShowService {
     });
 
     return resultado;
+  }
+
+  async excluirComentario(comentario_id: number, usuario_id: number): Promise<void> {
+    const comentario = await ComentarioShowModel.findByPk(comentario_id);
+    if (!comentario) {
+      throw notFound('Comentário não encontrado');
+    }
+
+    if (comentario.usuario_id !== usuario_id) {
+      throw new AppError('Você não tem permissão para excluir este comentário', 403);
+    }
+
+    await sequelize.transaction(async (t) => {
+      const respostas = await ComentarioShowModel.findAll({
+        where: { parent_id: comentario_id },
+        attributes: ['id'],
+        transaction: t,
+      });
+      const ids = [comentario_id, ...respostas.map((r) => r.id)];
+
+      await CurtidaComentarioModel.destroy({
+        where: { comentario_id: ids },
+        transaction: t,
+      });
+
+      if (respostas.length > 0) {
+        await ComentarioShowModel.destroy({
+          where: { parent_id: comentario_id },
+          transaction: t,
+        });
+      }
+
+      await comentario.destroy({ transaction: t });
+    });
   }
 }
 

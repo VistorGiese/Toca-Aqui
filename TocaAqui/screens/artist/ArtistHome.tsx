@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,13 @@ import {
   Alert,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/contexts/AuthContext";
 import { contractService, Contract } from "@/http/contractService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { showService, Show, showToDetailParams } from "@/http/showService";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
+import { getGenreColor } from "@/utils/colors";
 
 const DS = {
   bg: "#09090F",
@@ -33,18 +35,41 @@ const DS = {
 };
 
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
+
+function formatDateBadge(d: string) {
+  try {
+    const dt = new Date(d);
+    return {
+      dia: String(dt.getDate()).padStart(2, "0"),
+      mes: dt.toLocaleString("pt-BR", { month: "short" }).toUpperCase(),
+    };
+  } catch {
+    return { dia: "--", mes: "---" };
+  }
+}
 
 export default function ArtistHome() {
   const navigation = useNavigation<NavProp>();
   const { user } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [upcomingShows, setUpcomingShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchContracts = useCallback(async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await contractService.getMyContracts();
-      setContracts(Array.isArray(data) ? data : []);
+      const [contractData, upcoming] = await Promise.allSettled([
+        contractService.getMyContracts(),
+        showService.getConfirmedShows({ limit: 3 }),
+      ]);
+
+      if (contractData.status === "fulfilled") {
+        setContracts(Array.isArray(contractData.value) ? contractData.value : []);
+      }
+      if (upcoming.status === "fulfilled") {
+        setUpcomingShows(upcoming.value.shows);
+      }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar seus dados.");
     } finally {
@@ -52,13 +77,19 @@ export default function ArtistHome() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchContracts();
-  }, [fetchContracts]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const confirmedCount = contracts.filter((c) => c.status === "aceito").length;
   const pendingCount = contracts.filter((c) => c.status === "aguardando_aceite").length;
   const recentContracts = contracts.slice(0, 3);
+
+  const goToAllConfirmed = () => {
+    navigation.navigate("ArtistAllConfirmedShows");
+  };
 
   const getFirstName = () => {
     if (!user?.nome_completo) return "Artista";
@@ -126,6 +157,57 @@ export default function ArtistHome() {
           </View>
         </View>
 
+        {/* Próximos Shows — mesmo padrão da home do estabelecimento */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Próximos Shows</Text>
+          <TouchableOpacity onPress={goToAllConfirmed} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={styles.sectionLink}>VER TODOS</Text>
+          </TouchableOpacity>
+        </View>
+
+        {upcomingShows.length === 0 ? (
+          <Text style={styles.emptyShowsText}>Nenhum show confirmado.</Text>
+        ) : (
+          upcomingShows.map((show) => {
+            const { dia, mes } = formatDateBadge(show.data_show);
+            const genero = (show.genero_musical ?? "SHOW").split(",")[0]?.trim().toUpperCase() || "SHOW";
+            const genreColor = getGenreColor(genero);
+            const horario = show.horario_inicio?.substring(0, 5) ?? "--:--";
+            const detail = showToDetailParams(show);
+            return (
+              <TouchableOpacity
+                key={show.id}
+                style={[styles.showCard, { borderLeftColor: genreColor }]}
+                onPress={() => navigation.navigate("ArtistUpcomingShowDetail", detail)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.dateBadge, { borderColor: `${genreColor}55` }]}>
+                  <Text style={styles.dateDay}>{dia}</Text>
+                  <Text style={[styles.dateMes, { color: genreColor }]}>{mes}</Text>
+                </View>
+                <View style={styles.showCardBody}>
+                  <Text style={styles.showTitle} numberOfLines={1}>
+                    {show.titulo_evento}
+                  </Text>
+                  <Text style={styles.showSub} numberOfLines={1}>
+                    {show.EstablishmentProfile?.nome_estabelecimento
+                      ? `${show.EstablishmentProfile.nome_estabelecimento} · `
+                      : show.nome_artista
+                        ? `${show.nome_artista} · `
+                        : ""}
+                    {horario}
+                  </Text>
+                  <View style={styles.confirmedBadge}>
+                    <FontAwesome5 name="check-circle" size={9} color={DS.success} />
+                    <Text style={styles.confirmedBadgeText}>Show confirmado</Text>
+                  </View>
+                </View>
+                <FontAwesome5 name="chevron-right" size={12} color={DS.textDis} />
+              </TouchableOpacity>
+            );
+          })
+        )}
+
         {/* Últimas Candidaturas */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Últimas Candidaturas</Text>
@@ -138,7 +220,7 @@ export default function ArtistHome() {
             <Text style={styles.emptyText}>Nenhuma candidatura ainda</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
-              onPress={() => (navigation as any).navigate("BrowseEvents")}
+              onPress={() => navigation.navigate("ArtistTabs", { screen: "BrowseEvents" } as never)}
             >
               <Text style={styles.emptyBtnText}>Explorar vagas</Text>
             </TouchableOpacity>
@@ -148,9 +230,7 @@ export default function ArtistHome() {
             <GigCard
               key={c.id}
               contract={c}
-              onPress={() =>
-                (navigation as any).navigate("ContractDetail", { contractId: c.id })
-              }
+              onPress={() => navigation.navigate("ContractDetail", { contractId: c.id })}
             />
           ))
         )}
@@ -207,15 +287,15 @@ function GigCard({ contract, onPress }: { contract: Contract; onPress: () => voi
             <Text style={gigStyles.locationText}>{contract.cidade}</Text>
           </View>
         ) : null}
-        {contract.data_show ? (
+        {contract.data_evento ? (
           <Text style={gigStyles.dateText}>
-            {new Date(contract.data_show).toLocaleDateString("pt-BR")}
+            {new Date(contract.data_evento).toLocaleDateString("pt-BR")}
           </Text>
         ) : null}
-        {contract.cache_acordado > 0 ? (
+        {(contract.cache_total ?? 0) > 0 ? (
           <Text style={gigStyles.cacheText}>
             R${" "}
-            {Number(contract.cache_acordado).toLocaleString("pt-BR", {
+            {Number(contract.cache_total).toLocaleString("pt-BR", {
               minimumFractionDigits: 2,
             })}
           </Text>
@@ -398,6 +478,74 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-SemiBold",
     fontSize: 12,
     color: DS.accentLight,
+  },
+  emptyShowsText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 13,
+    color: DS.textSec,
+    marginBottom: 20,
+  },
+  showCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: DS.bgCard,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: DS.bgSurface,
+    borderLeftWidth: 4,
+    padding: 14,
+    marginBottom: 10,
+    gap: 12,
+  },
+  showCardBody: { flex: 1 },
+  dateBadge: {
+    width: 48,
+    height: 52,
+    backgroundColor: DS.bgSurface,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dateDay: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 18,
+    color: DS.white,
+    lineHeight: 20,
+  },
+  dateMes: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 10,
+    marginTop: 2,
+  },
+  showTitle: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 15,
+    color: DS.white,
+  },
+  showSub: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 12,
+    color: DS.textSec,
+    marginTop: 3,
+  },
+  confirmedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 5,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: "rgba(16,185,129,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(16,185,129,0.25)",
+  },
+  confirmedBadgeText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 10,
+    color: DS.success,
   },
   sectionSub: {
     fontFamily: "Montserrat-Regular",

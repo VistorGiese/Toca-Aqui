@@ -14,6 +14,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { bookingService, Booking } from "@/http/bookingService";
+import { bandApplicationService, BandApplication } from "@/http/bandApplicationService";
 import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 
 const DS = {
@@ -37,11 +38,30 @@ type FilterTab = typeof FILTER_TABS[number];
 
 type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 
+function parseEventDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  const raw = dateStr.trim();
+  if (!raw) return null;
+
+  // Backend often sends only YYYY-MM-DD. Parsing this directly with new Date()
+  // treats it as UTC and may shift one day in local timezone.
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1]);
+    const month = Number(dateOnlyMatch[2]);
+    const day = Number(dateOnlyMatch[3]);
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  }
+
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
 function isThisWeek(dateStr: string | null | undefined): boolean {
-  if (!dateStr) return false;
+  const date = parseEventDate(dateStr);
+  if (!date) return false;
   const today = new Date();
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return false;
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
@@ -52,16 +72,29 @@ function isThisWeek(dateStr: string | null | undefined): boolean {
 }
 
 function isWeekend(dateStr: string | null | undefined): boolean {
-  if (!dateStr) return false;
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return false;
+  const date = parseEventDate(dateStr);
+  if (!date) return false;
   const day = date.getDay();
   return day === 0 || day === 6;
+}
+
+function isFromTodayOrFuture(dateStr: string | null | undefined): boolean {
+  const date = parseEventDate(dateStr);
+  if (!date) return false;
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const eventDay = new Date(date);
+  eventDay.setHours(0, 0, 0, 0);
+
+  return eventDay >= todayStart;
 }
 
 export default function BrowseEvents() {
   const navigation = useNavigation<NavProp>();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [applicationStatusByEvent, setApplicationStatusByEvent] = useState<Record<number, BandApplication["status"]>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -70,8 +103,18 @@ export default function BrowseEvents() {
   const fetchBookings = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const data = await bookingService.getBookings({ status: 'pendente' });
+      const [data, myApplications] = await Promise.all([
+        bookingService.getBookings({ status: "pendente" }),
+        bandApplicationService.getMyApplications().catch(() => []),
+      ]);
       setBookings(data);
+      const byEvent: Record<number, BandApplication["status"]> = {};
+      myApplications.forEach((application) => {
+        if (application.evento_id) {
+          byEvent[application.evento_id] = application.status;
+        }
+      });
+      setApplicationStatusByEvent(byEvent);
     } catch {
       Alert.alert("Erro", "Não foi possível carregar as vagas.");
     } finally {
@@ -96,7 +139,7 @@ export default function BrowseEvents() {
         ? isThisWeek(b.data_show)
         : isWeekend(b.data_show);
 
-    const isFuture = new Date(b.data_show) > new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const isFuture = isFromTodayOrFuture(b.data_show);
 
     return matchesSearch && matchesTab && isFuture;
   });
@@ -166,6 +209,7 @@ export default function BrowseEvents() {
         renderItem={({ item }) => (
           <BookingCard
             booking={item}
+            applicationStatus={applicationStatusByEvent[item.id]}
             onPress={() =>
               navigation.navigate("EventDetailArtist", { eventId: item.id })
             }
@@ -194,8 +238,17 @@ export default function BrowseEvents() {
   );
 }
 
-function BookingCard({ booking, onPress }: { booking: Booking; onPress: () => void }) {
+function BookingCard({
+  booking,
+  applicationStatus,
+  onPress,
+}: {
+  booking: Booking;
+  applicationStatus?: BandApplication["status"];
+  onPress: () => void;
+}) {
   const isNew = booking.status === "pendente";
+  const isPendingApplication = applicationStatus === "pendente";
 
   const formatDate = (dateStr: string) => {
     try {
@@ -234,7 +287,7 @@ function BookingCard({ booking, onPress }: { booking: Booking; onPress: () => vo
         <View style={cardStyles.locationRow}>
           <FontAwesome5 name="map-marker-alt" size={11} color={DS.textDis} />
           <Text style={cardStyles.locationText}>
-            {booking.nome_estabelecimento ?? "Local não informado"}
+            {booking.nome_estabelecimento ?? (booking.perfil_estabelecimento_id ? `Estabelecimento #${booking.perfil_estabelecimento_id}` : "Local a confirmar")}
           </Text>
         </View>
 
@@ -253,8 +306,15 @@ function BookingCard({ booking, onPress }: { booking: Booking; onPress: () => vo
         </View>
 
         {/* Botão */}
-        <TouchableOpacity style={cardStyles.btnCandidatar} onPress={onPress} activeOpacity={0.85}>
-          <Text style={cardStyles.btnCandidatarText}>CANDIDATAR-SE</Text>
+        <TouchableOpacity
+          style={[cardStyles.btnCandidatar, isPendingApplication && cardStyles.btnAguardando]}
+          onPress={isPendingApplication ? undefined : onPress}
+          activeOpacity={isPendingApplication ? 1 : 0.85}
+          disabled={isPendingApplication}
+        >
+          <Text style={cardStyles.btnCandidatarText}>
+            {isPendingApplication ? "AGUARDANDO RETORNO" : "CANDIDATAR-SE"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -328,6 +388,9 @@ const cardStyles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
+  },
+  btnAguardando: {
+    backgroundColor: DS.success,
   },
   btnCandidatarText: {
     fontFamily: "AkiraExpanded-Superbold",

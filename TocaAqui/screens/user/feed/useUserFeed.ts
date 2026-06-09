@@ -1,16 +1,19 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { showService, Show, ShowsParams } from "@/http/showService";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { getApiErrorMessage } from "@/utils/errorHandler";
+import { isShowFree } from "./showHelpers";
 import { FeedFilter, UserFeedViewModel } from "./types";
 
 type NavProp = NativeStackNavigationProp<UserStackParamList>;
 
+const CONFIRMED_SHOWS_LIMIT = 50;
+
 function buildShowsParams(filter: FeedFilter): ShowsParams {
-  const params: ShowsParams = {};
+  const params: ShowsParams = { limit: CONFIRMED_SHOWS_LIMIT };
   if (filter === "Esta semana") params.esta_semana = true;
   if (filter === "Fim de semana") params.fim_de_semana = true;
   if (filter === "Hoje") params.esta_hoje = true;
@@ -19,36 +22,23 @@ function buildShowsParams(filter: FeedFilter): ShowsParams {
 
 function applyClientFilter(shows: Show[], filter: FeedFilter): Show[] {
   if (filter !== "Gratuitos") return shows;
-  return shows.filter((show) => (show.preco_ingresso_inteira ?? 0) === 0);
+  return shows.filter((show) => isShowFree(show));
 }
 
 export function useUserFeed(): UserFeedViewModel {
   const navigation = useNavigation<NavProp>();
-  const [activeFilter, setActiveFilter] = useState<FeedFilter>("Esta semana");
+  const [activeFilter, setActiveFilter] = useState<FeedFilter>("Todos");
   const [favorites, setFavorites] = useState<number[]>([]);
-  const [featuredShows, setFeaturedShows] = useState<Show[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
-  const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [loadingShows, setLoadingShows] = useState(true);
-
-  const loadFeatured = useCallback(async () => {
-    setLoadingFeatured(true);
-    try {
-      const data = await showService.getShowsDestaque();
-      setFeaturedShows(data);
-    } catch {
-      setFeaturedShows([]);
-    } finally {
-      setLoadingFeatured(false);
-    }
-  }, []);
 
   const loadShows = useCallback(async (filter: FeedFilter) => {
     setLoadingShows(true);
     try {
       const params = buildShowsParams(filter);
-      const response = await showService.getPublicShows(params);
-      setShows(applyClientFilter(response.shows, filter));
+      const response = await showService.getConfirmedShows(params);
+      const list = Array.isArray(response.shows) ? response.shows : [];
+      setShows(applyClientFilter(list, filter));
     } catch (error: unknown) {
       Alert.alert("Erro", getApiErrorMessage(error, "Não foi possível carregar os shows."));
       setShows([]);
@@ -59,15 +49,8 @@ export function useUserFeed(): UserFeedViewModel {
 
   useFocusEffect(
     useCallback(() => {
-      loadFeatured();
       loadShows(activeFilter);
-    }, [activeFilter, loadFeatured, loadShows])
-  );
-
-  const featured = useMemo(() => featuredShows[0] || shows[0] || null, [featuredShows, shows]);
-  const listShows = useMemo(
-    () => shows.filter((show) => show.id !== featured?.id),
-    [shows, featured]
+    }, [activeFilter, loadShows])
   );
 
   const toggleFavorite = useCallback((showId: number) => {
@@ -89,9 +72,7 @@ export function useUserFeed(): UserFeedViewModel {
   return {
     activeFilter,
     favorites,
-    featured,
-    listShows,
-    loadingFeatured,
+    shows,
     loadingShows,
     setActiveFilter,
     toggleFavorite,

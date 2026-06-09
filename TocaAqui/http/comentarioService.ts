@@ -9,7 +9,7 @@ export interface Comentario {
   parent_id?: number;
   eu_curtei?: boolean;
   createdAt: string;
-  Usuario?: { nome: string };
+  Usuario?: { id: number; nome_completo: string; foto_perfil?: string | null };
   Respostas?: Comentario[];
 }
 
@@ -37,5 +37,9 @@ export const comentarioService = {
       `/comentarios/${id}/curtir`
     );
     return response.data;
+  },
+
+  async excluirComentario(id: number): Promise<void> {
+    await api.delete(`/comentarios/${id}`);
   },
 };

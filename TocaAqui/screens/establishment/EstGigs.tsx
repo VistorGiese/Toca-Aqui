@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
-import { establishmentService, Gig } from "@/http/establishmentService";
+import { establishmentService, Gig, isGigAberta, isGigEncerrada } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
 
 const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", textPrimary:"#FFFFFF", textSecondary:"#8888AA", error:"#E74C3C" };
@@ -44,8 +44,8 @@ export default function EstGigs() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const filtered = gigs.filter(g => {
-    if (tab === "abertas") return g.status === "aberta" || g.status === "pendente";
-    if (tab === "encerradas") return g.status === "encerrada" || g.status === "realizado" || g.status === "cancelado";
+    if (tab === "abertas") return isGigAberta(g.status);
+    if (tab === "encerradas") return isGigEncerrada(g.status);
     return g.status === "rascunho";
   });
 
@@ -84,7 +84,10 @@ export default function EstGigs() {
           <FontAwesome5 name="dollar-sign" size={11} color={DS.cyan} />
           <Text style={[s.cardMetaText,{color:DS.cyan}]}>{formatBRL(item.cache_minimo ?? item.preco_ingresso_inteira)}{item.cache_maximo ? ` - ${formatBRL(item.cache_maximo)}` : ""}</Text>
         </View>
-        {(item.candidaturas_count ?? 0) > 0 && (
+        {item.status === "aceito" && (
+          <View style={[s.badge, s.badgeContratado]}><FontAwesome5 name="check-circle" size={10} color="#00C853" style={{marginRight:6}} /><Text style={[s.badgeText, { color: "#00C853" }]}>Artista contratado</Text></View>
+        )}
+        {isGigAberta(item.status) && (item.candidaturas_count ?? 0) > 0 && (
           <View style={s.badge}><FontAwesome5 name="users" size={10} color={DS.textSecondary} style={{marginRight:6}} /><Text style={s.badgeText}>{item.candidaturas_count} candidaturas</Text></View>
         )}
       </TouchableOpacity>
@@ -147,6 +150,7 @@ const s = StyleSheet.create({
   cardMeta:{flexDirection:"row",alignItems:"center",gap:6,marginBottom:4},
   cardMetaText:{fontFamily:"Montserrat-Regular",fontSize:13,color:DS.textSecondary},
   badge:{flexDirection:"row",alignItems:"center",backgroundColor:DS.surface,borderRadius:20,paddingHorizontal:12,paddingVertical:5,alignSelf:"flex-start",marginTop:6},
+  badgeContratado:{borderWidth:1,borderColor:"#00C85333"},
   badgeText:{fontFamily:"Montserrat-Regular",fontSize:12,color:DS.textSecondary},
   empty:{alignItems:"center",paddingTop:60,gap:12},
   emptyText:{fontFamily:"Montserrat-Regular",fontSize:14,color:DS.textSecondary},

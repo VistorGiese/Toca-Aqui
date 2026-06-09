@@ -15,7 +15,7 @@ export const applyBandToEvent = asyncHandler(async (req: AuthRequest, res: Respo
 export const acceptBandApplication = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const id = req.params.candidaturaId as string;
+  const id = req.params.id as string;
   const { aplicacao, contrato } = await bandApplicationService.accept(id);
   const contratado = aplicacao.banda_id ? 'artista/banda' : 'artista';
   res.json({
@@ -28,7 +28,7 @@ export const acceptBandApplication = asyncHandler(async (req: AuthRequest, res: 
 export const rejectBandApplication = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const id = req.params.candidaturaId as string;
+  const id = req.params.id as string;
   const aplicacao = await bandApplicationService.reject(id);
   res.json({ message: 'Candidatura recusada com sucesso', aplicacao });
 });

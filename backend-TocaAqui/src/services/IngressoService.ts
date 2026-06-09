@@ -5,8 +5,14 @@ import BookingModel from '../models/BookingModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import AddressModel from '../models/AddressModel';
 import { badRequest, notFound, unauthorized } from '../errors/AppError';
+import {
+  getTicketBaseUnitPrice,
+  getTicketHalfUnitPrice,
+} from '../utils/ticketPricing';
 
 class IngressoService {
+  private readonly maxIngressosPorUsuario = 4;
+
   private gerarCodigoQR(): string {
     const random = Math.random().toString(36).substr(2, 9).toUpperCase();
     return `TKT-${Date.now()}-${random}`;
@@ -52,36 +58,50 @@ class IngressoService {
     }
 
     let preco: number;
+    const capacidade = show.capacidade_maxima ?? null;
+
     if (data.tipo === 'inteira') {
       if (!show.preco_ingresso_inteira) {
         throw badRequest('Ingresso inteira não disponível para este show');
       }
-      preco = Number(show.preco_ingresso_inteira);
+      preco = getTicketBaseUnitPrice(show.preco_ingresso_inteira, capacidade);
     } else if (data.tipo === 'meia_entrada') {
-      if (!show.preco_ingresso_meia) {
+      if (!show.preco_ingresso_inteira && show.preco_ingresso_meia == null) {
         throw badRequest('Meia entrada não disponível para este show');
       }
-      preco = Number(show.preco_ingresso_meia);
+      preco = getTicketHalfUnitPrice(
+        show.preco_ingresso_inteira,
+        show.preco_ingresso_meia,
+        capacidade,
+      );
     } else {
       if (!show.preco_ingresso_inteira) {
         throw badRequest('Ingresso VIP não disponível para este show');
       }
-      preco = Number(show.preco_ingresso_inteira) * 1.5;
-    }
-
-    const ingressoExistente = await IngressoModel.findOne({
-      where: {
-        usuario_id: data.usuario_id,
-        agendamento_id: data.agendamento_id,
-        status: { [Op.in]: [IngressoStatus.CONFIRMADO, IngressoStatus.PENDENTE] },
-      },
-    });
-
-    if (ingressoExistente) {
-      throw badRequest('Você já possui um ingresso para este show');
+      preco = Math.round(getTicketBaseUnitPrice(show.preco_ingresso_inteira, capacidade) * 1.5 * 100) / 100;
     }
 
     const resultado = await sequelize.transaction(async (t) => {
+      const ingressosUsuario = await IngressoModel.count({
+        where: {
+          usuario_id: data.usuario_id,
+          agendamento_id: data.agendamento_id,
+          status: { [Op.in]: [IngressoStatus.CONFIRMADO, IngressoStatus.PENDENTE] },
+        },
+        transaction: t,
+      });
+
+      if (ingressosUsuario >= this.maxIngressosPorUsuario) {
+        throw badRequest('Limite de 4 ingressos por show atingido');
+      }
+
+      if (
+        show.capacidade_maxima &&
+        show.ingressos_vendidos >= show.capacidade_maxima
+      ) {
+        throw badRequest('Show esgotado');
+      }
+
       const codigo_qr = this.gerarCodigoQR();
 
       const ingresso = await IngressoModel.create(
@@ -106,6 +126,7 @@ class IngressoService {
 
   async getMeusIngressos(usuario_id: number, tipo?: 'proximos' | 'passados'): Promise<any[]> {
     const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
 
     const whereShow: any = {};
     if (tipo === 'proximos') {

@@ -9,11 +9,14 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { comentarioService, Comentario } from "@/http/comentarioService";
+import { resolveImageUrl } from "@/utils/adapters";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserComments">;
 
@@ -41,13 +44,36 @@ function getInitials(nome: string): string {
     .toUpperCase();
 }
 
+function CommentAvatar({
+  nome,
+  fotoPerfil,
+  color,
+}: {
+  nome: string;
+  fotoPerfil?: string | null;
+  color: string;
+}) {
+  const fotoUrl = resolveImageUrl(fotoPerfil);
+
+  if (fotoUrl) {
+    return <Image source={{ uri: fotoUrl }} style={styles.avatarImage} />;
+  }
+
+  return (
+    <View style={[styles.avatar, { backgroundColor: color }]}>
+      <Text style={styles.avatarText}>{getInitials(nome)}</Text>
+    </View>
+  );
+}
+
 export default function UserComments({ route, navigation }: Props) {
   const { showId, showTitle } = route.params;
+  const { user } = useAuth();
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
-  const [likedComments, setLikedComments] = useState<number[]>([]);
   const [publishing, setPublishing] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const MAX_CHARS = 280;
 
@@ -56,7 +82,6 @@ export default function UserComments({ route, navigation }: Props) {
       setLoading(true);
       const data = await comentarioService.getComentariosByShow(showId);
       setComentarios(data);
-      setLikedComments(data.filter((c) => c.eu_curtei).map((c) => c.id));
     } catch {
       Alert.alert("Erro", "Não foi possível carregar os comentários");
     } finally {
@@ -67,21 +92,6 @@ export default function UserComments({ route, navigation }: Props) {
   useEffect(() => {
     loadComentarios();
   }, [loadComentarios]);
-
-  async function toggleLike(id: number) {
-    try {
-      const result = await comentarioService.curtirComentario(id);
-      setComentarios((prev) =>
-        prev.map((c) =>
-          c.id === id ? { ...c, curtidas_count: result.curtidas_count } : c
-        )
-      );
-      setLikedComments((prev) =>
-        result.curtiu ? [...prev, id] : prev.filter((x) => x !== id)
-      );
-    } catch {
-    }
-  }
 
   async function handlePublish() {
     if (newComment.trim().length === 0) return;
@@ -100,6 +110,33 @@ export default function UserComments({ route, navigation }: Props) {
     }
   }
 
+  function confirmDelete(comentario: Comentario) {
+    Alert.alert(
+      "Excluir comentário",
+      "Tem certeza que deseja excluir este comentário?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: () => handleDelete(comentario.id),
+        },
+      ]
+    );
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      setDeletingId(id);
+      await comentarioService.excluirComentario(id);
+      setComentarios((prev) => prev.filter((c) => c.id !== id));
+    } catch {
+      Alert.alert("Erro", "Não foi possível excluir o comentário");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#09090F" />
@@ -109,9 +146,7 @@ export default function UserComments({ route, navigation }: Props) {
           <FontAwesome5 name="arrow-left" size={16} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>COMENTÁRIOS</Text>
-        <TouchableOpacity>
-          <FontAwesome5 name="cog" size={17} color="#A0A0B8" />
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
       </View>
 
       <Text style={styles.showSubtitle} numberOfLines={1}>{showTitle}</Text>
@@ -141,15 +176,6 @@ export default function UserComments({ route, navigation }: Props) {
         </View>
       </View>
 
-      <View style={styles.sortRow}>
-        <Text style={styles.sortLabel}>Recentes</Text>
-        <FontAwesome5 name="chevron-down" size={11} color="#A78BFA" style={{ marginRight: 8 }} />
-        <TouchableOpacity style={styles.sortBtn}>
-          <FontAwesome5 name="sort-amount-down" size={13} color="#555577" />
-          <Text style={styles.sortBtnText}>ORDENAR</Text>
-        </TouchableOpacity>
-      </View>
-
       {loading ? (
         <ActivityIndicator color="#A78BFA" style={{ marginTop: 40 }} />
       ) : (
@@ -163,45 +189,41 @@ export default function UserComments({ route, navigation }: Props) {
           )}
 
           {comentarios.map((comentario, index) => {
-            const liked = likedComments.includes(comentario.id);
             const nome = comentario.Usuario?.nome_completo || "Usuário";
-            const initials = getInitials(nome);
             const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
+            const isOwner = user?.id === comentario.usuario_id;
+            const isDeleting = deletingId === comentario.id;
             return (
               <View key={comentario.id} style={styles.commentCard}>
-                <View style={[styles.avatar, { backgroundColor: color }]}>
-                  <Text style={styles.avatarText}>{initials}</Text>
-                </View>
+                <CommentAvatar
+                  nome={nome}
+                  fotoPerfil={comentario.Usuario?.foto_perfil}
+                  color={color}
+                />
 
                 <View style={styles.commentContent}>
                   <View style={styles.commentHeader}>
                     <Text style={styles.commentName}>{nome}</Text>
-                    <Text style={styles.commentTime}>{formatTimeAgo(comentario.createdAt)}</Text>
+                    <View style={styles.commentHeaderRight}>
+                      <Text style={styles.commentTime}>{formatTimeAgo(comentario.createdAt)}</Text>
+                      {isOwner ? (
+                        <TouchableOpacity
+                          style={styles.deleteBtn}
+                          onPress={() => confirmDelete(comentario)}
+                          disabled={isDeleting}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          {isDeleting ? (
+                            <ActivityIndicator size="small" color="#FF6B6B" />
+                          ) : (
+                            <FontAwesome5 name="trash-alt" size={12} color="#FF6B6B" />
+                          )}
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
                   </View>
 
                   <Text style={styles.commentText}>{comentario.texto}</Text>
-
-                  <View style={styles.commentActions}>
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={() => toggleLike(comentario.id)}
-                    >
-                      <FontAwesome5
-                        name="heart"
-                        size={13}
-                        color={liked ? "#A78BFA" : "#555577"}
-                        solid={liked}
-                      />
-                      <Text style={[styles.actionCount, liked && { color: "#A78BFA" }]}>
-                        {comentario.curtidas_count}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <FontAwesome5 name="reply" size={13} color="#555577" />
-                      <Text style={styles.actionLabel}>Responder</Text>
-                    </TouchableOpacity>
-                  </View>
                 </View>
               </View>
             );
@@ -225,6 +247,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   backBtn: { padding: 4 },
+  headerSpacer: { width: 24 },
   headerTitle: {
     fontFamily: "Montserrat-Bold",
     fontSize: 15,
@@ -278,35 +301,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 1,
   },
-  sortRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  sortLabel: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 14,
-    color: "#FFFFFF",
-    marginRight: 4,
-  },
-  sortBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginLeft: "auto",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  sortBtnText: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: 11,
-    color: "#555577",
-    letterSpacing: 0.5,
-  },
   commentsList: {
     paddingHorizontal: 20,
   },
@@ -332,6 +326,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    flexShrink: 0,
+  },
   avatarText: {
     fontFamily: "Montserrat-Bold",
     fontSize: 14,
@@ -343,6 +343,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 5,
+  },
+  commentHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  deleteBtn: {
+    padding: 2,
   },
   commentName: {
     fontFamily: "Montserrat-Bold",
@@ -359,25 +367,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#A0A0B8",
     lineHeight: 20,
-    marginBottom: 10,
-  },
-  commentActions: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  actionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  actionCount: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: 12,
-    color: "#555577",
-  },
-  actionLabel: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: 12,
-    color: "#555577",
   },
 });

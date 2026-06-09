@@ -2,9 +2,7 @@ import React from "react";
 import { ActivityIndicator, ScrollView, StatusBar, Text, View } from "react-native";
 import { colors } from "@/utils/colors";
 import EmptyState from "@/components/ui/EmptyState";
-import SectionHeader from "@/components/ui/SectionHeader";
 import {
-  FeedFeaturedCard,
   FeedFilterChips,
   FeedScreenHeader,
   FeedSearchBar,
@@ -41,36 +39,21 @@ export default function UserFeed() {
           />
         </ScrollView>
 
-        <View style={styles.sectionSpacingTop}>
-          <SectionHeader title="Em Destaque" />
-        </View>
-
-        {vm.loadingFeatured ? (
-          <View style={styles.featuredLoadingBlock}>
-            <ActivityIndicator size="large" color={colors.purpleLight} />
-          </View>
-        ) : vm.featured ? (
-          <FeedFeaturedCard
-            show={vm.featured}
-            onPress={() => vm.goToDetail(vm.featured!.id)}
-          />
-        ) : (
-          <EmptyState message="Nenhum destaque disponível" />
-        )}
-
         <View style={styles.sectionSubtitleWrapper}>
-          <Text style={styles.sectionTitle}>{vm.activeFilter}</Text>
-          <Text style={styles.sectionSubtitle}>Eventos acontecendo perto de você</Text>
+          <Text style={styles.sectionTitle}>Próximos Shows</Text>
+          <Text style={styles.sectionSubtitle}>
+            Eventos confirmados com artista
+          </Text>
         </View>
 
         {vm.loadingShows ? (
           <View style={styles.loadingBlock}>
             <ActivityIndicator size="large" color={colors.purpleLight} />
           </View>
-        ) : vm.listShows.length === 0 ? (
-          <EmptyState message="Nenhum show encontrado" />
+        ) : vm.shows.length === 0 ? (
+          <EmptyState message="Nenhum show confirmado no momento" />
         ) : (
-          vm.listShows.map((show) => (
+          vm.shows.map((show) => (
             <FeedShowCard
               key={show.id}
               show={show}

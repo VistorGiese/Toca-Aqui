@@ -3,7 +3,14 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Show } from "@/http/showService";
 import { colors, getGenreColor, genreColorWithAlpha } from "@/utils/colors";
-import { getShowPrice, getShowTitle, getShowVenue } from "@/screens/user/feed/showHelpers";
+import {
+  getShowCtaLabel,
+  getShowPriceLabel,
+  getShowTitle,
+  getShowVenue,
+  isShowFree,
+} from "@/screens/user/feed/showHelpers";
+import ShowPurchaseCta from "./ShowPurchaseCta";
 
 interface FeedFeaturedCardProps {
   show: Show;
@@ -13,7 +20,7 @@ interface FeedFeaturedCardProps {
 export default function FeedFeaturedCard({ show, onPress }: FeedFeaturedCardProps) {
   const genre = show.genero_musical ?? "";
   const genreColor = getGenreColor(genre);
-  const price = getShowPrice(show);
+  const isFree = isShowFree(show);
 
   return (
     <TouchableOpacity
@@ -34,10 +41,18 @@ export default function FeedFeaturedCard({ show, onPress }: FeedFeaturedCardProp
             </Text>
           </View>
           <Text style={styles.title}>{getShowTitle(show)}</Text>
-          <View style={styles.meta}>
-            <FontAwesome5 name="map-marker-alt" size={12} color={colors.textSecondary} />
-            <Text style={styles.venue}>{getShowVenue(show)}</Text>
-            <Text style={styles.price}>{price === 0 ? "Free Entry" : `R$ ${price}`}</Text>
+          <View style={styles.footer}>
+            <View style={styles.meta}>
+              <FontAwesome5 name="map-marker-alt" size={12} color={colors.textSecondary} />
+              <Text style={styles.venue}>{getShowVenue(show)}</Text>
+              <Text style={styles.price}>{getShowPriceLabel(show)}</Text>
+            </View>
+            <ShowPurchaseCta
+              label={getShowCtaLabel(show)}
+              variant={isFree ? "free" : "paid"}
+              onPress={onPress}
+              stopPropagation
+            />
           </View>
         </View>
       </View>
@@ -104,7 +119,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    marginBottom: 10,
   },
+  footer: { gap: 8 },
   venue: {
     fontFamily: "Montserrat-Regular",
     fontSize: 12,

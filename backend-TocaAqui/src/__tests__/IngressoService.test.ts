@@ -17,6 +17,7 @@ jest.mock('../models/IngressoModel', () => ({
     findOne: jest.fn(),
     findAll: jest.fn(),
     create: jest.fn(),
+    count: jest.fn(),
   },
   IngressoStatus: {
     CONFIRMADO: 'confirmado',
@@ -81,13 +82,13 @@ describe('IngressoService', () => {
       const ingresso = { id: 99, tipo: 'inteira', preco: 50 };
 
       (BookingModel.findOne as jest.Mock).mockResolvedValue(show);
-      (IngressoModel.findOne as jest.Mock).mockResolvedValue(null);
+      (IngressoModel.count as jest.Mock).mockResolvedValue(0);
       (IngressoModel.create as jest.Mock).mockResolvedValue(ingresso);
 
       const result = await ingressoService.comprarIngresso(makePayload());
 
       expect(IngressoModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ tipo: 'inteira', preco: 50 }),
+        expect.objectContaining({ tipo: 'inteira', preco: 0.5 }),
         expect.anything()
       );
       expect(result).toBe(ingresso);
@@ -98,13 +99,13 @@ describe('IngressoService', () => {
       const ingresso = { id: 100, tipo: 'meia_entrada', preco: 25 };
 
       (BookingModel.findOne as jest.Mock).mockResolvedValue(show);
-      (IngressoModel.findOne as jest.Mock).mockResolvedValue(null);
+      (IngressoModel.count as jest.Mock).mockResolvedValue(0);
       (IngressoModel.create as jest.Mock).mockResolvedValue(ingresso);
 
       const result = await ingressoService.comprarIngresso(makePayload({ tipo: 'meia_entrada' }));
 
       expect(IngressoModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ tipo: 'meia_entrada', preco: 25 }),
+        expect.objectContaining({ tipo: 'meia_entrada', preco: 0.25 }),
         expect.anything()
       );
       expect(result).toBe(ingresso);
@@ -115,13 +116,13 @@ describe('IngressoService', () => {
       const ingresso = { id: 101, tipo: 'vip', preco: 75 };
 
       (BookingModel.findOne as jest.Mock).mockResolvedValue(show);
-      (IngressoModel.findOne as jest.Mock).mockResolvedValue(null);
+      (IngressoModel.count as jest.Mock).mockResolvedValue(0);
       (IngressoModel.create as jest.Mock).mockResolvedValue(ingresso);
 
       await ingressoService.comprarIngresso(makePayload({ tipo: 'vip' }));
 
       expect(IngressoModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ tipo: 'vip', preco: 75 }),
+        expect.objectContaining({ tipo: 'vip', preco: 0.75 }),
         expect.anything()
       );
     });
@@ -152,19 +153,19 @@ describe('IngressoService', () => {
       );
     });
 
-    it('lança 400 quando usuário já possui ingresso para o show', async () => {
+    it('lança 400 quando usuário atingiu limite de ingressos', async () => {
       (BookingModel.findOne as jest.Mock).mockResolvedValue(makeShow());
-      (IngressoModel.findOne as jest.Mock).mockResolvedValue({ id: 50 });
+      (IngressoModel.count as jest.Mock).mockResolvedValue(4);
 
       await expect(ingressoService.comprarIngresso(makePayload())).rejects.toEqual(
-        expect.objectContaining({ statusCode: 400 })
+        expect.objectContaining({ statusCode: 400, message: 'Limite de 4 ingressos por show atingido' })
       );
     });
 
     it('lança 400 quando ingresso inteira não disponível para show sem preço', async () => {
       const show = makeShow({ preco_ingresso_inteira: null });
       (BookingModel.findOne as jest.Mock).mockResolvedValue(show);
-      (IngressoModel.findOne as jest.Mock).mockResolvedValue(null);
+      (IngressoModel.count as jest.Mock).mockResolvedValue(0);
 
       await expect(ingressoService.comprarIngresso(makePayload())).rejects.toEqual(
         expect.objectContaining({ statusCode: 400 })

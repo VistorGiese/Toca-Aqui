@@ -13,6 +13,7 @@ export interface Booking {
   banda_id: number | null;
   titulo_evento: string;
   descricao_evento?: string;
+  genero_musical?: string;
   data_show: string;
   estabelecimento_id: number;
   perfil_estabelecimento_id?: number;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { getGenreColor } from "@/utils/colors";
 import { ingressoService, Ingresso } from "@/http/ingressoService";
+import { formatBRL } from "@/utils/ticketPricing";
 
 type NavProp = NativeStackNavigationProp<UserStackParamList>;
 
@@ -26,6 +27,14 @@ function formatDate(dataShow: string, horarioInicio: string): string {
   return `${day} ${month} • ${horarioInicio.slice(0, 5)}`;
 }
 
+function isShowPast(dataShow: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const show = new Date(dataShow);
+  show.setHours(0, 0, 0, 0);
+  return show.getTime() < today.getTime();
+}
+
 function calcDaysLeft(dataShow: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -34,10 +43,87 @@ function calcDaysLeft(dataShow: string): number {
   return Math.round((show.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function calcProgress(daysLeft: number): number {
-  if (daysLeft <= 0) return 1.0;
-  if (daysLeft >= 30) return 0.1;
-  return (30 - daysLeft) / 30;
+type CompactTicketCardProps = {
+  ingresso: Ingresso;
+  variant: "upcoming" | "past";
+  onPress: () => void;
+  onRate?: () => void;
+};
+
+function CompactTicketCard({ ingresso, variant, onPress, onRate }: CompactTicketCardProps) {
+  const genre = ingresso.Show?.genero_musical ?? "";
+  const genreColor = getGenreColor(genre);
+  const imageColor = genreColor ? `${genreColor}22` : "#2D1B4E";
+  const venue = ingresso.Show
+    ? [
+        ingresso.Show.EstablishmentProfile?.nome_estabelecimento,
+        ingresso.Show.EstablishmentProfile?.Address?.cidade,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+  const dateStr =
+    ingresso.Show?.data_show && ingresso.Show?.horario_inicio
+      ? formatDate(ingresso.Show.data_show, ingresso.Show.horario_inicio)
+      : "";
+  const daysLeft =
+    variant === "upcoming" && ingresso.Show?.data_show
+      ? calcDaysLeft(ingresso.Show.data_show)
+      : null;
+
+  return (
+    <TouchableOpacity
+      style={styles.ticketCard}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      <View style={[styles.ticketThumb, { backgroundColor: imageColor }]}>
+        <FontAwesome5 name="ticket-alt" size={14} color="rgba(255,255,255,0.45)" />
+      </View>
+
+      <View style={styles.ticketInfo}>
+        {genre ? (
+          <Text style={[styles.genreText, { color: genreColor }]} numberOfLines={1}>
+            {genre.toUpperCase()}
+          </Text>
+        ) : null}
+        <Text style={styles.ticketTitle} numberOfLines={1}>
+          {ingresso.Show?.titulo_evento ?? "Show"}
+        </Text>
+        {venue ? (
+          <Text style={styles.ticketMeta} numberOfLines={1}>{venue}</Text>
+        ) : null}
+        {dateStr ? (
+          <Text style={styles.ticketDate}>{dateStr}</Text>
+        ) : null}
+        <View style={styles.ticketFooter}>
+          <Text style={styles.ticketPrice}>
+            {Number(ingresso.preco) === 0 ? "Gratuito" : formatBRL(Number(ingresso.preco))}
+          </Text>
+          {daysLeft != null && daysLeft >= 0 ? (
+            <Text style={styles.daysText}>
+              {daysLeft === 0 ? "Hoje" : `Em ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}`}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      {variant === "past" && onRate ? (
+        <TouchableOpacity
+          style={styles.rateBtn}
+          onPress={(e) => {
+            e.stopPropagation();
+            onRate();
+          }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <FontAwesome5 name="star" size={13} color="#A78BFA" />
+        </TouchableOpacity>
+      ) : (
+        <FontAwesome5 name="chevron-right" size={11} color="#555577" />
+      )}
+    </TouchableOpacity>
+  );
 }
 
 export default function UserTickets() {
@@ -59,9 +145,11 @@ export default function UserTickets() {
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTickets();
+    }, [fetchTickets])
+  );
 
   function goToDetail(ticketId: number) {
     navigation.navigate("UserTicketDetail", { ticketId });
@@ -85,9 +173,6 @@ export default function UserTickets() {
       <StatusBar barStyle="light-content" backgroundColor="#09090F" />
 
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuBtn}>
-          <FontAwesome5 name="bars" size={18} color="#A0A0B8" />
-        </TouchableOpacity>
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Meus ingressos</Text>
           <Text style={styles.headerSubtitle}>
@@ -125,184 +210,39 @@ export default function UserTickets() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
         >
-          {activeTab === "upcoming" ? (
-            <>
-              {tickets.length === 0 ? (
-                <Text style={styles.emptyText}>Nenhum ingresso encontrado</Text>
-              ) : (
-                tickets.map((ingresso) => {
-                  const genre = ingresso.Show?.genero_musical ?? "";
-                  const genreColor = getGenreColor(genre);
-                  const imageColor = genreColor ? genreColor + "33" : "#2D1B4E";
-                  const daysLeft = ingresso.Show?.data_show
-                    ? calcDaysLeft(ingresso.Show.data_show)
-                    : 0;
-                  const progress = calcProgress(daysLeft);
-                  const venue = ingresso.Show
-                    ? [
-                        ingresso.Show.EstablishmentProfile?.nome_estabelecimento,
-                        ingresso.Show.EstablishmentProfile?.Address?.cidade,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")
-                    : "";
-                  const dateStr =
-                    ingresso.Show?.data_show && ingresso.Show?.horario_inicio
-                      ? formatDate(ingresso.Show.data_show, ingresso.Show.horario_inicio)
-                      : "";
-
-                  return (
-                    <View key={ingresso.id} style={styles.ticketCard}>
-                      <View style={[styles.ticketImage, { backgroundColor: imageColor }]}>
-                        <FontAwesome5 name="music" size={24} color="rgba(255,255,255,0.25)" />
-                        {genre ? (
-                          <View
-                            style={[
-                              styles.genreBadge,
-                              { backgroundColor: genreColor + "33" },
-                            ]}
-                          >
-                            <Text style={[styles.genreBadgeText, { color: genreColor }]}>
-                              {genre.toUpperCase()}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-
-                      <View style={styles.ticketBody}>
-                        <Text style={styles.ticketTitle}>
-                          {ingresso.Show?.titulo_evento ?? "Show"}
-                        </Text>
-                        {venue ? (
-                          <View style={styles.ticketMeta}>
-                            <FontAwesome5 name="map-marker-alt" size={11} color="#555577" />
-                            <Text style={styles.ticketMetaText}>{venue}</Text>
-                          </View>
-                        ) : null}
-                        {dateStr ? (
-                          <View style={styles.ticketMeta}>
-                            <FontAwesome5 name="clock" size={11} color="#555577" />
-                            <Text style={styles.ticketMetaText}>{dateStr}</Text>
-                          </View>
-                        ) : null}
-
-                        <View style={styles.daysRow}>
-                          <View style={styles.daysBadge}>
-                            <FontAwesome5 name="fire" size={10} color="#FF6B6B" />
-                            <Text style={styles.daysBadgeText}>
-                              FALTAM {daysLeft > 0 ? daysLeft : 0} DIAS
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View style={styles.progressTrack}>
-                          <View
-                            style={[
-                              styles.progressFill,
-                              { width: `${progress * 100}%` },
-                            ]}
-                          />
-                        </View>
-
-                        <TouchableOpacity
-                          style={styles.viewBtn}
-                          onPress={() => goToDetail(ingresso.id)}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={styles.viewBtnText}>VER INGRESSO</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                })
-              )}
-
-              <View style={styles.exploreCard}>
-                <FontAwesome5
-                  name="compass"
-                  size={24}
-                  color="#A78BFA"
-                  style={{ marginBottom: 12 }}
-                />
-                <Text style={styles.exploreTitle}>Procurando por mais eventos?</Text>
-                <Text style={styles.exploreSubtitle}>
-                  Descubra shows incríveis que estão acontecendo perto de você.
-                </Text>
-                <TouchableOpacity
-                  style={styles.exploreBtn}
-                  onPress={goToFeed}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.exploreBtnText}>EXPLORAR EVENTOS</Text>
-                </TouchableOpacity>
-              </View>
-            </>
+          {tickets.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {activeTab === "upcoming"
+                ? "Nenhum ingresso próximo"
+                : "Nenhum ingresso passado"}
+            </Text>
           ) : (
-            <>
-              <Text style={styles.historyTitle}>Histórico Recente</Text>
-              {tickets.length === 0 ? (
-                <Text style={styles.emptyText}>Nenhum ingresso encontrado</Text>
-              ) : (
-                tickets.map((ingresso) => {
-                  const genre = ingresso.Show?.genero_musical ?? "";
-                  const genreColor = getGenreColor(genre);
-                  const imageColor = genreColor ? genreColor + "22" : "#2D1B4E";
-                  const venue = ingresso.Show?.EstablishmentProfile?.nome_estabelecimento ?? "";
-                  const dateStr =
-                    ingresso.Show?.data_show && ingresso.Show?.horario_inicio
-                      ? formatDate(ingresso.Show.data_show, ingresso.Show.horario_inicio)
-                      : "";
+            tickets.map((ingresso) => (
+              <CompactTicketCard
+                key={ingresso.id}
+                ingresso={ingresso}
+                variant={activeTab}
+                onPress={() => goToDetail(ingresso.id)}
+                onRate={
+                  activeTab === "past" && ingresso.Show?.data_show && isShowPast(ingresso.Show.data_show)
+                    ? () => goToRateShow(ingresso)
+                    : undefined
+                }
+              />
+            ))
+          )}
 
-                  return (
-                    <View key={ingresso.id} style={styles.pastCard}>
-                      <View
-                        style={[
-                          styles.pastCardImage,
-                          { backgroundColor: imageColor },
-                        ]}
-                      >
-                        <FontAwesome5
-                          name="music"
-                          size={16}
-                          color="rgba(255,255,255,0.3)"
-                        />
-                      </View>
-                      <View style={styles.pastCardInfo}>
-                        {genre ? (
-                          <View
-                            style={[
-                              styles.genreBadge,
-                              { backgroundColor: genreColor + "22" },
-                            ]}
-                          >
-                            <Text
-                              style={[styles.genreBadgeText, { color: genreColor }]}
-                            >
-                              {genre.toUpperCase()}
-                            </Text>
-                          </View>
-                        ) : null}
-                        <Text style={styles.pastCardTitle}>
-                          {ingresso.Show?.titulo_evento ?? "Show"}
-                        </Text>
-                        {venue ? (
-                          <Text style={styles.pastCardVenue}>{venue}</Text>
-                        ) : null}
-                        {dateStr ? (
-                          <Text style={styles.pastCardDate}>{dateStr}</Text>
-                        ) : null}
-                      </View>
-                      <TouchableOpacity
-                        style={styles.rateBtn}
-                        onPress={() => goToRateShow(ingresso)}
-                      >
-                        <FontAwesome5 name="star" size={14} color="#A78BFA" />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })
-              )}
-            </>
+          {activeTab === "upcoming" && (
+            <View style={styles.exploreCard}>
+              <FontAwesome5 name="compass" size={20} color="#A78BFA" style={{ marginBottom: 8 }} />
+              <Text style={styles.exploreTitle}>Procurando por mais eventos?</Text>
+              <Text style={styles.exploreSubtitle}>
+                Descubra shows incríveis perto de você.
+              </Text>
+              <TouchableOpacity style={styles.exploreBtn} onPress={goToFeed} activeOpacity={0.85}>
+                <Text style={styles.exploreBtnText}>EXPLORAR EVENTOS</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           <View style={{ height: 20 }} />
@@ -317,12 +257,8 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 52,
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 14,
+    paddingBottom: 12,
   },
-  menuBtn: { marginTop: 2 },
   headerText: { flex: 1 },
   headerTitle: {
     fontFamily: "Montserrat-Bold",
@@ -341,11 +277,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.06)",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: "center",
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
@@ -363,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 20, gap: 8 },
   emptyText: {
     fontFamily: "Montserrat-Regular",
     fontSize: 14,
@@ -373,172 +309,106 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   ticketCard: {
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
-    overflow: "hidden",
-    marginBottom: 16,
-  },
-  ticketImage: {
-    height: 140,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  genreBadge: {
-    position: "absolute",
-    bottom: 10,
-    left: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 5,
-  },
-  genreBadgeText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 9,
-    letterSpacing: 1,
-  },
-  ticketBody: { padding: 14 },
-  ticketTitle: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 16,
-    color: "#FFFFFF",
-    marginBottom: 6,
-  },
-  ticketMeta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  ticketMetaText: {
-    fontFamily: "Montserrat-Regular",
-    fontSize: 12,
-    color: "#A0A0B8",
-  },
-  daysRow: { flexDirection: "row", marginTop: 8, marginBottom: 8 },
-  daysBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "rgba(255,107,107,0.12)",
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  daysBadgeText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 10,
-    color: "#FF6B6B",
-    letterSpacing: 0.5,
-  },
-  progressTrack: {
-    height: 4,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 2,
-    marginBottom: 14,
-  },
-  progressFill: {
-    height: 4,
-    backgroundColor: "#A78BFA",
-    borderRadius: 2,
-  },
-  viewBtn: {
-    backgroundColor: "#6C5CE7",
-    borderRadius: 10,
-    paddingVertical: 13,
-    alignItems: "center",
-  },
-  viewBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 13,
-    color: "#FFFFFF",
-    letterSpacing: 1,
-  },
-  exploreCard: {
-    backgroundColor: "rgba(167,139,250,0.08)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.2)",
-    padding: 20,
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  exploreTitle: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 15,
-    color: "#FFFFFF",
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  exploreSubtitle: {
-    fontFamily: "Montserrat-Regular",
-    fontSize: 13,
-    color: "#A0A0B8",
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  exploreBtn: {
-    backgroundColor: "#6C5CE7",
-    borderRadius: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  exploreBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 13,
-    color: "#FFFFFF",
-    letterSpacing: 1,
-  },
-  historyTitle: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 15,
-    color: "#FFFFFF",
-    marginBottom: 12,
-  },
-  pastCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    gap: 10,
     backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
-    padding: 12,
-    marginBottom: 10,
+    padding: 10,
   },
-  pastCardImage: {
-    width: 56,
-    height: 56,
+  ticketThumb: {
+    width: 44,
+    height: 44,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  pastCardInfo: { flex: 1 },
-  pastCardTitle: {
+  ticketInfo: { flex: 1, minWidth: 0 },
+  genreText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 8,
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  ticketTitle: {
     fontFamily: "Montserrat-Bold",
     fontSize: 13,
     color: "#FFFFFF",
     marginBottom: 2,
   },
-  pastCardVenue: {
+  ticketMeta: {
     fontFamily: "Montserrat-Regular",
     fontSize: 11,
     color: "#A0A0B8",
   },
-  pastCardDate: {
+  ticketDate: {
     fontFamily: "Montserrat-Regular",
-    fontSize: 11,
+    fontSize: 10,
     color: "#555577",
+    marginTop: 2,
+  },
+  ticketFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  ticketPrice: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 11,
+    color: "#00C896",
+  },
+  daysText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 10,
+    color: "#A78BFA",
   },
   rateBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "rgba(167,139,250,0.1)",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
+  },
+  exploreCard: {
+    backgroundColor: "rgba(167,139,250,0.08)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(167,139,250,0.2)",
+    padding: 16,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  exploreTitle: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 14,
+    color: "#FFFFFF",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  exploreSubtitle: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 12,
+    color: "#A0A0B8",
+    textAlign: "center",
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  exploreBtn: {
+    backgroundColor: "#6C5CE7",
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  exploreBtnText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 12,
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
 });

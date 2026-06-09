@@ -15,6 +15,13 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import api from "@/http/api";
+import { Show } from "@/http/showService";
+import { ShowPurchaseCta } from "@/components/feed";
+import {
+  getShowCtaLabel,
+  getShowPriceLabel,
+  isShowFree,
+} from "@/screens/user/feed/showHelpers";
 
 type NavProp = NativeStackNavigationProp<UserStackParamList>;
 
@@ -156,17 +163,17 @@ export default function UserFavorites() {
                 <Text style={styles.emptyText}>Nenhum show favoritado ainda.</Text>
               )}
               {favShows.map((f) => {
-                const show = f.item;
-                const genre = show?.genero_musical || "";
+                const show = f.item as Show | undefined;
+                if (!show?.id) return null;
                 const daysLeft = show?.data_show ? calcDaysLeft(show.data_show) : 0;
                 const dateLabel = show?.data_show ? formatDate(show.data_show) : "—";
                 const venue = show?.EstablishmentProfile?.nome_estabelecimento || "—";
-                const price = show?.preco_ingresso_inteira ?? 0;
+                const isFree = isShowFree(show);
                 return (
                   <TouchableOpacity
                     key={f.id}
                     style={styles.showCard}
-                    onPress={() => goToShowDetail(show?.id)}
+                    onPress={() => goToShowDetail(show.id)}
                     activeOpacity={0.85}
                   >
                     <View style={[styles.showImage, { backgroundColor: "#2D1B4E" }]}>
@@ -178,20 +185,20 @@ export default function UserFavorites() {
                     <View style={styles.showBody}>
                       <View style={styles.showBodyTop}>
                         <Text style={styles.showDate}>{dateLabel}</Text>
-                        <TouchableOpacity onPress={() => handleRemover(f.tipo, show?.id)}>
+                        <TouchableOpacity onPress={() => handleRemover(f.tipo, show.id)}>
                           <FontAwesome5 name="heart" size={16} color="#A78BFA" solid />
                         </TouchableOpacity>
                       </View>
-                      <Text style={styles.showTitle}>{show?.titulo_evento || "Show"}</Text>
+                      <Text style={styles.showTitle}>{show.titulo_evento || "Show"}</Text>
                       <Text style={styles.showVenue}>{venue}</Text>
                       <View style={styles.showFooter}>
-                        <Text style={styles.showPrice}>R$ {price}</Text>
-                        <TouchableOpacity
-                          style={styles.detailBtn}
-                          onPress={() => goToShowDetail(show?.id)}
-                        >
-                          <Text style={styles.detailBtnText}>DETALHES</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.showPrice}>{getShowPriceLabel(show)}</Text>
+                        <ShowPurchaseCta
+                          label={getShowCtaLabel(show)}
+                          variant={isFree ? "free" : "paid"}
+                          onPress={() => goToShowDetail(show.id)}
+                          stopPropagation
+                        />
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -402,18 +409,6 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Bold",
     fontSize: 16,
     color: "#00C896",
-  },
-  detailBtn: {
-    backgroundColor: "#6C5CE7",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  detailBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 11,
-    color: "#FFFFFF",
-    letterSpacing: 1,
   },
   artistGrid: {
     flexDirection: "row",

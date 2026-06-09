@@ -17,6 +17,8 @@ import ContractDetail from "@/screens/artist/ContractDetail";
 import MyContracts from "@/screens/artist/MyContracts";
 import RateEstablishment from "@/screens/artist/RateEstablishment";
 import Subscription from "@/screens/artist/Subscription";
+import ArtistUpcomingShowDetail from "@/screens/artist/ArtistUpcomingShowDetail";
+import ArtistAllConfirmedShows from "@/screens/artist/ArtistAllConfirmedShows";
 
 const DS = {
   bg: "#09090F",
@@ -47,6 +49,15 @@ export type ArtistStackParamList = {
   };
   ShowDetail: { contractId: number };
   ContractDetail: { contractId: number };
+  ArtistUpcomingShowDetail: {
+    nomeEvento: string;
+    nomeArtista?: string;
+    fotoArtista?: string;
+    horarioInicio: string;
+    horarioFim?: string;
+    dataShow: string;
+  };
+  ArtistAllConfirmedShows: undefined;
   MyContracts: undefined;
   RateEstablishment: { contractId: number; venueName: string };
   Subscription: undefined;
@@ -139,6 +150,8 @@ export default function ArtistNavigator() {
       <Stack.Screen name="ApplyConfirmation" component={ApplyConfirmation} />
       <Stack.Screen name="ShowDetail" component={ShowDetail} />
       <Stack.Screen name="ContractDetail" component={ContractDetail} />
+      <Stack.Screen name="ArtistUpcomingShowDetail" component={ArtistUpcomingShowDetail} />
+      <Stack.Screen name="ArtistAllConfirmedShows" component={ArtistAllConfirmedShows} />
       <Stack.Screen name="MyContracts" component={MyContracts} />
       <Stack.Screen name="RateEstablishment" component={RateEstablishment} />
       <Stack.Screen name="Subscription" component={Subscription} />

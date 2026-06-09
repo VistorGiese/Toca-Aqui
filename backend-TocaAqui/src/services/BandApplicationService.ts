@@ -10,6 +10,8 @@ import { createNotification } from './NotificationService';
 import { NotificationType } from '../models/NotificationModel';
 import { AppError } from '../errors/AppError';
 import { contractService } from './ContractService';
+import redisService from '../config/redis';
+import { CACHE_KEYS } from '../config/cache';
 
 export class BandApplicationService {
   async apply(banda_id: number | undefined, evento_id: number, requestingUserId?: number, artista_id?: number, mensagem?: string, valor_proposto?: number) {
@@ -116,27 +118,34 @@ export class BandApplicationService {
     if (jaAprovada) throw new AppError('Já existe banda aceita para este evento', 400);
 
     await aplicacao.update({ status: 'aceito' });
-    await BookingModel.update({ status: 'aceito' }, { where: { id: aplicacao.evento_id } });
+    await BookingModel.update(
+      { status: 'aceito', esta_publico: true },
+      { where: { id: aplicacao.evento_id } },
+    );
+    await redisService.invalidate(CACHE_KEYS.agendamento(aplicacao.evento_id));
+    await redisService.invalidatePattern('agendamentos:*');
     await BandApplicationModel.update(
       { status: 'rejeitado' },
       { where: { evento_id: aplicacao.evento_id, id: { [Op.ne]: aplicacao.id }, status: 'pendente' } }
     );
 
-    // Gerar contrato automaticamente
-    const contrato = await contractService.generateFromApplication(aplicacao.id);
+    // Gera contrato após aceite; falha na geração não desfaz a candidatura aceita
+    let contrato: ContractModel | null = null;
+    try {
+      contrato = await contractService.generateFromApplication(aplicacao.id);
 
-    // Notificar estabelecimento sobre o contrato gerado
-    if (contrato) {
       const estabelecimento = await EstablishmentProfileModel.findByPk(evento.perfil_estabelecimento_id);
       if (estabelecimento) {
         await createNotification(
           estabelecimento.usuario_id,
           NotificationType.CONTRATO_GERADO,
-          `Um contrato foi gerado para o evento "${evento.titulo_evento}"${banda ? ` com a banda "${banda.nome_banda}"` : ""}. Revise e aceite os termos.`,
+          `Um contrato foi gerado para o evento "${evento.titulo_evento}"${banda ? ` com a banda "${banda.nome_banda}"` : ''}. Revise e aceite os termos.`,
           'contrato',
           contrato.id
         );
       }
+    } catch (err) {
+      console.error('[BandApplicationService] Falha ao gerar contrato após aceite:', err);
     }
 
     // Notificar contratado aceito

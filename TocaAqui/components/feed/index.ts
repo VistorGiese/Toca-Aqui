@@ -3,3 +3,4 @@ export { default as FeedFilterChips } from "./FeedFilterChips";
 export { default as FeedScreenHeader } from "./FeedScreenHeader";
 export { default as FeedSearchBar } from "./FeedSearchBar";
 export { default as FeedShowCard } from "./FeedShowCard";
+export { default as ShowPurchaseCta } from "./ShowPurchaseCta";

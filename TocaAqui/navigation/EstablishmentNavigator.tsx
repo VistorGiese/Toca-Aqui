@@ -18,6 +18,8 @@ import EstNotifications from "@/screens/establishment/EstNotifications";
 import EstRateArtist from "@/screens/establishment/EstRateArtist";
 import EstSettings from "@/screens/establishment/EstSettings";
 import EstEditProfile from "@/screens/establishment/EstEditProfile";
+import EstUpcomingShowDetail from "@/screens/establishment/EstUpcomingShowDetail";
+import EstAllConfirmedShows from "@/screens/establishment/EstAllConfirmedShows";
 
 const DS = {
   bg: "#09090F",
@@ -38,9 +40,28 @@ export type EstStackParamList = {
   EstTabs: undefined;
   EstNewGig: { gigId?: number; artistaConvidadoId?: number };
   EstGigApplications: { gigId: number; gigTitle: string };
-  EstArtistProfile: { artistId: number };
-  EstAcceptContract: { applicationId: number; artistId?: number; artistName: string; gigTitle: string; valorProposto?: number };
+  EstArtistProfile: { artistId?: number; bandaId?: number };
+  EstAcceptContract: {
+    applicationId: number;
+    status: "pendente" | "aceito" | "rejeitado";
+    artistaId?: number;
+    bandaId?: number;
+    artistName: string;
+    gigTitle: string;
+    valorProposto?: number;
+    mensagem?: string;
+    eventClosed?: boolean;
+  };
   EstShowDetail: { contractId: number };
+  EstUpcomingShowDetail: {
+    nomeEvento: string;
+    nomeArtista?: string;
+    fotoArtista?: string;
+    horarioInicio: string;
+    horarioFim?: string;
+    dataShow: string;
+  };
+  EstAllConfirmedShows: undefined;
   EstNotifications: undefined;
   EstRateArtist: { contractId: number; artistName: string; showDate: string };
   EstSettings: undefined;
@@ -125,6 +146,8 @@ export default function EstablishmentNavigator() {
       <Stack.Screen name="EstArtistProfile" component={EstArtistProfile} />
       <Stack.Screen name="EstAcceptContract" component={EstAcceptContract} />
       <Stack.Screen name="EstShowDetail" component={EstShowDetail} />
+      <Stack.Screen name="EstUpcomingShowDetail" component={EstUpcomingShowDetail} />
+      <Stack.Screen name="EstAllConfirmedShows" component={EstAllConfirmedShows} />
       <Stack.Screen name="EstNotifications" component={EstNotifications} />
       <Stack.Screen name="EstRateArtist" component={EstRateArtist} />
       <Stack.Screen name="EstSettings" component={EstSettings} />

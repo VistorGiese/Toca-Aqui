@@ -271,16 +271,6 @@ export default function UserTicketDetail({ route, navigation }: Props) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.walletBtn} activeOpacity={0.85}>
-          <FontAwesome5 name="clipboard" size={14} color="#A78BFA" style={{ marginRight: 8 }} />
-          <Text style={styles.walletBtnText}>ADICIONAR À CARTEIRA</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.shareBtn} activeOpacity={0.85}>
-          <FontAwesome5 name="share-alt" size={14} color="#A78BFA" style={{ marginRight: 8 }} />
-          <Text style={styles.shareBtnText}>COMPARTILHAR INGRESSO</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.supportLink}>
           <Text style={styles.supportLinkText}>
             Problemas com seu ingresso? Suporte Editorial
@@ -421,37 +411,6 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Bold",
     fontSize: 11,
     letterSpacing: 1,
-  },
-  walletBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#A78BFA",
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginBottom: 12,
-  },
-  walletBtnText: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 13,
-    color: "#A78BFA",
-    letterSpacing: 1,
-  },
-  shareBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
-    borderRadius: 12,
-    paddingVertical: 13,
-    marginBottom: 20,
-  },
-  shareBtnText: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: 13,
-    color: "#A78BFA",
   },
   supportLink: {
     flexDirection: "row",

@@ -16,6 +16,19 @@ import { useForm, Controller } from "react-hook-form";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { showService } from "@/http/showService";
 import { ingressoService } from "@/http/ingressoService";
+import {
+  formatCardExpiry,
+  formatCardNumber,
+  formatCpf,
+  formatCvv,
+  formatPhone,
+} from "@/utils/inputMasks";
+import {
+  calcCheckoutTotals,
+  formatBRL,
+  getTicketBaseUnitPrice,
+  getTicketHalfUnitPrice,
+} from "@/utils/ticketPricing";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserCheckout">;
 
@@ -28,7 +41,26 @@ type FormData = {
   cardCvv: string;
 };
 
-const SERVICE_FEE_RATE = 0.1;
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const data = (error as {
+      response?: {
+        data?: {
+          message?: string;
+          error?: string;
+          detalhes?: Array<{ mensagem?: string; message?: string }>;
+          errors?: Array<{ message?: string }>;
+        };
+      };
+    }).response?.data;
+    if (data?.message) return data.message;
+    if (data?.detalhes?.[0]?.mensagem) return data.detalhes[0].mensagem;
+    if (data?.detalhes?.[0]?.message) return data.detalhes[0].message;
+    if (data?.errors?.[0]?.message) return data.errors[0].message;
+    if (data?.error) return data.error;
+  }
+  return fallback;
+}
 
 export default function UserCheckout({ route, navigation }: Props) {
   const { showId, showTitle, showDate, venue } = route.params;
@@ -57,13 +89,15 @@ export default function UserCheckout({ route, navigation }: Props) {
     async function fetchShow() {
       try {
         const show = await showService.getShowById(showId);
-        const full = show.preco_ingresso_inteira ?? 0;
-        const half =
-          show.preco_ingresso_meia != null
-            ? show.preco_ingresso_meia
-            : full > 0
-            ? full / 2
-            : 0;
+        const full = getTicketBaseUnitPrice(
+          show.preco_ingresso_inteira,
+          show.capacidade_maxima,
+        );
+        const half = getTicketHalfUnitPrice(
+          show.preco_ingresso_inteira,
+          show.preco_ingresso_meia,
+          show.capacidade_maxima,
+        );
         setPriceFull(full);
         setPriceHalf(half);
         setIsFree(full === 0);
@@ -76,9 +110,13 @@ export default function UserCheckout({ route, navigation }: Props) {
     fetchShow();
   }, [showId]);
 
-  const subtotal = qtyFull * priceFull + qtyHalf * priceHalf;
-  const serviceFee = isFree ? 0 : Math.round(subtotal * SERVICE_FEE_RATE * 100) / 100;
-  const total = subtotal + serviceFee;
+  const { subtotal, serviceFee, total } = calcCheckoutTotals(
+    qtyFull,
+    priceFull,
+    qtyHalf,
+    priceHalf,
+    isFree,
+  );
 
   function changeQty(type: "full" | "half", delta: number) {
     if (type === "full") {
@@ -94,33 +132,20 @@ export default function UserCheckout({ route, navigation }: Props) {
     if (qtyFull + qtyHalf === 0) return;
     setSubmitting(true);
     try {
-      const requests: Promise<any>[] = [];
+      const payload = {
+        agendamento_id: showId,
+        nome_comprador: data.nome.trim(),
+        cpf: formatCpf(data.cpf),
+        telefone: data.telefone.trim() || undefined,
+      };
 
       for (let i = 0; i < qtyFull; i++) {
-        requests.push(
-          ingressoService.comprarIngresso({
-            agendamento_id: showId,
-            tipo: "inteira",
-            nome_comprador: data.nome,
-            cpf: data.cpf,
-            telefone: data.telefone,
-          })
-        );
+        await ingressoService.comprarIngresso({ ...payload, tipo: "inteira" });
       }
 
       for (let i = 0; i < qtyHalf; i++) {
-        requests.push(
-          ingressoService.comprarIngresso({
-            agendamento_id: showId,
-            tipo: "meia_entrada",
-            nome_comprador: data.nome,
-            cpf: data.cpf,
-            telefone: data.telefone,
-          })
-        );
+        await ingressoService.comprarIngresso({ ...payload, tipo: "meia_entrada" });
       }
-
-      await Promise.all(requests);
 
       navigation.navigate("UserPurchaseConfirmation", {
         showTitle,
@@ -128,9 +153,10 @@ export default function UserCheckout({ route, navigation }: Props) {
         venue,
         price: total,
         buyerName: data.nome || "Comprador",
+        payMethod: isFree ? "free" : payMethod,
       });
-    } catch {
-      Alert.alert("Erro", "Não foi possível finalizar a compra");
+    } catch (error) {
+      Alert.alert("Erro", getApiErrorMessage(error, "Não foi possível finalizar a compra"));
     } finally {
       setSubmitting(false);
     }
@@ -192,7 +218,7 @@ export default function UserCheckout({ route, navigation }: Props) {
             <View>
               <Text style={styles.ticketType}>Inteira</Text>
               <Text style={styles.ticketPrice}>
-                {isFree ? "Gratuito" : `R$ ${priceFull.toFixed(2)}`}
+                {isFree ? "Gratuito" : formatBRL(priceFull)}
               </Text>
             </View>
             <View style={styles.qtyControl}>
@@ -229,7 +255,7 @@ export default function UserCheckout({ route, navigation }: Props) {
               <View style={styles.ticketRow}>
                 <View>
                   <Text style={styles.ticketType}>Meia-Entrada</Text>
-                  <Text style={styles.ticketPrice}>R$ {priceHalf.toFixed(2)}</Text>
+                  <Text style={styles.ticketPrice}>{formatBRL(priceHalf)}</Text>
                 </View>
                 <View style={styles.qtyControl}>
                   <TouchableOpacity
@@ -294,7 +320,7 @@ export default function UserCheckout({ route, navigation }: Props) {
                   placeholder="000.000.000-00"
                   placeholderTextColor="#555577"
                   value={value}
-                  onChangeText={onChange}
+                  onChangeText={(text) => onChange(formatCpf(text))}
                   keyboardType="numeric"
                 />
               </View>
@@ -312,7 +338,7 @@ export default function UserCheckout({ route, navigation }: Props) {
                   placeholder="(11) 99999-9999"
                   placeholderTextColor="#555577"
                   value={value}
-                  onChangeText={onChange}
+                  onChangeText={(text) => onChange(formatPhone(text))}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -370,7 +396,7 @@ export default function UserCheckout({ route, navigation }: Props) {
                         placeholder="0000 0000 0000 0000"
                         placeholderTextColor="#555577"
                         value={value}
-                        onChangeText={onChange}
+                        onChangeText={(text) => onChange(formatCardNumber(text))}
                         keyboardType="numeric"
                       />
                     </View>
@@ -388,7 +414,7 @@ export default function UserCheckout({ route, navigation }: Props) {
                           placeholder="MM/AA"
                           placeholderTextColor="#555577"
                           value={value}
-                          onChangeText={onChange}
+                          onChangeText={(text) => onChange(formatCardExpiry(text))}
                           keyboardType="numeric"
                         />
                       </View>
@@ -406,7 +432,7 @@ export default function UserCheckout({ route, navigation }: Props) {
                           placeholder="000"
                           placeholderTextColor="#555577"
                           value={value}
-                          onChangeText={onChange}
+                          onChangeText={(text) => onChange(formatCvv(text))}
                           keyboardType="numeric"
                           secureTextEntry
                         />
@@ -450,7 +476,7 @@ export default function UserCheckout({ route, navigation }: Props) {
                     Ingressos ({qtyFull}x Inteira)
                   </Text>
                   <Text style={styles.summaryValue}>
-                    R$ {(qtyFull * priceFull).toFixed(2)}
+                    {formatBRL(qtyFull * priceFull)}
                   </Text>
                 </View>
               )}
@@ -460,20 +486,20 @@ export default function UserCheckout({ route, navigation }: Props) {
                     Ingressos ({qtyHalf}x Meia)
                   </Text>
                   <Text style={styles.summaryValue}>
-                    R$ {(qtyHalf * priceHalf).toFixed(2)}
+                    {formatBRL(qtyHalf * priceHalf)}
                   </Text>
                 </View>
               )}
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Taxa de Serviço (10%)</Text>
-                <Text style={styles.summaryValue}>R$ {serviceFee.toFixed(2)}</Text>
+                <Text style={styles.summaryValue}>{formatBRL(serviceFee)}</Text>
               </View>
             </>
           )}
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>R$ {total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>{formatBRL(total)}</Text>
           </View>
         </View>
 
