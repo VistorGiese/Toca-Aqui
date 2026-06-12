@@ -200,6 +200,7 @@ export class AuthService {
     horario_abertura: string;
     horario_fechamento: string;
     telefone_contato: string;
+    cnpj?: string;
     endereco: {
       rua: string;
       numero: string;

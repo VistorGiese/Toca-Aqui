@@ -133,6 +133,7 @@ export const updateEstablishment = asyncHandler(async (req: AuthRequest, res: Re
     horario_fechamento,
     endereco_id,
     telefone_contato,
+    cnpj,
     fotos,
     esta_ativo,
   } = req.body;
@@ -184,6 +185,7 @@ export const updateEstablishment = asyncHandler(async (req: AuthRequest, res: Re
     horario_fechamento: horario_fechamento ?? establishment.horario_fechamento,
     endereco_id: novoEnderecoId,
     telefone_contato: telefone_contato ?? establishment.telefone_contato,
+    cnpj: cnpj ?? establishment.cnpj,
     fotos: fotos !== undefined ? fotos : establishment.fotos,
     esta_ativo: esta_ativo !== undefined ? esta_ativo : establishment.esta_ativo,
     ...coordenadas,

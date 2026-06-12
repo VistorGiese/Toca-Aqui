@@ -16,6 +16,7 @@ const bookingBaseSchema = z.object({
   esta_publico: z.boolean().optional(),
   preco_ingresso_inteira: z.number().nonnegative().optional(),
   preco_ingresso_meia: z.number().nonnegative().optional(),
+  modo_venda_ingresso: z.enum(['antecipada', 'na_porta']).optional(),
   capacidade_maxima: z.number().int().positive().optional(),
   classificacao_etaria: z.number().int().nonnegative().optional(),
 });

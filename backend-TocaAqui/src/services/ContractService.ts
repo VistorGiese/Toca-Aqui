@@ -35,7 +35,7 @@ export class ContractService {
 
     // Verificar se já existe contrato para esta aplicação
     const existente = await ContractModel.findOne({ where: { aplicacao_id: aplicacaoId } });
-    if (existente) throw new AppError('Já existe contrato para esta candidatura', 400);
+    if (existente) return existente;
 
     // Carregar evento
     const evento = await BookingModel.findByPk(aplicacao.evento_id);
@@ -80,8 +80,18 @@ export class ContractService {
       : '';
 
     // Calcular duração em minutos
-    const [hInicio, mInicio] = evento.horario_inicio.split(':').map(Number);
-    const [hFim, mFim] = evento.horario_fim.split(':').map(Number);
+    const parseTime = (timeValue: string): [number, number] => {
+      const [hoursRaw, minutesRaw] = timeValue.split(':');
+      const h = Number(hoursRaw);
+      const m = Number(minutesRaw);
+      if (!Number.isFinite(h) || !Number.isFinite(m)) {
+        throw new AppError('Horário do evento inválido para geração de contrato', 400);
+      }
+      return [h, m];
+    };
+
+    const [hInicio, mInicio] = parseTime(evento.horario_inicio);
+    const [hFim, mFim] = parseTime(evento.horario_fim);
     let duracao = (hFim * 60 + mFim) - (hInicio * 60 + mInicio);
     if (duracao < 0) duracao += 24 * 60; // Evento que passa da meia-noite
 

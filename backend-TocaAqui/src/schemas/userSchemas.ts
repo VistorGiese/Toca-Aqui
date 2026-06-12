@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { UserRole } from '../types/roles';
+import { cnpj as cnpjValidator } from 'cpf-cnpj-validator';
 
 export const registroSchema = z.object({
   nome_completo: z.string().min(2, 'Nome completo deve ter ao menos 2 caracteres').trim(),
@@ -24,6 +25,10 @@ export const createEstablishmentProfileSchema = z.object({
   horario_abertura: z.string().min(1, 'Horário de abertura é obrigatório'),
   horario_fechamento: z.string().min(1, 'Horário de fechamento é obrigatório'),
   telefone_contato: z.string().min(8, 'Telefone deve ter ao menos 8 caracteres').trim(),
+  cnpj: z.string().trim().optional().refine((value) => {
+    if (!value) return true;
+    return cnpjValidator.isValid(value);
+  }, 'CNPJ inválido'),
   endereco: z.object({
     rua: z.string().min(1, 'Rua é obrigatória').trim(),
     numero: z.string().min(1, 'Número é obrigatório').trim(),

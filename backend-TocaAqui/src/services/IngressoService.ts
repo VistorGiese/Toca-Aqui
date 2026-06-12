@@ -59,26 +59,31 @@ class IngressoService {
 
     let preco: number;
     const capacidade = show.capacidade_maxima ?? null;
+    const vendaNaPorta = show.modo_venda_ingresso === 'na_porta';
 
     if (data.tipo === 'inteira') {
-      if (!show.preco_ingresso_inteira) {
+      if (!show.preco_ingresso_inteira && !vendaNaPorta) {
         throw badRequest('Ingresso inteira não disponível para este show');
       }
-      preco = getTicketBaseUnitPrice(show.preco_ingresso_inteira, capacidade);
+      preco = vendaNaPorta ? 0 : getTicketBaseUnitPrice(show.preco_ingresso_inteira, capacidade);
     } else if (data.tipo === 'meia_entrada') {
-      if (!show.preco_ingresso_inteira && show.preco_ingresso_meia == null) {
+      if (!show.preco_ingresso_inteira && show.preco_ingresso_meia == null && !vendaNaPorta) {
         throw badRequest('Meia entrada não disponível para este show');
       }
-      preco = getTicketHalfUnitPrice(
-        show.preco_ingresso_inteira,
-        show.preco_ingresso_meia,
-        capacidade,
-      );
+      preco = vendaNaPorta
+        ? 0
+        : getTicketHalfUnitPrice(
+            show.preco_ingresso_inteira,
+            show.preco_ingresso_meia,
+            capacidade,
+          );
     } else {
-      if (!show.preco_ingresso_inteira) {
+      if (!show.preco_ingresso_inteira && !vendaNaPorta) {
         throw badRequest('Ingresso VIP não disponível para este show');
       }
-      preco = Math.round(getTicketBaseUnitPrice(show.preco_ingresso_inteira, capacidade) * 1.5 * 100) / 100;
+      preco = vendaNaPorta
+        ? 0
+        : Math.round(getTicketBaseUnitPrice(show.preco_ingresso_inteira, capacidade) * 1.5 * 100) / 100;
     }
 
     const resultado = await sequelize.transaction(async (t) => {

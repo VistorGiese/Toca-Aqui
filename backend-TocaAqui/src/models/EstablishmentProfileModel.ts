@@ -12,6 +12,7 @@ export interface EstablishmentProfileAttributes {
   horario_fechamento: string;
   endereco_id?: number;
   telefone_contato: string;
+  cnpj?: string;
   fotos?: string;
   esta_ativo?: boolean;
   shows_realizados?: number;
@@ -33,6 +34,7 @@ class EstablishmentProfileModel extends Model<EstablishmentProfileAttributes> im
   public horario_fechamento!: string;
   public endereco_id?: number;
   public telefone_contato!: string;
+  public cnpj?: string;
   public fotos?: string;
   public esta_ativo!: boolean;
   public shows_realizados!: number;
@@ -93,6 +95,11 @@ EstablishmentProfileModel.init(
     telefone_contato: {
       type: DataTypes.STRING(20),
       allowNull: false,
+    },
+    cnpj: {
+      type: DataTypes.STRING(18),
+      allowNull: true,
+      unique: true,
     },
     fotos: {
       type: DataTypes.JSON,

@@ -88,7 +88,7 @@ describe('IngressoService', () => {
       const result = await ingressoService.comprarIngresso(makePayload());
 
       expect(IngressoModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ tipo: 'inteira', preco: 0.5 }),
+        expect.objectContaining({ tipo: 'inteira', preco: 50 }),
         expect.anything()
       );
       expect(result).toBe(ingresso);
@@ -105,7 +105,7 @@ describe('IngressoService', () => {
       const result = await ingressoService.comprarIngresso(makePayload({ tipo: 'meia_entrada' }));
 
       expect(IngressoModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ tipo: 'meia_entrada', preco: 0.25 }),
+        expect.objectContaining({ tipo: 'meia_entrada', preco: 25 }),
         expect.anything()
       );
       expect(result).toBe(ingresso);
@@ -122,7 +122,7 @@ describe('IngressoService', () => {
       await ingressoService.comprarIngresso(makePayload({ tipo: 'vip' }));
 
       expect(IngressoModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ tipo: 'vip', preco: 0.75 }),
+        expect.objectContaining({ tipo: 'vip', preco: 75 }),
         expect.anything()
       );
     });

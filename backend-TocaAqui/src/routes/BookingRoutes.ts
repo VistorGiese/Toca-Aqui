@@ -5,6 +5,7 @@ import {
   getMeusAgendamentos,
   getBookingById,
   updateBooking,
+  uploadBookingCover,
   deleteBooking,
   getByProximidade,
 } from "../controllers/BookingController";
@@ -14,6 +15,8 @@ import { validate } from "../middleware/validate";
 import { createBookingSchema, updateBookingSchema } from "../schemas/bookingSchemas";
 import BookingModel from "../models/BookingModel";
 import EstablishmentProfileModel from "../models/EstablishmentProfileModel";
+import { uploadService } from "../services/UploadService";
+import { uploadLimiter } from "../middleware/rateLimiter";
 
 const resolveBookingOwner = async (req: any): Promise<number | undefined> => {
   const booking = await BookingModel.findByPk(req.params.id);
@@ -35,6 +38,7 @@ router.get("/", authMiddleware, getBookings);
 router.get("/:id", authMiddleware, getBookingById);
 
 router.put("/:id", authMiddleware, checkOwnership(resolveBookingOwner), validate(updateBookingSchema), updateBooking);
+router.patch("/:id/capa", authMiddleware, checkOwnership(resolveBookingOwner), uploadLimiter, uploadService.uploadSingle, uploadBookingCover);
 
 router.delete("/:id", authMiddleware, checkOwnership(resolveBookingOwner), deleteBooking);
 

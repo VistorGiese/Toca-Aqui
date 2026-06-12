@@ -10,6 +10,11 @@ export enum BookingStatus {
   REALIZADO = 'realizado'
 }
 
+export enum BookingTicketSaleMode {
+  ANTECIPADA = 'antecipada',
+  NA_PORTA = 'na_porta',
+}
+
 class BookingModel extends Model {
   id!: number;
   titulo_evento!: string;
@@ -19,12 +24,15 @@ class BookingModel extends Model {
   horario_inicio!: string;
   horario_fim!: string;
   status!: BookingStatus;
+  cache_minimo?: number;
+  cache_maximo?: number;
   preco_ingresso_inteira?: number;
   preco_ingresso_meia?: number;
   capacidade_maxima?: number;
   ingressos_vendidos!: number;
   classificacao_etaria?: string;
   imagem_capa?: string;
+  modo_venda_ingresso!: BookingTicketSaleMode;
   esta_publico!: boolean;
   genero_musical?: string;
   readonly createdAt!: Date;
@@ -72,6 +80,14 @@ BookingModel.init(
       allowNull: false,
       defaultValue: BookingStatus.PENDENTE,
     },
+    cache_minimo: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    cache_maximo: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
     preco_ingresso_inteira: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
@@ -96,6 +112,11 @@ BookingModel.init(
     imagem_capa: {
       type: DataTypes.STRING(500),
       allowNull: true,
+    },
+    modo_venda_ingresso: {
+      type: DataTypes.ENUM(...Object.values(BookingTicketSaleMode)),
+      allowNull: false,
+      defaultValue: BookingTicketSaleMode.ANTECIPADA,
     },
     esta_publico: {
       type: DataTypes.BOOLEAN,

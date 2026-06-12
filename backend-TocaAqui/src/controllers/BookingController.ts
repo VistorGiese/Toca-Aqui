@@ -10,11 +10,12 @@ import { asyncHandler } from "../middleware/errorHandler";
 import { AppError } from "../errors/AppError";
 import sequelize from "../config/database";
 import { AuthRequest } from '../middleware/authmiddleware';
+import { uploadService } from '../services/UploadService';
 
 export const createBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
 
-  const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, generos_musicais, genero_musical, esta_publico, preco_ingresso_inteira, preco_ingresso_meia, capacidade_maxima, classificacao_etaria, perfil_estabelecimento_id } = req.body;
+  const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, generos_musicais, genero_musical, esta_publico, cache_minimo, cache_maximo, preco_ingresso_inteira, preco_ingresso_meia, modo_venda_ingresso, capacidade_maxima, classificacao_etaria, perfil_estabelecimento_id } = req.body;
 
   // Validar que o usuário logado é dono ou membro do estabelecimento informado
   const perfil = await EstablishmentProfileModel.findByPk(perfil_estabelecimento_id);
@@ -43,6 +44,7 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
   if (conflito) {
     throw new AppError("Já existe evento para este estabelecimento neste horário e dia.", 400);
   }
+  
   const booking = await BookingModel.create({
     titulo_evento,
     descricao_evento,
@@ -53,8 +55,11 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
     status: BookingStatus.PENDENTE,
     genero_musical: genero_musical ?? generos_musicais ?? undefined,
     esta_publico: esta_publico ?? undefined,
+    cache_minimo: cache_minimo ?? undefined,
+    cache_maximo: cache_maximo ?? undefined,
     preco_ingresso_inteira: preco_ingresso_inteira ?? undefined,
     preco_ingresso_meia: preco_ingresso_meia ?? undefined,
+    modo_venda_ingresso: modo_venda_ingresso ?? undefined,
     capacidade_maxima: capacidade_maxima ?? undefined,
     classificacao_etaria: classificacao_etaria ?? undefined,
   });
@@ -89,8 +94,8 @@ export const getBookings = asyncHandler(async (req: AuthRequest, res: Response) 
   if (data_inicio && data_fim) where.data_show = { [Op.between]: [data_inicio, data_fim] };
   else if (data_inicio)        where.data_show = { [Op.gte]: data_inicio };
   else if (data_fim)           where.data_show = { [Op.lte]: data_fim };
-  if (status)           where.status = status;
-  if (estabelecimento_id) where.perfil_estabelecimento_id = estabelecimento_id;
+  if (status)                  where.status = status;
+  if (estabelecimento_id)      where.perfil_estabelecimento_id = estabelecimento_id;
 
   const sortedParams = Object.entries(req.query)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -172,6 +177,24 @@ export const updateBooking = asyncHandler(async (req: AuthRequest, res: Response
   await redisService.invalidatePattern('agendamentos:*');
 
   res.json(booking);
+});
+
+export const uploadBookingCover = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const id = req.params.id as string;
+  const booking = await BookingModel.findByPk(id);
+  if (!booking) throw new AppError("Agendamento não encontrado", 404);
+  if (!req.file) throw new AppError("Nenhuma imagem enviada", 400);
+
+  const novaCapa = uploadService.getRelativePath(req.file);
+  if (booking.imagem_capa) {
+    uploadService.deleteFile(booking.imagem_capa);
+  }
+
+  await booking.update({ imagem_capa: novaCapa });
+  await redisService.invalidate(CACHE_KEYS.agendamento(id));
+  await redisService.invalidatePattern('agendamentos:*');
+
+  res.json({ message: "Capa atualizada com sucesso", imagem_capa: novaCapa });
 });
 
 export const deleteBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
