@@ -1,6 +1,5 @@
 import winston from 'winston';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ElasticsearchTransport } = require('winston-elasticsearch');
+import LokiTransport from 'winston-loki';
 
 const { combine, timestamp, json, colorize, printf } = winston.format;
 
@@ -31,13 +30,16 @@ const logger = winston.createLogger({
   ],
 });
 
-// Adiciona transport para Elasticsearch quando a URL estiver configurada
-if (process.env.ELASTICSEARCH_URL) {
+// Adiciona transport para Loki quando a URL estiver configurada
+if (process.env.LOKI_URL) {
   logger.add(
-    new ElasticsearchTransport({
-      level: 'info',
-      clientOpts: { node: process.env.ELASTICSEARCH_URL },
-      index: 'toca-aqui-logs',
+    new LokiTransport({
+      host: process.env.LOKI_URL,
+      labels: { app: 'toca-aqui-api' },
+      json: true,
+      format: winston.format.json(),
+      replaceTimestamp: true,
+      onConnectionError: (err) => console.error('Loki connection error:', err),
     })
   );
 }
