@@ -52,7 +52,12 @@ jest.mock('../../../services/NotificationService', () => ({
   createNotification: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../../services/LockService', () => ({
+  lockService: { acquire: jest.fn(), release: jest.fn() },
+}));
+
 import { BandApplicationService } from '../../../services/BandApplicationService';
+import { lockService } from '../../../services/LockService';
 import { AppError } from '../../../errors/AppError';
 import BandModel from '../../../models/BandModel';
 import BookingModel from '../../../models/BookingModel';
@@ -91,7 +96,11 @@ const makeAplicacao = (overrides = {}) => ({
 });
 
 describe('BandApplicationService', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (lockService.acquire as jest.Mock).mockResolvedValue({ acquired: true, token: 'test-token' });
+    (lockService.release as jest.Mock).mockResolvedValue(undefined);
+  });
 
   // ─── apply ────────────────────────────────────────────────────────────────
   describe('apply', () => {
@@ -192,6 +201,32 @@ describe('BandApplicationService', () => {
       // Phase 3: accept() deve retornar composite { aplicacao, contrato }
       expect(result).toEqual(expect.objectContaining({ aplicacao }));
       expect(result).toHaveProperty('contrato');
+      // Phase 08-07: lock adquirido por evento e liberado ao final
+      expect(lockService.acquire).toHaveBeenCalledWith(
+        expect.stringContaining('lock:band-application:accept:evento:'),
+        expect.any(Number)
+      );
+      expect(lockService.release).toHaveBeenCalledWith(expect.any(String), 'test-token');
+    });
+
+    it('lança AppError 409 quando lock do evento já está em uso', async () => {
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(makeAplicacao());
+      (lockService.acquire as jest.Mock).mockResolvedValueOnce({ acquired: false, token: 'x' });
+
+      await expect(service.accept(100)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 409 })
+      );
+      expect(lockService.release).not.toHaveBeenCalled();
+    });
+
+    it('libera o lock mesmo quando ocorre erro durante o aceite', async () => {
+      (BandApplicationModel.findByPk as jest.Mock).mockResolvedValue(makeAplicacao());
+      (BandModel.findByPk as jest.Mock).mockResolvedValue(null); // força AppError 404 "Banda não encontrada"
+
+      await expect(service.accept(100)).rejects.toEqual(
+        expect.objectContaining({ statusCode: 404 })
+      );
+      expect(lockService.release).toHaveBeenCalledWith(expect.any(String), 'test-token');
     });
 
     it('lança AppError 404 quando candidatura não existe', async () => {
