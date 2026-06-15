@@ -7,7 +7,7 @@ import ArtistProfileModel from '../models/ArtistProfileModel';
 import { generateToken } from '../utils/jwt';
 import { validateEmailFormat, validatePasswordFormat } from './userValidationServices';
 import redisService from '../config/redis';
-import { sendPasswordResetEmail, sendVerificationEmail } from './EmailService';
+import { IEmailProvider, defaultEmailProvider } from './EmailService';
 import { AppError } from '../errors/AppError';
 import { geocodificarEndereco } from './GeocodingService';
 import AddressModel from '../models/AddressModel';
@@ -26,6 +26,8 @@ export interface LoginResult {
 }
 
 export class AuthService {
+  constructor(private emailProvider: IEmailProvider = defaultEmailProvider) {}
+
   async register(params: RegisterParams) {
     const { nome_completo, email, senha, tipo_usuario } = params;
 
@@ -97,7 +99,7 @@ export class AuthService {
     const token = crypto.randomBytes(32).toString('hex');
     try {
       await redisService.getClient().setex(`reset:${token}`, 60 * 60, String(user.id));
-      await sendPasswordResetEmail(email, token);
+      await this.emailProvider.sendPasswordResetEmail(email, token);
     } catch (err) {
       console.error('[AuthService] Falha ao armazenar token ou enviar email de redefinição:', err);
     }
@@ -136,7 +138,7 @@ export class AuthService {
     const token = crypto.randomBytes(32).toString('hex');
     try {
       await redisService.getClient().setex(`verify:${token}`, 60 * 60 * 24, String(user.id));
-      await sendVerificationEmail(email, token);
+      await this.emailProvider.sendVerificationEmail(email, token);
     } catch (err) {
       console.error('[AuthService] Falha ao armazenar token ou reenviar email de verificação:', err);
     }
