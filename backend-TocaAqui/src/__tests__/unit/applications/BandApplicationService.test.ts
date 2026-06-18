@@ -195,7 +195,7 @@ describe('BandApplicationService', () => {
 
       expect(aplicacao.update).toHaveBeenCalledWith({ status: 'aceito' });
       expect(BookingModel.update).toHaveBeenCalledWith(
-        { status: 'aceito' },
+        { status: 'aceito', esta_publico: true },
         expect.objectContaining({ where: { id: 10 } })
       );
       // Phase 3: accept() deve retornar composite { aplicacao, contrato }

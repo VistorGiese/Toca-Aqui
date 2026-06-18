@@ -21,9 +21,14 @@
     "docker:mysql": "docker-compose exec mysql mysql -u root toca_aqui_v4",
     "test:unit": "jest --selectProjects unit",
     "test:integration": "jest --selectProjects integration",
+    "test:e2e": "jest --selectProjects e2e",
+    "test:behavior": "jest --selectProjects behavior",
     "test:all": "jest",
     "test:coverage": "jest --coverage",
-    "seed:metrics": "ts-node scripts/seed-demo-metrics.ts"
+    "seed:metrics": "ts-node scripts/seed-demo-metrics.ts",
+    "load:seed": "ts-node load-tests/seed.ts",
+    "load:flow": "k6 run load-tests/flow-throughput.js",
+    "load:lock": "k6 run load-tests/lock-contention.js"
   },
   "keywords": [],
   "author": "",
@@ -71,6 +76,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
     "jest": "^30.1.2",
+    "jest-cucumber": "^4.5.0",
     "sequelize-cli": "^6.6.5",
     "sequelize-mock": "^0.10.2",
     "sqlite3": "^6.0.1",

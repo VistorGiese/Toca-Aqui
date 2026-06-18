@@ -7,6 +7,8 @@
 
 ```mermaid
 classDiagram
+    %% ── Domínio Principal ──────────────────────────────────────────
+
     class AuthService {
         +register(params: RegisterParams) Promise~User~
         +login(email, senha) Promise~LoginResult~
@@ -57,6 +59,98 @@ classDiagram
         +getByUser(userId) Promise~Avaliacao[]~
     }
 
+    class ComentarioShowService {
+        +getComentariosByShow(agendamento_id, usuario_id) Promise~Comentario[]~
+        +criarComentario(data) Promise~Comentario~
+        +curtirComentario(comentario_id, usuario_id) Promise~CurtidaResult~
+        +excluirComentario(comentario_id, usuario_id) Promise~void~
+    }
+
+    class IngressoService {
+        +comprarIngresso(data) Promise~Ingresso~
+        +getMeusIngressos(usuario_id, tipo) Promise~Ingresso[]~
+        +getIngressoById(id, usuario_id) Promise~Ingresso~
+    }
+
+    class SeguidorArtistaService {
+        +seguirOuDesseguir(usuario_id, perfil_artista_id) Promise~SeguidorResult~
+        +isSeguindo(usuario_id, perfil_artista_id) Promise~boolean~
+        +getSeguidores(perfil_artista_id) Promise~number~
+        +getArtistasQueSigo(usuario_id) Promise~ArtistProfile[]~
+        +getPerfilArtistaPublico(perfil_artista_id, usuario_id) Promise~PerfilPublico~
+    }
+
+    %% ── Financeiro ─────────────────────────────────────────────────
+
+    class PaymentService {
+        +createPayment(data: CreatePaymentData) Promise~Payment~
+        +getByContract(contratoId) Promise~Payment[]~
+        +getById(paymentId) Promise~Payment~
+        +updateStatus(paymentId, status, stripeData) Promise~Payment~
+        +findByStripePaymentIntent(intentId) Promise~Payment~
+    }
+
+    class StripeService {
+        +createSignalPayment(contractId) Promise~PaymentResult~
+        +createBalancePayment(contractId) Promise~PaymentResult~
+        +getPaymentClientSecret(paymentId) Promise~string~
+        +handleWebhook(payload, signature) Promise~void~
+        +refundPayment(paymentId, amount) Promise~void~
+    }
+
+    %% ── Email (DIP) ─────────────────────────────────────────────────
+
+    class IEmailProvider {
+        <<interface>>
+        +sendVerificationEmail(email, token) Promise~void~
+        +sendPasswordResetEmail(email, token) Promise~void~
+    }
+
+    class NodemailerEmailProvider {
+        +sendVerificationEmail(email, token) Promise~void~
+        +sendPasswordResetEmail(email, token) Promise~void~
+    }
+
+    %% ── Infraestrutura ──────────────────────────────────────────────
+
+    class LockService {
+        +acquire(key, ttlMs) Promise~LockHandle~
+        +release(key, token) Promise~void~
+    }
+
+    class PubSubService {
+        +subscribe(channel, handler) Promise~void~
+        +unsubscribe(channel) Promise~void~
+        +initializeSubscribers() Promise~void~
+        +isReady() boolean
+        +disconnect() Promise~void~
+    }
+
+    class MetricsService {
+        +record(route, durationMs, statusCode) void
+        +getSummary() Record~string, object~
+        +reset() void
+    }
+
+    class UploadService {
+        +uploadSingle multer.Handler
+        +uploadMultiple multer.Handler
+        +deleteFile(filepath) boolean
+        +getRelativePath(file) string
+        +fileExists(filepath) boolean
+        +getFileInfo(filepath) FileInfo
+    }
+
+    class CronService {
+        +initCronJobs() void
+    }
+
+    class GeocodingService {
+        +geocodificarEndereco(rua, numero, cidade, estado, cep) Promise~Coordenadas~
+    }
+
+    %% ── Tipos Compartilhados ────────────────────────────────────────
+
     class AppError {
         +message: string
         +statusCode: number
@@ -72,17 +166,31 @@ classDiagram
         +exp: number
     }
 
-    %% Dependências entre serviços
-    BandApplicationService ..> ContractService : "chama generateFromApplication() ao aceitar"
-    BandApplicationService ..> NotificationService : "notifica artistas aceitos/recusados"
-    ContractService ..> NotificationService : "notifica mudanças de status"
-    AuthService ..> NotificationService : "notifica registro e verificação de email"
+    class LockHandle {
+        +acquired: boolean
+        +token: string
+    }
 
-    %% Erros e tipos compartilhados
+    %% ── Dependências entre serviços ─────────────────────────────────
+    BandApplicationService ..> ContractService : "generateFromApplication() ao aceitar"
+    BandApplicationService ..> NotificationService : "notifica aceitos/recusados"
+    BandApplicationService ..> LockService : "lock distribuído no aceite"
+    ContractService ..> NotificationService : "notifica mudanças de status"
+    AuthService ..> NotificationService : "notifica registro e verificação"
+    AuthService ..> IEmailProvider : "envia emails via interface"
+    NodemailerEmailProvider ..|> IEmailProvider : "implementa"
+    StripeService ..> PaymentService : "cria e atualiza pagamentos"
+    StripeService ..> NotificationService : "notifica pagamento/falha"
+    CronService ..> NotificationService : "lembretes de pagamento"
+    CronService ..> ShowService : "marca eventos como realizados"
+    PubSubService ..> MetricsService : "invalida cache via eventos"
+
+    %% ── Erros e tipos compartilhados ────────────────────────────────
     BandApplicationService ..> AppError : "lança em validações"
     ContractService ..> AppError : "lança em validações"
     AuthService ..> AppError : "lança em validações"
     AuthService ..> TokenPayload : "usa para gerar JWT"
+    LockService ..> LockHandle : "retorna ao adquirir lock"
 ```
 
 ## Fluxo de Chamadas — Aceitar Candidatura
@@ -93,6 +201,7 @@ sequenceDiagram
     participant R as BandApplicationRoutes
     participant Ctrl as BandApplicationController
     participant BAS as BandApplicationService
+    participant LS as LockService
     participant CS as ContractService
     participant NS as NotificationService
     participant DB as MySQL
@@ -100,6 +209,8 @@ sequenceDiagram
     C->>R: PUT /eventos/:id/aceitar { applicationId }
     R->>Ctrl: accept(req, res)
     Ctrl->>BAS: accept(applicationId)
+    BAS->>LS: acquire(lock:aplicacao:{id})
+    LS-->>BAS: LockHandle
     BAS->>DB: BandApplicationModel.findByPk(id)
     BAS->>DB: BandApplicationModel.update(status=aceito)
     BAS->>DB: BandApplicationModel.update(status=rejeitado) [demais candidaturas]
@@ -108,6 +219,7 @@ sequenceDiagram
     CS-->>BAS: Contract
     BAS->>NS: createNotification(artista, "candidatura_aceita")
     BAS->>NS: createNotification(artistas_rejeitados, "candidatura_rejeitada")
+    BAS->>LS: release(lock:aplicacao:{id})
     BAS-->>Ctrl: { aplicacao, contrato }
     Ctrl-->>C: 200 { aplicacao, contrato }
 ```
@@ -132,7 +244,11 @@ sequenceDiagram
 ┌──────────────────▼──────────────────────┐
 │           Services (Domínio)             │
 │  BandApplicationService, ContractService │
-│  AuthService, NotificationService, ...   │
+│  AuthService, NotificationService,       │
+│  PaymentService, StripeService,          │
+│  ShowService, AvaliacaoShowService,      │
+│  ComentarioShowService, IngressoService, │
+│  SeguidorArtistaService, ...             │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
@@ -141,6 +257,6 @@ sequenceDiagram
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│  MySQL 8.0  │  Redis 7 (cache + sessions)│
+│  MySQL 8.0  │  Redis 7 (cache + lock)   │
 └─────────────────────────────────────────┘
 ```

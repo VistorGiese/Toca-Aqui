@@ -55,5 +55,23 @@ module.exports = {
       moduleFileExtensions: ['ts', 'js', 'json'],
       testTimeout: 30000,
     },
+    {
+      displayName: 'e2e',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      roots: ['<rootDir>/src'],
+      testMatch: ['**/__tests__/e2e/**/*.test.ts'],
+      moduleFileExtensions: ['ts', 'js', 'json'],
+      testTimeout: 30000,
+    },
+    {
+      displayName: 'behavior',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      roots: ['<rootDir>/src'],
+      testMatch: ['**/__tests__/behavior/**/*.steps.ts'],
+      moduleFileExtensions: ['ts', 'js', 'json'],
+      testTimeout: 30000,
+    },
   ],
 };

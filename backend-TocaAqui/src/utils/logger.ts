@@ -1,7 +1,8 @@
 import winston from 'winston';
-import LokiTransport from 'winston-loki';
+import TransportStream from 'winston-transport';
+import http from 'http';
 
-const { combine, timestamp, json, colorize, printf } = winston.format;
+const { combine, timestamp, colorize, printf } = winston.format;
 
 const devFormat = combine(
   colorize(),
@@ -13,15 +14,71 @@ const devFormat = combine(
   })
 );
 
-const prodFormat = combine(
-  timestamp(),
-  json()
-);
+// Transport customizado que envia logs para Loki com o formato correto (2 elementos por entrada)
+class LokiHttpTransport extends TransportStream {
+  private lokiUrl: URL;
+  private batch: Array<{ labels: Record<string, string>; line: string; ts: string }> = [];
+  private flushTimer: NodeJS.Timeout | null = null;
+
+  constructor(lokiUrl: string) {
+    super();
+    this.lokiUrl = new URL('/loki/api/v1/push', lokiUrl);
+  }
+
+  log(info: any, callback: () => void): void {
+    const ts = (BigInt(Date.now()) * 1_000_000n).toString();
+    const line = JSON.stringify({
+      level: info.level,
+      message: info.message,
+      ...Object.fromEntries(
+        Object.entries(info).filter(([k]) => !['level', 'message', Symbol.for('level'), Symbol.for('splat'), Symbol.for('message')].includes(k as any))
+      ),
+    });
+
+    this.batch.push({ labels: { app: 'toca-aqui-api', level: info.level }, line, ts });
+
+    if (!this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flush(), 3000);
+    }
+
+    callback();
+  }
+
+  private flush(): void {
+    this.flushTimer = null;
+    if (this.batch.length === 0) return;
+
+    const entries = this.batch.splice(0);
+    const body = JSON.stringify({
+      streams: [{
+        stream: { app: 'toca-aqui-api' },
+        values: entries.map(e => [e.ts, e.line]),
+      }],
+    });
+
+    const buf = Buffer.from(body);
+    const req = http.request({
+      hostname: this.lokiUrl.hostname,
+      port: parseInt(this.lokiUrl.port) || 3100,
+      path: this.lokiUrl.pathname,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': buf.length },
+    }, (res) => {
+      if (res.statusCode && res.statusCode >= 400) {
+        let errBody = '';
+        res.on('data', (d: Buffer) => { errBody += d; });
+        res.on('end', () => console.error(`[Loki] Erro ${res.statusCode}:`, errBody.substring(0, 200)));
+      }
+    });
+    req.on('error', (e) => console.error('[Loki] Erro de conexão:', e.message));
+    req.write(buf);
+    req.end();
+  }
+}
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL ?? 'info',
   defaultMeta: { service: 'toca-aqui-api' },
-  format: process.env.NODE_ENV === 'production' ? prodFormat : prodFormat,
   transports: [
     new winston.transports.Console({
       format: devFormat,
@@ -30,18 +87,8 @@ const logger = winston.createLogger({
   ],
 });
 
-// Adiciona transport para Loki quando a URL estiver configurada
 if (process.env.LOKI_URL) {
-  logger.add(
-    new LokiTransport({
-      host: process.env.LOKI_URL,
-      labels: { app: 'toca-aqui-api' },
-      json: true,
-      format: winston.format.json(),
-      replaceTimestamp: true,
-      onConnectionError: (err) => console.error('Loki connection error:', err),
-    })
-  );
+  logger.add(new LokiHttpTransport(process.env.LOKI_URL));
 }
 
 export default logger;
