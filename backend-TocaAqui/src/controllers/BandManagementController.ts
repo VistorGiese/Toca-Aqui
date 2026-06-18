@@ -63,7 +63,6 @@ export const createBand = asyncHandler(async (req: AuthRequest, res: Response) =
     data_entrada: new Date(),
   });
 
-  // Convidar membros iniciais (máx 9 além do líder)
   const membrosValidos: Array<{ perfil_artista_id: number; funcao?: string }> = membros.slice(0, 9);
   const convites = await Promise.allSettled(
     membrosValidos

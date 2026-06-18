@@ -1,16 +1,4 @@
 /**
- * Teste de carga (k6) — contenção do lock distribuído
- * (`LockService` / `BandApplicationService.accept()`, ver `docs/CONCURRENCY.md`)
- * contra a stack `docker-compose` (app:3000).
- *
- * Requer `npm run load:seed` previamente (gera `seed-data/lock-contention.json`
- * com 1 evento + M candidaturas pendentes do mesmo estabelecimento).
- *
- * Todas as M VUs disparam `PUT /eventos/:id/aceitar` ~simultaneamente, uma
- * para cada candidatura pendente. Apenas uma deve obter o lock (200 +
- * contrato); as demais devem receber 409 ("Outra candidatura está sendo
- * processada"), evidenciando a contenção sob carga real.
- *
  * Uso: npm run load:lock
  */
 

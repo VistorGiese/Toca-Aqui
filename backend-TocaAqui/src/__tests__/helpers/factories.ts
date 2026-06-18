@@ -1,7 +1,4 @@
-/**
- * Factories para testes — retornam objetos com valores padrão válidos.
- * Use spread para sobrescrever campos específicos em cada teste.
- */
+
 
 export function makeUserData(overrides: Record<string, unknown> = {}) {
   return {

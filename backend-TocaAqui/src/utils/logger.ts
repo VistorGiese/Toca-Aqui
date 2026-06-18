@@ -14,7 +14,6 @@ const devFormat = combine(
   })
 );
 
-// Transport customizado que envia logs para Loki com o formato correto (2 elementos por entrada)
 class LokiHttpTransport extends TransportStream {
   private lokiUrl: URL;
   private batch: Array<{ labels: Record<string, string>; line: string; ts: string }> = [];

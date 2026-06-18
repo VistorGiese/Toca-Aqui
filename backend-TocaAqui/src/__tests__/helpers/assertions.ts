@@ -1,6 +1,5 @@
-/**
- * Helpers de asserção reutilizáveis para padrões comuns de resposta.
- */
+
+
 
 export function assertSuccessResponse(body: unknown, expectedFields: string[]): void {
   expect(body).toBeDefined();

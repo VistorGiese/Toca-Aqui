@@ -1,8 +1,4 @@
-/**
- * Fake client Redis em memória — usado para que `LockService` (que chama
- * `redisService.getClient().set(...)`/`.eval(...)`) funcione de verdade nos
- * testes E2E/Behavior, sem cair no fail-open por falta de `getClient()`.
- */
+
 export function createFakeRedisClient() {
   const store = new Map<string, { value: string; expiresAt: number }>();
 

@@ -10,7 +10,7 @@ import { Op } from 'sequelize';
 
 const router = Router();
 
-// GET /artistas/busca?q=nome&genero=rock
+
 router.get('/busca', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { q, genero } = req.query as { q?: string; genero?: string };

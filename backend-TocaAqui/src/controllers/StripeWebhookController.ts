@@ -1,4 +1,4 @@
-// STRIPE — previsto para produção, desativado no MVP/TCC
+
 import { Request, Response } from 'express';
 import { stripeService } from '../services/StripeService';
 import { env } from '../config/env';

@@ -5,11 +5,7 @@ import ContractRoutes from '../../routes/ContractRoutes';
 import { errorHandler } from '../../middleware/errorHandler';
 import { traceIdMiddleware } from '../../middleware/traceId';
 
-/**
- * App Express real (sem `listen`), reaproveitado pelos testes E2E e de
- * Comportamento (BDD) — monta as rotas do fluxo
- * "criar evento → artista aplica → estabelecimento aceita".
- */
+
 export function buildE2EApp(): Express {
   const app = express();
   app.use(express.json());

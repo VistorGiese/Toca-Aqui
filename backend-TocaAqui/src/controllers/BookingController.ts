@@ -17,7 +17,6 @@ export const createBooking = asyncHandler(async (req: AuthRequest, res: Response
 
   const { titulo_evento, descricao_evento, data_show, horario_inicio, horario_fim, generos_musicais, genero_musical, esta_publico, cache_minimo, cache_maximo, preco_ingresso_inteira, preco_ingresso_meia, modo_venda_ingresso, capacidade_maxima, classificacao_etaria, perfil_estabelecimento_id } = req.body;
 
-  // Validar que o usuário logado é dono ou membro do estabelecimento informado
   const perfil = await EstablishmentProfileModel.findByPk(perfil_estabelecimento_id);
   if (!perfil) throw new AppError('Estabelecimento não encontrado', 404);
 

@@ -1,9 +1,4 @@
 /**
- * Teste de carga (k6) — fluxo "criar evento → artista se candidata →
- * estabelecimento aceita" contra a stack `docker-compose` (app:3000).
- *
- * Requer `npm run load:seed` previamente (gera `seed-data/throughput.json`).
- *
  * Uso: npm run load:flow
  */
 

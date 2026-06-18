@@ -2,10 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger';
 import { metricsService } from '../services/MetricsService';
 
-/**
- * Loga cada requisição HTTP com método, rota, status e duração.
- * Depende do traceIdMiddleware para ter req.traceId disponível.
- */
+
 export function requestLoggerMiddleware(req: Request, res: Response, next: NextFunction): void {
   const startMs = Date.now();
 
