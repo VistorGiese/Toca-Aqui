@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, StatusBar,
+  ActivityIndicator, StatusBar, Image,
 } from "react-native";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -9,6 +9,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService, ArtistPublicProfile, BandPublicProfile } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
+import { resolveImageUrl } from "@/utils/adapters";
 
 const DS = {
   bg: "#09090F", card: "#13101F", surface: "#0F0B1E",
@@ -39,6 +40,7 @@ type ProfileView = {
   biografia?: string;
   cidade?: string;
   estado?: string;
+  foto?: string;
   isBanda: boolean;
 };
 
@@ -55,6 +57,7 @@ function mapArtistProfile(artist: ArtistPublicProfile): ProfileView {
     biografia: artist.biografia,
     cidade: artist.cidade,
     estado: artist.estado,
+    foto: artist.foto_perfil ?? artist.foto_url,
     isBanda: false,
   };
 }
@@ -73,6 +76,7 @@ function mapBandProfile(band: BandPublicProfile): ProfileView {
     biografia: band.descricao,
     cidade: band.cidade,
     estado: band.estado,
+    foto: band.imagem,
     isBanda: true,
   };
 }
@@ -99,9 +103,7 @@ export default function EstArtistProfile() {
       }
       throw new Error("Identificador de perfil ausente");
     } catch {
-      Alert.alert("Erro", "Não foi possível carregar o perfil.", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      // silenciado temporariamente
     } finally {
       setLoading(false);
     }
@@ -142,9 +144,13 @@ export default function EstArtistProfile() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         <View style={s.heroSection}>
-          <View style={s.avatarCircle}>
-            <FontAwesome5 name={profile.isBanda ? "users" : "user"} size={44} color={DS.accent} />
-          </View>
+          {profile.foto ? (
+            <Image source={{ uri: resolveImageUrl(profile.foto) }} style={s.avatarCircle} />
+          ) : (
+            <View style={s.avatarCircle}>
+              <FontAwesome5 name={profile.isBanda ? "users" : "user"} size={44} color={DS.accent} />
+            </View>
+          )}
           <Text style={s.artistName}>{profile.nome.toUpperCase()}</Text>
           <Text style={s.tipoLabel}>{profile.tipo}</Text>
           {localizacao ? (

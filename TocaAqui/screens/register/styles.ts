@@ -40,17 +40,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
-  logoIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.purpleGlowBg,
-    borderWidth: 1,
-    borderColor: colors.purpleGlowBorder,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
+  logoImage: { width: 96, height: 96, marginBottom: 16 },
   logoTitle: {
     color: colors.white,
     fontSize: 22,

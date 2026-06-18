@@ -27,6 +27,7 @@ export interface EstablishmentOnboardingDraft {
   nome: string;
   tipo: EstablishmentTipo | "";
   telefone: string;
+  cnpj: string;
   fotoUri: string | null;
   endereco: string;
   numero: string;
@@ -46,6 +47,7 @@ export const INITIAL_DRAFT: EstablishmentOnboardingDraft = {
   nome: "",
   tipo: "",
   telefone: "",
+  cnpj: "",
   fotoUri: null,
   endereco: "",
   numero: "",

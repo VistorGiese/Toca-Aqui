@@ -129,6 +129,7 @@ export const userService = {
     horario_abertura: string;
     horario_fechamento: string;
     telefone_contato: string;
+    cnpj?: string;
     endereco: {
       rua: string;
       numero: string;

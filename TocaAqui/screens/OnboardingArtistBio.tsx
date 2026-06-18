@@ -19,6 +19,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/Navigate";
 import api from "@/http/api";
 import * as ImagePicker from "expo-image-picker";
+import { buildImageFormFile } from "@/utils/adapters";
 
 const DS = {
   bg: "#09090F",
@@ -166,15 +167,13 @@ export default function OnboardingArtistBio() {
 
       // Upload foto de perfil se selecionada no passo 1
       if (params.fotoUri && profileId) {
-        const filename = params.fotoUri.split("/").pop() || "photo.jpg";
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
         const formData = new FormData();
+        const file = buildImageFormFile(params.fotoUri, "photo.jpg");
         if (Platform.OS === "web") {
           const blob = await fetch(params.fotoUri).then((r) => r.blob());
-          formData.append("imagem", blob, filename);
+          formData.append("imagem", blob, file.name);
         } else {
-          formData.append("imagem", { uri: params.fotoUri, name: filename, type } as any);
+          formData.append("imagem", file as any);
         }
         await api.patch(`/usuarios/perfil-artista/${profileId}/foto`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -186,14 +185,12 @@ export default function OnboardingArtistBio() {
         const formData = new FormData();
         for (let i = 0; i < pressKit.length; i++) {
           const uri = pressKit[i];
-          const filename = uri.split("/").pop() || `press_kit_${i}.jpg`;
-          const match = /\.(\w+)$/.exec(filename);
-          const type = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
+          const file = buildImageFormFile(uri, `press_kit_${i}.jpg`);
           if (Platform.OS === "web") {
             const blob = await fetch(uri).then((r) => r.blob());
-            formData.append("imagens", blob, filename);
+            formData.append("imagens", blob, file.name);
           } else {
-            formData.append("imagens", { uri, name: filename, type } as any);
+            formData.append("imagens", file as any);
           }
         }
         await api.patch(`/usuarios/perfil-artista/${profileId}/press-kit`, formData, {

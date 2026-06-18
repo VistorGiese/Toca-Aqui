@@ -8,10 +8,11 @@ import {
   Platform,
   TouchableOpacity,
   Pressable,
+  Image,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { RootStackParamList } from "../../navigation/Navigate";
 import { colors } from "@/utils/colors";
 import Button from "@/components/ui/Button";
@@ -58,10 +59,7 @@ export default function Register() {
         >
           <View style={styles.scrollInner}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <MaterialCommunityIcons name="waveform" size={38} color={colors.purpleLight} />
-            </View>
-            <Text style={styles.logoTitle}>TOCA AQUI</Text>
+            <Image source={require("../../assets/adaptive-icon.png")} style={styles.logoImage} resizeMode="contain" />
             <Text style={styles.logoSubtitle}>Sua jornada musical começa aqui.</Text>
           </View>
 

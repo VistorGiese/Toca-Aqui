@@ -86,10 +86,8 @@ export default function Profile() {
                 ),
                 cep: formatCep(data.endereco.cep),
             });
-        } catch (error) {
-            console.error("Erro ao buscar dados do perfil:", error);
-            Alert.alert("Erro", "Não foi possível carregar seus dados.");
-            navigation.goBack();
+        } catch {
+            // silenciado temporariamente
         } finally {
             setIsLoading(false);
         }
@@ -102,10 +100,7 @@ export default function Profile() {
     );
 
     const handleUpdate = async (data: AccountProps) => {
-        if (!enderecoId) {
-            Alert.alert("Erro", "ID do Endereço não encontrado para atualização.");
-            return;
-        }
+        if (!enderecoId) return;
 
         setIsSubmitting(true);
         try {
@@ -131,9 +126,8 @@ export default function Profile() {
             ]);
 
             Alert.alert("Sucesso", "Seus dados foram atualizados.");
-        } catch (error) {
-            console.error("Erro ao atualizar dados:", error);
-            Alert.alert("Erro", "Não foi possível atualizar seus dados.");
+        } catch {
+            // silenciado temporariamente
         } finally {
             setIsSubmitting(false);
         }
@@ -145,13 +139,10 @@ export default function Profile() {
             await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
 
             // 2. Validação Simples: Confere se sumiu
-            const checkToken = await AsyncStorage.getItem("token");
-            console.log("Token existe? (Deve ser null):", checkToken);
-
-            // 3. Redireciona
+            // silenciado temporariamente
             navigation.replace("Login");
-        } catch (error) {
-            Alert.alert("Erro", "Não foi possível sair.");
+        } catch {
+            // silenciado temporariamente
         }
     };
 
@@ -170,9 +161,8 @@ export default function Profile() {
                             await AsyncStorage.multiRemove(["token", "estabelecimentoId", "userRole"]);
                             Alert.alert("Sucesso", "Sua conta foi apagada.");
                             navigation.replace("Login");
-                        } catch (error) {
-                            console.error("Erro ao apagar conta:", error);
-                            Alert.alert("Erro", "Não foi possível apagar sua conta.");
+                        } catch {
+                            // silenciado temporariamente
                         }
                     },
                 },

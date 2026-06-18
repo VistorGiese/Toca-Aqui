@@ -90,7 +90,7 @@ export default function EstAcceptContract() {
                 "Candidatura aceita!",
                 contractId
                   ? `${artistName} foi contratado(a). Um contrato foi gerado — revise os termos.`
-                  : `${artistName} foi contratado(a) para o show.`,
+                  : `${artistName} foi contratado(a) para o show. O contrato será gerado em instantes.`,
                 [{
                   text: "OK",
                   onPress: () => {

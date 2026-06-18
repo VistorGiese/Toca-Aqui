@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { Controller } from "react-hook-form";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/Navigate";
@@ -60,17 +60,12 @@ export default function Login() {
         >
           {/* ── Logo ── */}
           <View style={styles.logoWrap}>
-            <View style={styles.logoIcon}>
-              <MaterialCommunityIcons name="waveform" size={32} color={colors.purpleLight} />
-            </View>
-            <Text style={styles.logoTitle}>TOCA AQUI</Text>
-            <Text style={styles.logoSub}>BACKSTAGE PASS</Text>
+            <Image source={require("../../assets/adaptive-icon.png")} style={styles.logoImage} resizeMode="contain" />
           </View>
 
           {/* ── Heading ── */}
           <View style={styles.headingWrap}>
             <Text style={styles.heading}>Bem-vindo de volta</Text>
-            <Text style={styles.headingSub}>Acesse o seu backstage digital</Text>
           </View>
 
           {/* ── Campo E-MAIL ── */}

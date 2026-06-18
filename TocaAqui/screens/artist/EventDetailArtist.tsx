@@ -99,7 +99,7 @@ export default function EventDetailArtist() {
 
     const timeStr = `${booking.horario_inicio || ""} — ${booking.horario_fim || ""}`;
 
-    const offeredCache = booking.preco_ingresso_inteira ?? (booking as any).cache_minimo;
+    const offeredCache = (booking as any).cache_minimo;
     navigation.navigate("ApplyConfirmation", {
       eventId: booking.id,
       eventName: booking.titulo_evento || `Vaga #${booking.id}`,
@@ -132,7 +132,7 @@ export default function EventDetailArtist() {
   const mainGenre = eventGenres[0] ?? "SEM GÊNERO";
   const venueName = estabelecimento?.nome_estabelecimento ?? booking.nome_estabelecimento;
   const venueLocation = estabelecimento?.cidade ? `${venueName ?? "Estabelecimento"} · ${estabelecimento.cidade}` : venueName;
-  const offeredCache = booking.preco_ingresso_inteira ?? (booking as any).cache_minimo;
+  const offeredCache = (booking as any).cache_minimo;
 
   return (
     <View style={styles.root}>

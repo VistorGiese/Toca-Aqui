@@ -36,17 +36,7 @@ export const styles = StyleSheet.create({
 
   // Logo
   logoWrap: { alignItems: "center", marginBottom: 40 },
-  logoIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.purpleGlowBg,
-    borderWidth: 1,
-    borderColor: colors.purpleGlowBorder,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 14,
-  },
+  logoImage: { width: 90, height: 90, marginBottom: 14 },
   logoTitle: {
     fontFamily: "AkiraExpanded-SuperBold",
     fontSize: 20,

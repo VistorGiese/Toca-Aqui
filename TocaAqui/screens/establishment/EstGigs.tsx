@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService, Gig, isGigAberta, isGigEncerrada } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
+import { parseGenres } from "@/utils/genres";
 
 const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", textPrimary:"#FFFFFF", textSecondary:"#8888AA", error:"#E74C3C" };
 type NavProp = NativeStackNavigationProp<EstStackParamList>;
@@ -61,12 +62,28 @@ export default function EstGigs() {
 
   const renderGig = ({ item }: { item: Gig }) => {
     const generoRaw = item.generos_musicais ?? item.genero_musical ?? "";
-    const genero = generoRaw.split(",")[0]?.trim().toUpperCase() || "SHOW";
+    const generos = parseGenres(generoRaw);
+    const genero = generos[0] ?? "SHOW";
     const color = getGenreColor(genero);
     return (
       <TouchableOpacity style={s.card} onPress={() => navigation.navigate("EstGigApplications", { gigId: item.id, gigTitle: item.titulo_evento })} activeOpacity={0.8}>
         <View style={s.cardTop}>
-          <View style={[s.genreBadge, { borderColor: color }]}><Text style={[s.genreBadgeText, { color }]}>{genero}</Text></View>
+          <View style={s.genreRow}>
+            {generos.length > 0 ? (
+              generos.map((genre) => {
+                const genreColor = getGenreColor(genre);
+                return (
+                  <View key={`${item.id}-${genre}`} style={[s.genreBadge, { borderColor: genreColor }]}>
+                    <Text style={[s.genreBadgeText, { color: genreColor }]}>{genre}</Text>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={[s.genreBadge, { borderColor: color }]}>
+                <Text style={[s.genreBadgeText, { color }]}>{genero}</Text>
+              </View>
+            )}
+          </View>
           <TouchableOpacity onPress={() => Alert.alert("Opções", "O que deseja fazer?", [
             { text: "Editar", onPress: () => navigation.navigate("EstNewGig", { gigId: item.id }) },
             { text: "Excluir", style: "destructive", onPress: () => handleDelete(item.id) },
@@ -82,7 +99,7 @@ export default function EstGigs() {
         </View>
         <View style={s.cardMeta}>
           <FontAwesome5 name="dollar-sign" size={11} color={DS.cyan} />
-          <Text style={[s.cardMetaText,{color:DS.cyan}]}>{formatBRL(item.cache_minimo ?? item.preco_ingresso_inteira)}{item.cache_maximo ? ` - ${formatBRL(item.cache_maximo)}` : ""}</Text>
+          <Text style={[s.cardMetaText,{color:DS.cyan}]}>{formatBRL(item.cache_minimo)}{item.cache_maximo ? ` - ${formatBRL(item.cache_maximo)}` : ""}</Text>
         </View>
         {item.status === "aceito" && (
           <View style={[s.badge, s.badgeContratado]}><FontAwesome5 name="check-circle" size={10} color="#00C853" style={{marginRight:6}} /><Text style={[s.badgeText, { color: "#00C853" }]}>Artista contratado</Text></View>
@@ -144,6 +161,7 @@ const s = StyleSheet.create({
   list:{paddingHorizontal:20,paddingBottom:100},
   card:{backgroundColor:DS.card,borderRadius:14,borderWidth:1,borderColor:DS.border,padding:16,marginBottom:12},
   cardTop:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",marginBottom:10},
+  genreRow:{flexDirection:"row",flexWrap:"wrap",gap:6,flex:1,marginRight:10},
   genreBadge:{borderWidth:1,borderRadius:8,paddingHorizontal:10,paddingVertical:3},
   genreBadgeText:{fontFamily:"Montserrat-Bold",fontSize:10,letterSpacing:1},
   cardTitle:{fontFamily:"Montserrat-Bold",fontSize:16,color:DS.textPrimary,marginBottom:8},

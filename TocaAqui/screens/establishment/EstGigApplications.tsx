@@ -33,9 +33,6 @@ export default function EstGigApplications() {
     if (!silent) setLoading(true);
     try {
       const result = await establishmentService.getGigApplications(gigId);
-      if (__DEV__) {
-        console.log("[EST_GIG_APPLICATIONS] fetched", result);
-      }
       setCandidates(Array.isArray(result?.candidaturas) ? result.candidaturas : []);
       setEventClosed(result.closed);
       setClosedMessage(result.message);

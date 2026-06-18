@@ -13,7 +13,6 @@ import {
 import { ingressoService, Ingresso } from "@/http/ingressoService";
 import { userService } from "@/http/userService";
 import { resolveImageUrl } from "@/utils/adapters";
-import { getApiErrorMessage } from "@/utils/errorHandler";
 import { UserProfileStat, UserProfileViewModel } from "./types";
 
 type NavProp = NativeStackNavigationProp<UserStackParamList>;
@@ -50,20 +49,6 @@ export function useUserProfile(): UserProfileViewModel {
       setLocalizacao(prefs.value?.cidade ?? null);
     }
 
-    const allRejected =
-      artistas.status === "rejected" &&
-      ingressosProximos.status === "rejected" &&
-      ingressosPassados.status === "rejected" &&
-      perfil.status === "rejected" &&
-      prefs.status === "rejected";
-
-    if (allRejected) {
-      Alert.alert(
-        "Erro",
-        getApiErrorMessage(artistas.reason, "Não foi possível carregar seus dados.")
-      );
-    }
-
     setLoading(false);
   }, []);
 
@@ -96,11 +81,8 @@ export function useUserProfile(): UserProfileViewModel {
     try {
       const data = await userService.uploadFoto(result.assets[0].uri);
       setFotoPerfil(resolveImageUrl(data.foto_perfil));
-    } catch (error: unknown) {
-      Alert.alert(
-        "Erro no upload",
-        getApiErrorMessage(error, "Não foi possível fazer o upload da foto.")
-      );
+    } catch {
+      // silenciado temporariamente
     } finally {
       setUploadingFoto(false);
     }

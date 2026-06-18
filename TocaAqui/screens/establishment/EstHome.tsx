@@ -8,6 +8,7 @@ import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService, Gig, isGigAberta, ArtistPublicProfile } from "@/http/establishmentService";
 import { showService, Show, showToDetailParams } from "@/http/showService";
 import { getGenreColor } from "@/utils/colors";
+import { parseGenres } from "@/utils/genres";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", textPrimary:"#FFFFFF", textSecondary:"#8888AA", error:"#E74C3C", success:"#00C853" };
@@ -116,7 +117,8 @@ export default function EstHome() {
           ? <Text style={s.emptyText}>Nenhum show confirmado.</Text>
           : upcomingShows.map((show) => {
               const { dia, mes } = formatDate(show.data_show);
-              const genero = (show.genero_musical ?? "SHOW").split(",")[0]?.trim().toUpperCase() || "SHOW";
+              const generos = parseGenres(show.genero_musical);
+              const genero = generos[0] ?? "SHOW";
               const genreColor = getGenreColor(genero);
               const horario = show.horario_inicio?.substring(0, 5) ?? "--:--";
               const detail = showToDetailParams(show);
@@ -145,6 +147,18 @@ export default function EstHome() {
                       <FontAwesome5 name="check-circle" size={9} color={DS.success} />
                       <Text style={s.confirmedBadgeText}>Artista contratado</Text>
                     </View>
+                    {generos.length > 0 && (
+                      <View style={s.genreRow}>
+                        {generos.map((genre) => {
+                          const color = getGenreColor(genre);
+                          return (
+                            <View key={`${show.id}-${genre}`} style={[s.genreBadge, { borderColor: color }]}>
+                              <Text style={[s.genreBadgeText, { color }]}>{genre}</Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
                   </View>
                   <FontAwesome5 name="chevron-right" size={12} color={DS.textSecondary} />
                 </TouchableOpacity>
@@ -230,6 +244,9 @@ const s = StyleSheet.create({
     borderColor: "rgba(0,200,83,0.25)",
   },
   confirmedBadgeText: { fontFamily: "Montserrat-SemiBold", fontSize: 10, color: DS.success },
+  genreRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
+  genreBadge: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  genreBadgeText: { fontFamily: "Montserrat-Bold", fontSize: 9, letterSpacing: 0.5 },
   emptyText: { fontFamily:"Montserrat-Regular", fontSize:13, color:DS.textSecondary, marginBottom:16 },
   artistCard: { width:150, backgroundColor:DS.card, borderRadius:14, borderWidth:1, borderColor:DS.border, padding:12, alignItems:"center" },
   artistAvatar: { width:64, height:64, borderRadius:32, backgroundColor:DS.surface, justifyContent:"center", alignItems:"center", marginBottom:8 },

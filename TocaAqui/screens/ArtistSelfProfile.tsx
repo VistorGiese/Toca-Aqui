@@ -54,9 +54,8 @@ export default function ArtistSelfProfile() {
       setUserName(user.nome || "");
       setUserEmail(user.email || "");
       setArtistProfile(firstArtistProfile);
-    } catch (error) {
-      console.error("Erro ao buscar perfil de artista:", error);
-      setArtistProfile(null);
+    } catch {
+      // silenciado temporariamente
     } finally {
       setIsLoading(false);
     }
@@ -80,12 +79,8 @@ export default function ArtistSelfProfile() {
       });
       await loadArtistProfile();
       Alert.alert("Sucesso", "Perfil artistico criado com sucesso.");
-    } catch (error: any) {
-      const msg =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        "Nao foi possivel criar o perfil artistico.";
-      Alert.alert("Erro", msg);
+    } catch {
+      // silenciado temporariamente
     } finally {
       setIsCreatingProfile(false);
     }

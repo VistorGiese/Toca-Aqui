@@ -3,7 +3,7 @@ import { colors, genreColorWithAlpha } from "@/utils/colors";
 import {
   formatBRL,
   getTicketBaseUnitPrice,
-  getTicketDisplayPriceWithFee,
+  getTicketDisplayPrice,
 } from "@/utils/ticketPricing";
 
 const MONTH_NAMES = [
@@ -38,7 +38,7 @@ export function getShowVenue(show: Show): string {
 }
 
 export function getShowPrice(show: Show): number {
-  return getTicketDisplayPriceWithFee(show.preco_ingresso_inteira, show.capacidade_maxima);
+  return getTicketDisplayPrice(show.preco_ingresso_inteira);
 }
 
 export function getShowArtistName(show: Show): string | null {
@@ -46,15 +46,17 @@ export function getShowArtistName(show: Show): string | null {
 }
 
 export function isShowFree(show: Show): boolean {
-  return getTicketBaseUnitPrice(show.preco_ingresso_inteira, show.capacidade_maxima) === 0;
+  if (show.modo_venda_ingresso === "na_porta") return true;
+  return getTicketBaseUnitPrice(show.preco_ingresso_inteira) === 0;
 }
 
 export function getShowPriceLabel(show: Show): string {
+  if (show.modo_venda_ingresso === "na_porta") return "Na porta";
   return isShowFree(show) ? "Gratuito" : formatBRL(getShowPrice(show));
 }
 
 export function getShowCtaLabel(show: Show): string {
-  return isShowFree(show) ? "CONFIRMAR PRESENÇA" : "COMPRAR INGRESSO";
+  return "COMPRAR INGRESSO";
 }
 
 export function getShowCardColor(show: Show, alpha = "55"): string {

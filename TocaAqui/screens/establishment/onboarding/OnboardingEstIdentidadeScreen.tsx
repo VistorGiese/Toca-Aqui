@@ -57,6 +57,15 @@ export default function OnboardingEstIdentidadeScreen() {
         containerStyle={{ width: "100%", marginBottom: 4 }}
       />
 
+      <Input
+        label="CNPJ (OPCIONAL)"
+        placeholder="00.000.000/0000-00"
+        value={vm.cnpj}
+        onChangeText={vm.setCnpj}
+        keyboardType="number-pad"
+        containerStyle={{ width: "100%", marginBottom: 4 }}
+      />
+
       <Text style={[s.sectionLabel, { marginTop: 12 }]}>TIPO DO LOCAL</Text>
       <EstTypeSelector
         value={vm.tipo}

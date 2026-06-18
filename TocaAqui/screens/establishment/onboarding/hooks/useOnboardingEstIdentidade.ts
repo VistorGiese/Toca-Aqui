@@ -7,7 +7,7 @@ import * as ImagePicker from "expo-image-picker";
 import { EstablishmentOnboardingStackParamList } from "../EstablishmentOnboardingNavigator";
 import { useEstablishmentOnboarding } from "../context/EstablishmentOnboardingContext";
 import { EstablishmentTipo } from "../context/types";
-import { sanitizePhone } from "../utils";
+import { maskCnpj, sanitizeCnpj, sanitizePhone } from "../utils";
 
 type NavProp = NativeStackNavigationProp<EstablishmentOnboardingStackParamList, "OnboardingEstIdentidade">;
 
@@ -62,6 +62,11 @@ export function useOnboardingEstIdentidade() {
           Alert.alert("Atenção", "Informe um telefone válido (mínimo 8 dígitos).");
           return;
         }
+        const cnpj = sanitizeCnpj(draft.cnpj);
+        if (cnpj && cnpj.length !== 14) {
+          Alert.alert("Atenção", "Informe um CNPJ válido com 14 dígitos ou deixe em branco.");
+          return;
+        }
         updateDraft({ telefone: tel });
         navigation.navigate("OnboardingEstFuncionamento");
         return;
@@ -71,6 +76,7 @@ export function useOnboardingEstIdentidade() {
           nome: draft.nome.trim() || "Meu Espaço",
           tipo: (draft.tipo || "bar") as EstablishmentTipo,
           telefone: tel,
+          cnpj: maskCnpj(draft.cnpj),
         });
       }
       navigation.navigate("OnboardingEstFuncionamento");
@@ -80,6 +86,7 @@ export function useOnboardingEstIdentidade() {
 
   const setNome = useCallback((nome: string) => updateDraft({ nome }), [updateDraft]);
   const setTelefone = useCallback((telefone: string) => updateDraft({ telefone }), [updateDraft]);
+  const setCnpj = useCallback((cnpj: string) => updateDraft({ cnpj: maskCnpj(cnpj) }), [updateDraft]);
   const setTipo = useCallback(
     (tipo: EstablishmentTipo) => updateDraft({ tipo }),
     [updateDraft]
@@ -88,10 +95,12 @@ export function useOnboardingEstIdentidade() {
   return {
     nome: draft.nome,
     telefone: draft.telefone,
+    cnpj: draft.cnpj,
     tipo: draft.tipo,
     fotoUri: draft.fotoUri,
     setNome,
     setTelefone,
+    setCnpj,
     setTipo,
     selectPhoto,
     goNext,

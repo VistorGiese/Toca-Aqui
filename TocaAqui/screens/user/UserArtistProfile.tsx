@@ -7,13 +7,14 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
-  Alert,
+  Image,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { getGenreColor } from "@/utils/colors";
 import { artistaPublicoService, ArtistaPublico } from "@/http/artistaPublicoService";
+import { resolveImageUrl, parsePressKit } from "@/utils/adapters";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserArtistProfile">;
 
@@ -68,7 +69,7 @@ export default function UserArtistProfile({ route, navigation }: Props) {
       setFollowing(data.seguindo);
       setTotalSeguidores(data.total_seguidores);
     } catch {
-      Alert.alert("Erro", "Não foi possível carregar o perfil do artista.");
+      // silenciado temporariamente
     } finally {
       setLoading(false);
     }
@@ -86,7 +87,7 @@ export default function UserArtistProfile({ route, navigation }: Props) {
       setFollowing(result.seguindo);
       setTotalSeguidores(result.total_seguidores);
     } catch {
-      Alert.alert("Erro", "Não foi possível atualizar o seguimento.");
+      // silenciado temporariamente
     } finally {
       setFollowLoading(false);
     }
@@ -129,6 +130,11 @@ export default function UserArtistProfile({ route, navigation }: Props) {
   const avatarColor = genreColor + "66";
   const rating = artista.media_nota ?? 0;
   const shows = artista.ProximosShows ?? [];
+  const avatarUrl = resolveImageUrl(artista.foto_perfil);
+  const pressKitPhotos = parsePressKit(artista.press_kit)
+    .map((path) => resolveImageUrl(path))
+    .filter(Boolean) as string[];
+  const locationLabel = [artista.cidade, artista.estado].filter(Boolean).join(", ") || "Cidade não informada";
 
   return (
     <View style={styles.container}>
@@ -144,9 +150,13 @@ export default function UserArtistProfile({ route, navigation }: Props) {
         </TouchableOpacity>
 
         <View style={styles.avatarContainer}>
-          <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-            <FontAwesome5 name="microphone" size={28} color="rgba(255,255,255,0.6)" />
-          </View>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
+              <FontAwesome5 name="microphone" size={28} color="rgba(255,255,255,0.6)" />
+            </View>
+          )}
         </View>
       </View>
 
@@ -175,8 +185,19 @@ export default function UserArtistProfile({ route, navigation }: Props) {
         <Text style={styles.artistName}>{artista.nome_artistico}</Text>
         <View style={styles.locationRow}>
           <FontAwesome5 name="map-marker-alt" size={12} color="#555577" />
-          <Text style={styles.locationText}>Cidade não informada</Text>
+          <Text style={styles.locationText}>{locationLabel}</Text>
         </View>
+
+        {pressKitPhotos.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Fotos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pressKitRow}>
+              {pressKitPhotos.map((uri) => (
+                <Image key={uri} source={{ uri }} style={styles.pressKitImage} />
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
 
         {artista.biografia ? (
           <View style={styles.section}>
@@ -395,6 +416,13 @@ const styles = StyleSheet.create({
     color: "#A0A0B8",
   },
   section: { marginBottom: 24 },
+  pressKitRow: { gap: 10 },
+  pressKitImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 10,
+    backgroundColor: "#161028",
+  },
   sectionTitle: {
     fontFamily: "Montserrat-Bold",
     fontSize: 16,

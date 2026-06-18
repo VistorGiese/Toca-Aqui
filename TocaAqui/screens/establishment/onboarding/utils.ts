@@ -16,6 +16,19 @@ export function sanitizePhone(phone: string): string {
   return phone.replace(/\D/g, "");
 }
 
+export function sanitizeCnpj(cnpj: string): string {
+  return cnpj.replace(/\D/g, "");
+}
+
+export function maskCnpj(raw: string): string {
+  const digits = sanitizeCnpj(raw).slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
 export function resolveOpeningHours(diasHorarios: WeekSchedule): {
   horarioAbertura: string;
   horarioFechamento: string;

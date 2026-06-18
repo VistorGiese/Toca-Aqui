@@ -1,15 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, Modal,
+  ActivityIndicator, Alert, Modal, Image,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Calendar } from "react-native-calendars";
+import * as ImagePicker from "expo-image-picker";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
+import { isValidHHMM, normalizeDateToISO, normalizeTimeToHHMM } from "@/utils/datetime";
+import { resolveImageUrl } from "@/utils/adapters";
 
 const DS = {
   bg: "#09090F", surface: "#161028", card: "#1E1635", border: "#2D2545",
@@ -43,8 +46,11 @@ export default function EstNewGig() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
-  const [cache, setCache] = useState("");
+  const [valorShow, setValorShow] = useState("");
+  const [valorIngresso, setValorIngresso] = useState("");
+  const [modoVendaIngresso, setModoVendaIngresso] = useState<"antecipada" | "na_porta">("antecipada");
   const [capacidade, setCapacidade] = useState("");
+  const [capaUri, setCapaUri] = useState<string | null>(null);
   const [generos, setGeneros] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,12 +61,17 @@ export default function EstNewGig() {
     try {
       const g = await establishmentService.getGigById(gigId);
       setTitulo(g.titulo_evento);
-      setDataISO(g.data_show);
-      setInicio(g.horario_inicio);
-      setFim(g.horario_fim);
-      if (g.preco_ingresso_inteira != null || g.cache_minimo != null) {
-        setCache(String(g.preco_ingresso_inteira ?? g.cache_minimo));
+      setDataISO(normalizeDateToISO(g.data_show));
+      setInicio(normalizeTimeToHHMM(g.horario_inicio));
+      setFim(normalizeTimeToHHMM(g.horario_fim));
+      if (g.cache_minimo != null) {
+        setValorShow(String(g.cache_minimo));
       }
+      if (g.preco_ingresso_inteira != null) {
+        setValorIngresso(String(g.preco_ingresso_inteira));
+      }
+      setModoVendaIngresso(g.modo_venda_ingresso ?? "antecipada");
+      setCapaUri(g.imagem_capa ?? null);
       if (g.capacidade_maxima != null) {
         setCapacidade(String(g.capacidade_maxima));
       }
@@ -79,30 +90,52 @@ export default function EstNewGig() {
     setGeneros(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
 
   const handlePublicar = async () => {
+    const dataNormalizada = normalizeDateToISO(dataISO);
+    const inicioNormalizado = normalizeTimeToHHMM(inicio);
+    const fimNormalizado = normalizeTimeToHHMM(fim);
+
     if (!titulo.trim()) { Alert.alert("Atenção", "Informe o título do evento."); return; }
-    if (!dataISO) { Alert.alert("Atenção", "Selecione a data do evento."); return; }
-    if (!inicio || inicio.length < 5) { Alert.alert("Atenção", "Informe o horário de início (HH:MM)."); return; }
-    if (!fim || fim.length < 5) { Alert.alert("Atenção", "Informe o horário de fim (HH:MM)."); return; }
+    if (!dataNormalizada) { Alert.alert("Atenção", "Selecione uma data válida para o evento."); return; }
+    if (!isValidHHMM(inicioNormalizado)) { Alert.alert("Atenção", "Informe o horário de início no formato HH:MM."); return; }
+    if (!isValidHHMM(fimNormalizado)) { Alert.alert("Atenção", "Informe o horário de fim no formato HH:MM."); return; }
+    if (inicioNormalizado === fimNormalizado) {
+      Alert.alert("Atenção", "O horário de início deve ser diferente do horário de fim.");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
         titulo_evento: titulo,
-        data_show: dataISO,
-        horario_inicio: inicio,
-        horario_fim: fim,
-        preco_ingresso_inteira: cache ? Number(cache) : undefined,
+        data_show: dataNormalizada,
+        horario_inicio: inicioNormalizado,
+        horario_fim: fimNormalizado,
+        cache_minimo: valorShow ? Number(valorShow) : undefined,
+        preco_ingresso_inteira: valorIngresso ? Number(valorIngresso) : undefined,
+        modo_venda_ingresso: modoVendaIngresso,
         capacidade_maxima: capacidade ? Number(capacidade) : undefined,
         genero_musical: generos.join(", ") || undefined,
         esta_publico: true,
       };
-      if (gigId) await establishmentService.updateGig(gigId, payload);
-      else await establishmentService.createGig(payload);
+      let savedGigId = gigId;
+      if (gigId) {
+        await establishmentService.updateGig(gigId, payload);
+      } else {
+        const created = await establishmentService.createGig(payload);
+        savedGigId = created.id;
+      }
+      if (savedGigId && capaUri && !capaUri.startsWith("uploads/")) {
+        await establishmentService.uploadGigCover(savedGigId, capaUri);
+      }
       Alert.alert("Sucesso", gigId ? "Data atualizada!" : "Data publicada!");
       navigation.goBack();
     } catch (e: any) {
       const data = e?.response?.data;
       const detalhes = data?.detalhes?.map((d: any) => d.mensagem).join("\n");
-      const msg = detalhes || data?.message || data?.error || "Não foi possível salvar.";
+      const rawMsg = detalhes || data?.message || data?.error || "Não foi possível salvar.";
+      const msg = /já existem candidaturas/i.test(String(rawMsg))
+        ? "Não é possível editar este evento porque já existem candidaturas vinculadas."
+        : rawMsg;
       Alert.alert("Erro", msg);
     } finally {
       setSaving(false);
@@ -118,6 +151,22 @@ export default function EstNewGig() {
   }
 
   const today = new Date().toISOString().split("T")[0];
+
+  const handleSelectCover = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão necessária", "Permita o acesso à galeria para adicionar a capa do evento.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCapaUri(result.assets[0].uri);
+    }
+  };
 
   return (
     <View style={s.root}>
@@ -146,6 +195,18 @@ export default function EstNewGig() {
           value={titulo}
           onChangeText={setTitulo}
         />
+
+        <Text style={s.fieldLabel}>CAPA DO EVENTO</Text>
+        <TouchableOpacity style={s.coverPicker} onPress={handleSelectCover} activeOpacity={0.85}>
+          {capaUri ? (
+            <Image source={{ uri: resolveImageUrl(capaUri) }} style={s.coverPreview} />
+          ) : (
+            <View style={s.coverPlaceholder}>
+              <FontAwesome5 name="image" size={18} color={DS.accent} />
+              <Text style={s.coverPlaceholderText}>Adicionar capa</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Data — picker */}
         <Text style={s.fieldLabel}>DATA DO EVENTO</Text>
@@ -185,16 +246,61 @@ export default function EstNewGig() {
           </View>
         </View>
 
-        {/* Cachê — valor único */}
-        <Text style={s.fieldLabel}>CACHÊ OFERECIDO (R$)</Text>
+        {/* Valor do show (cachê oferecido ao artista) */}
+        <Text style={s.fieldLabel}>VALOR DO SHOW (R$)</Text>
         <TextInput
           style={s.input}
           placeholder="Ex: 800"
           placeholderTextColor={DS.border}
-          value={cache}
-          onChangeText={setCache}
+          value={valorShow}
+          onChangeText={setValorShow}
           keyboardType="numeric"
         />
+        <Text style={s.fieldHint}>
+          Valor que o estabelecimento oferece ao artista contratado. Independente do ingresso.
+        </Text>
+
+        <Text style={s.fieldLabel}>MODO DE VENDA DO INGRESSO</Text>
+        <View style={s.saleModeRow}>
+          <TouchableOpacity
+            style={[s.saleModeBtn, modoVendaIngresso === "antecipada" && s.saleModeBtnActive]}
+            onPress={() => setModoVendaIngresso("antecipada")}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.saleModeBtnText, modoVendaIngresso === "antecipada" && s.saleModeBtnTextActive]}>
+              Venda antecipada
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.saleModeBtn, modoVendaIngresso === "na_porta" && s.saleModeBtnActive]}
+            onPress={() => setModoVendaIngresso("na_porta")}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.saleModeBtnText, modoVendaIngresso === "na_porta" && s.saleModeBtnTextActive]}>
+              Venda na hora
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Valor do ingresso */}
+        <Text style={s.fieldLabel}>VALOR DO INGRESSO (R$)</Text>
+        <TextInput
+          style={s.input}
+          placeholder={modoVendaIngresso === "na_porta" ? "Ex: 30 (referência na porta)" : "Ex: 50"}
+          placeholderTextColor={DS.border}
+          value={valorIngresso}
+          onChangeText={setValorIngresso}
+          keyboardType="numeric"
+        />
+        {modoVendaIngresso === "na_porta" ? (
+          <Text style={s.fieldHint}>
+            Ingresso pago na entrada. Esse valor é só referência para o público e não interfere no cachê do artista.
+          </Text>
+        ) : (
+          <Text style={s.fieldHint}>
+            Preço de venda antecipada pelo app. Separado do valor pago ao artista.
+          </Text>
+        )}
 
         {/* Capacidade */}
         <Text style={s.fieldLabel}>CAPACIDADE MÁXIMA (PESSOAS)</Text>
@@ -207,7 +313,7 @@ export default function EstNewGig() {
           keyboardType="numeric"
         />
         <Text style={s.fieldHint}>
-          Usada para calcular o preço do ingresso e limitar vendas. Deixe vazio se não souber.
+          Usada para limitar vendas de ingressos. Deixe vazio se não souber.
         </Text>
 
         {/* Gêneros */}
@@ -296,6 +402,23 @@ const s = StyleSheet.create({
   dateBtn: { flexDirection: "row", alignItems: "center", backgroundColor: DS.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: DS.border, gap: 10 },
   dateBtnText: { flex: 1, fontFamily: "Montserrat-Regular", fontSize: 14, color: DS.textPrimary },
   row: { flexDirection: "row", gap: 12 },
+  saleModeRow: { flexDirection: "row", gap: 8 },
+  saleModeBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: DS.border,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: DS.surface,
+  },
+  saleModeBtnActive: { borderColor: DS.accent, backgroundColor: "rgba(123,97,255,0.2)" },
+  saleModeBtnText: { fontFamily: "Montserrat-SemiBold", fontSize: 12, color: DS.textSecondary },
+  saleModeBtnTextActive: { color: DS.textPrimary },
+  coverPicker: { marginTop: 4, borderWidth: 1, borderColor: DS.border, borderRadius: 12, overflow: "hidden" },
+  coverPreview: { width: "100%", height: 140 },
+  coverPlaceholder: { width: "100%", height: 110, justifyContent: "center", alignItems: "center", gap: 8, backgroundColor: DS.surface },
+  coverPlaceholderText: { fontFamily: "Montserrat-SemiBold", fontSize: 12, color: DS.textSecondary },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1.5 },
   chipText: { fontFamily: "Montserrat-Bold", fontSize: 12 },

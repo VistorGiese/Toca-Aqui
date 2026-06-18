@@ -89,14 +89,10 @@ export default function UserCheckout({ route, navigation }: Props) {
     async function fetchShow() {
       try {
         const show = await showService.getShowById(showId);
-        const full = getTicketBaseUnitPrice(
-          show.preco_ingresso_inteira,
-          show.capacidade_maxima,
-        );
+        const full = getTicketBaseUnitPrice(show.preco_ingresso_inteira);
         const half = getTicketHalfUnitPrice(
           show.preco_ingresso_inteira,
           show.preco_ingresso_meia,
-          show.capacidade_maxima,
         );
         setPriceFull(full);
         setPriceHalf(half);
@@ -110,13 +106,7 @@ export default function UserCheckout({ route, navigation }: Props) {
     fetchShow();
   }, [showId]);
 
-  const { subtotal, serviceFee, total } = calcCheckoutTotals(
-    qtyFull,
-    priceFull,
-    qtyHalf,
-    priceHalf,
-    isFree,
-  );
+  const { total } = calcCheckoutTotals(qtyFull, priceFull, qtyHalf, priceHalf);
 
   function changeQty(type: "full" | "half", delta: number) {
     if (type === "full") {
@@ -490,10 +480,6 @@ export default function UserCheckout({ route, navigation }: Props) {
                   </Text>
                 </View>
               )}
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Taxa de Serviço (10%)</Text>
-                <Text style={styles.summaryValue}>{formatBRL(serviceFee)}</Text>
-              </View>
             </>
           )}
           <View style={styles.divider} />

@@ -16,6 +16,8 @@ export interface Gig {
   preco_ingresso_inteira?: number;
   capacidade_maxima?: number;
   genero_musical?: string;
+  imagem_capa?: string;
+  modo_venda_ingresso?: "antecipada" | "na_porta";
   status: "aberta" | "encerrada" | "rascunho" | "pendente" | "aceito" | "rejeitado" | "cancelado" | "realizado";
   candidaturas_count?: number;
   estabelecimento_id?: number;
@@ -131,6 +133,7 @@ export interface EstablishmentProfile {
   horario_abertura?: string;
   horario_fechamento?: string;
   telefone_contato?: string;
+  cnpj?: string;
   foto_url?: string;
   nota_media?: number;
   cidade?: string;
@@ -199,11 +202,11 @@ async function resolveEstablishmentProfileId(): Promise<number> {
 
 const createGig = async (data: {
   titulo_evento: string; data_show: string; horario_inicio: string; horario_fim: string;
+  cache_minimo?: number;
   preco_ingresso_inteira?: number;
   capacidade_maxima?: number;
   genero_musical?: string;
-  // Compatibilidade para chamadas antigas
-  cache_minimo?: number;
+  modo_venda_ingresso?: "antecipada" | "na_porta";
   cache_maximo?: number;
   generos_musicais?: string;
   descricao_evento?: string;
@@ -211,12 +214,10 @@ const createGig = async (data: {
   esta_publico?: boolean;
 }): Promise<Gig> => {
   const perfil_estabelecimento_id = data.perfil_estabelecimento_id ?? (await resolveEstablishmentProfileId());
-  const preco_ingresso_inteira = data.preco_ingresso_inteira ?? data.cache_minimo;
   const genero_musical = data.genero_musical ?? data.generos_musicais;
   const r = await api.post<Gig>("/agendamentos", {
     ...data,
     perfil_estabelecimento_id,
-    preco_ingresso_inteira,
     genero_musical,
     esta_publico: data.esta_publico ?? true,
   });
@@ -230,6 +231,17 @@ const getGigById = async (id: number): Promise<Gig> => {
 
 const updateGig = async (id: number, data: Partial<Gig>): Promise<Gig> => {
   const r = await api.put<Gig>(`/agendamentos/${id}`, data);
+  return r.data;
+};
+
+const uploadGigCover = async (id: number, uri: string): Promise<{ imagem_capa: string }> => {
+  const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+  const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+  const formData = new FormData();
+  formData.append("imagem", { uri, name: `gig-cover.${ext}`, type: mime } as any);
+  const r = await api.patch<{ imagem_capa: string }>(`/agendamentos/${id}/capa`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return r.data;
 };
 
@@ -426,6 +438,7 @@ const createEstablishmentProfile = async (data: {
   nome_estabelecimento: string; tipo_estabelecimento?: string; descricao?: string;
   generos_musicais: string; horario_abertura: string; horario_fechamento: string;
   telefone_contato: string;
+  cnpj?: string;
   endereco: {
     rua: string; numero: string; bairro: string; cidade: string; estado: string; cep: string;
   };
@@ -487,6 +500,7 @@ const removeMember = async (estabelecimentoId: number, usuarioId: number): Promi
 
 export const establishmentService = {
   getMyGigs, createGig, getGigById, updateGig, deleteGig,
+  uploadGigCover,
   getGigApplications, acceptApplication, rejectApplication,
   searchArtists, getArtistPublicProfile, getBandById,
   getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getContractById,

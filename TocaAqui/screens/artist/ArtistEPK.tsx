@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
+  Image,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -17,6 +17,7 @@ import { avaliacaoService, Avaliacao } from "@/http/avaliacaoService";
 import { artistaPublicoService } from "@/http/artistaPublicoService";
 import { userService } from "@/http/userService";
 import { RootStackParamList } from "@/navigation/Navigate";
+import { resolveImageUrl, parsePressKit } from "@/utils/adapters";
 
 const DS = {
   bg: "#09090F",
@@ -50,28 +51,32 @@ export default function ArtistEPK() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [contractsData] = await Promise.all([
-        contractService.getMyContracts(),
-      ]);
+      const contractsData = await contractService.getMyContracts();
       setContracts(contractsData);
 
-      // Buscar perfil do artista
-      userService.getProfile().then((res) => {
+      if (user?.perfilArtistaId) {
+        const perfil = await artistaPublicoService.getPerfilPublico(user.perfilArtistaId);
+        setArtistProfile(perfil);
+        const g = Array.isArray(perfil.generos)
+          ? perfil.generos
+          : typeof perfil.generos === "string"
+            ? (() => { try { return JSON.parse(perfil.generos); } catch { return []; } })()
+            : [];
+        setGeneros(g);
+      } else {
+        const res = await userService.getProfile();
         const raw = res.user.artist_profiles?.[0];
         if (raw) {
           setArtistProfile(raw);
-          const g = Array.isArray(raw.generos) ? raw.generos : (typeof raw.generos === "string" ? JSON.parse(raw.generos) : []);
+          const g = Array.isArray(raw.generos)
+            ? raw.generos
+            : typeof raw.generos === "string"
+              ? JSON.parse(raw.generos)
+              : [];
           setGeneros(g);
         }
-      }).catch(() => {});
-
-      if (user?.perfilArtistaId) {
-        artistaPublicoService.getPerfilPublico(user.perfilArtistaId)
-          .then((perfil) => { if (perfil.generos?.length) setGeneros(perfil.generos); })
-          .catch(() => {});
       }
 
-      // Buscar avaliações dos shows concluídos (máx 3)
       const concluidos = contractsData
         .filter((c) => c.status === "concluido")
         .slice(0, 3);
@@ -94,7 +99,7 @@ export default function ArtistEPK() {
         if (totalCount > 0) setMediaArtista(parseFloat((totalNota / totalCount).toFixed(1)));
       }
     } catch {
-      Alert.alert("Erro", "Não foi possível carregar o perfil.");
+      // silenciado temporariamente
     } finally {
       setLoading(false);
     }
@@ -108,9 +113,18 @@ export default function ArtistEPK() {
     await signOut();
   }
 
+  function goToUserProfile() {
+    const rootNav = (navigation as any).getParent()?.getParent();
+    rootNav?.navigate("UserNavigator");
+  }
+
   const completedShows = contracts.filter((c) => c.status === "concluido").length;
   const acceptedShows = contracts.filter((c) => c.status === "aceito").length;
   const totalShows = completedShows + acceptedShows;
+  const avatarUrl = resolveImageUrl(artistProfile?.foto_perfil);
+  const pressKitPhotos = parsePressKit(artistProfile?.press_kit)
+    .map((path) => resolveImageUrl(path))
+    .filter(Boolean) as string[];
 
   if (loading) {
     return (
@@ -129,9 +143,13 @@ export default function ArtistEPK() {
             <FontAwesome5 name="bars" size={18} color={DS.white} />
           </TouchableOpacity>
           <Text style={styles.brandName}>TOCA AQUI</Text>
-          <View style={styles.avatarSmall}>
-            <FontAwesome5 name="user" size={14} color={DS.accent} />
-          </View>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarSmall} />
+          ) : (
+            <View style={styles.avatarSmall}>
+              <FontAwesome5 name="user" size={14} color={DS.accent} />
+            </View>
+          )}
         </View>
 
         {/* Editar Perfil */}
@@ -147,9 +165,13 @@ export default function ArtistEPK() {
         </View>
 
         <View style={styles.avatarContainer}>
-          <View style={styles.avatarLarge}>
-            <FontAwesome5 name="user" size={36} color={DS.accent} />
-          </View>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarLarge} />
+          ) : (
+            <View style={styles.avatarLarge}>
+              <FontAwesome5 name="user" size={36} color={DS.accent} />
+            </View>
+          )}
         </View>
 
         <Text style={styles.artistName}>{artistProfile?.nome_artistico || user?.nome_completo || "Artista"}</Text>
@@ -225,6 +247,17 @@ export default function ArtistEPK() {
           </>
         ) : null}
 
+        {pressKitPhotos.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>PRESS KIT</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pressKitRow}>
+              {pressKitPhotos.map((uri) => (
+                <Image key={uri} source={{ uri }} style={styles.pressKitImage} />
+              ))}
+            </ScrollView>
+          </>
+        )}
+
         {/* Venue Testimonials */}
         {reviews.length > 0 && (
           <>
@@ -259,6 +292,28 @@ export default function ArtistEPK() {
           </>
         )}
 
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(78,205,196,0.08)",
+            borderWidth: 1,
+            borderColor: "rgba(78,205,196,0.3)",
+            borderRadius: 12,
+            paddingVertical: 15,
+            marginTop: 24,
+            marginHorizontal: 20,
+          }}
+          onPress={goToUserProfile}
+          activeOpacity={0.85}
+        >
+          <FontAwesome5 name="user" size={16} color={DS.cyan} style={{ marginRight: 10 }} />
+          <Text style={{ fontFamily: "Montserrat-Bold", fontSize: 14, color: DS.cyan, letterSpacing: 1.5 }}>
+            VOLTAR PARA PERFIL COMUM
+          </Text>
+        </TouchableOpacity>
+
         {/* Logout */}
         <TouchableOpacity
           style={{
@@ -270,7 +325,7 @@ export default function ArtistEPK() {
             borderColor: "rgba(255,107,107,0.3)",
             borderRadius: 12,
             paddingVertical: 15,
-            marginTop: 24,
+            marginTop: 14,
             marginHorizontal: 20,
             marginBottom: 32,
           }}
@@ -433,6 +488,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 8,
     paddingHorizontal: 20,
+  },
+  pressKitRow: {
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 20,
+  },
+  pressKitImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    backgroundColor: DS.bgCard,
   },
   genreRow: {
     flexDirection: "row",

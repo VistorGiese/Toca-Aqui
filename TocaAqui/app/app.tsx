@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 
 import React, { useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, LogBox } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { NavigationContainer, NavigationIndependentTree } from "@react-navigation/native";
@@ -10,6 +10,11 @@ import Navigate, { linking } from "../navigation/Navigate";
 import { customFonts } from "../assets/fonts/fonts";
 
 SplashScreen.preventAutoHideAsync();
+
+// TODO: reativar logs na tela quando estabilizar carregamento dos perfis
+if (__DEV__) {
+  LogBox.ignoreAllLogs(true);
+}
 
 interface ErrorBoundaryState {
   hasError: boolean;

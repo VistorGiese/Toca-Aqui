@@ -11,6 +11,7 @@ export interface Show {
   imagem_capa?: string;
   preco_ingresso_inteira?: number;
   preco_ingresso_meia?: number;
+  modo_venda_ingresso?: "antecipada" | "na_porta";
   capacidade_maxima?: number;
   ingressos_vendidos?: number;
   ingressos_disponiveis?: number | null;
@@ -92,6 +93,8 @@ export function normalizeShow(raw: Record<string, unknown>): Show {
       raw.preco_ingresso_inteira != null ? Number(raw.preco_ingresso_inteira) : undefined,
     preco_ingresso_meia:
       raw.preco_ingresso_meia != null ? Number(raw.preco_ingresso_meia) : undefined,
+    modo_venda_ingresso:
+      raw.modo_venda_ingresso != null ? String(raw.modo_venda_ingresso) as Show["modo_venda_ingresso"] : undefined,
     capacidade_maxima:
       raw.capacidade_maxima != null ? Number(raw.capacidade_maxima) : undefined,
     ingressos_vendidos:

@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Show } from "@/http/showService";
 import { colors, getGenreColor, genreColorWithAlpha } from "@/utils/colors";
@@ -13,6 +13,7 @@ import {
   isShowFree,
 } from "@/screens/user/feed/showHelpers";
 import ShowPurchaseCta from "./ShowPurchaseCta";
+import { resolveImageUrl } from "@/utils/adapters";
 
 interface FeedShowCardProps {
   show: Show;
@@ -33,7 +34,11 @@ export default function FeedShowCard({
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={[styles.image, { backgroundColor: getShowCardColor(show) }]}>
-        <FontAwesome5 name="music" size={22} color={colors.iconOnSurface} />
+        {show.imagem_capa ? (
+          <Image source={{ uri: resolveImageUrl(show.imagem_capa) }} style={styles.coverImage} />
+        ) : (
+          <FontAwesome5 name="music" size={22} color={colors.iconOnSurface} />
+        )}
         <TouchableOpacity
           style={styles.heartBtn}
           onPress={(event) => {
@@ -99,7 +104,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    overflow: "hidden",
   },
+  coverImage: { width: "100%", height: "100%", position: "absolute" },
   heartBtn: {
     position: "absolute",
     top: 12,

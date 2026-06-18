@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Show } from "@/http/showService";
 import { colors, getGenreColor, genreColorWithAlpha } from "@/utils/colors";
@@ -11,6 +11,7 @@ import {
   isShowFree,
 } from "@/screens/user/feed/showHelpers";
 import ShowPurchaseCta from "./ShowPurchaseCta";
+import { resolveImageUrl } from "@/utils/adapters";
 
 interface FeedFeaturedCardProps {
   show: Show;
@@ -28,6 +29,9 @@ export default function FeedFeaturedCard({ show, onPress }: FeedFeaturedCardProp
       onPress={onPress}
       activeOpacity={0.9}
     >
+      {show.imagem_capa ? (
+        <Image source={{ uri: resolveImageUrl(show.imagem_capa) }} style={styles.coverImage} />
+      ) : null}
       <View style={styles.overlay}>
         <View style={styles.liveBadge}>
           <View style={styles.liveDot} />
@@ -69,6 +73,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  coverImage: { ...StyleSheet.absoluteFillObject },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlayDark,

@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/utils/errorHandler";
 import { EstablishmentOnboardingStackParamList } from "../EstablishmentOnboardingNavigator";
 import { useEstablishmentOnboarding } from "../context/EstablishmentOnboardingContext";
-import { mapTipoToBackend, resolveOpeningHours, sanitizePhone } from "../utils";
+import { mapTipoToBackend, resolveOpeningHours, sanitizeCnpj, sanitizePhone } from "../utils";
 
 type NavProp = NativeStackNavigationProp<EstablishmentOnboardingStackParamList, "OnboardingEstApresentacao">;
 
@@ -71,10 +71,15 @@ export function useOnboardingEstApresentacao() {
     }
 
     const telefone = sanitizePhone(draft.telefone);
+      const cnpj = sanitizeCnpj(draft.cnpj);
     if (telefone.length < 8) {
       Alert.alert("Atenção", "Informe um telefone válido no passo Identidade (mínimo 8 dígitos).");
       return;
     }
+      if (cnpj && cnpj.length !== 14) {
+        Alert.alert("Atenção", "Informe um CNPJ válido no passo Identidade.");
+        return;
+      }
 
     setLoading(true);
     try {
@@ -88,6 +93,7 @@ export function useOnboardingEstApresentacao() {
         horario_abertura: horarioAbertura,
         horario_fechamento: horarioFechamento,
         telefone_contato: telefone,
+        cnpj: draft.cnpj || undefined,
         endereco: {
           rua: draft.endereco.trim() || "Endereço não informado",
           numero: draft.numero.trim() || "S/N",
@@ -101,10 +107,14 @@ export function useOnboardingEstApresentacao() {
       const estId = result.profile?.id;
       if (estId) {
         await AsyncStorage.setItem("estabelecimentoId", String(estId));
-        if (draft.fotosUris.length > 0) {
+        const fotosParaUpload = [
+          ...(draft.fotoUri ? [draft.fotoUri] : []),
+          ...draft.fotosUris,
+        ].slice(0, 5);
+        if (fotosParaUpload.length > 0) {
           try {
             const formData = new FormData();
-            draft.fotosUris.forEach((uri, idx) => {
+            fotosParaUpload.forEach((uri, idx) => {
               const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
               const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
               formData.append("imagens", { uri, name: `foto_${idx}.${ext}`, type: mime } as any);

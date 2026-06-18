@@ -8,6 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
@@ -21,6 +22,7 @@ import {
   getShowPriceLabel,
   isShowFree,
 } from "./feed/showHelpers";
+import { resolveImageUrl } from "@/utils/adapters";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserShowDetail">;
 
@@ -134,6 +136,9 @@ export default function UserShowDetail({ route, navigation }: Props) {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <View style={[styles.coverImage, { backgroundColor: imageColor }]}>
+        {show.imagem_capa ? (
+          <Image source={{ uri: resolveImageUrl(show.imagem_capa) }} style={styles.coverBackgroundImage} />
+        ) : null}
         <View style={styles.coverOverlay} />
         <View style={styles.topActions}>
           <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.goBack()}>
@@ -317,6 +322,9 @@ const styles = StyleSheet.create({
   coverImage: {
     height: 280,
     justifyContent: "space-between",
+  },
+  coverBackgroundImage: {
+    ...StyleSheet.absoluteFillObject,
   },
   coverOverlay: {
     ...StyleSheet.absoluteFillObject,

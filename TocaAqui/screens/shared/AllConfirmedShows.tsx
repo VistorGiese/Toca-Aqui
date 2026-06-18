@@ -13,6 +13,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { showService, Show, showToDetailParams, ShowDetailParams } from "@/http/showService";
 import { getGenreColor } from "@/utils/colors";
+import { parseGenres } from "@/utils/genres";
 
 type Theme = {
   bg: string;
@@ -110,7 +111,8 @@ export default function AllConfirmedShows({ theme: themeKey, detailScreen }: Pro
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {shows.map((show) => {
             const { dia, mes } = formatDateBadge(show.data_show);
-            const genero = (show.genero_musical ?? "SHOW").split(",")[0]?.trim().toUpperCase() || "SHOW";
+            const generos = parseGenres(show.genero_musical);
+            const genero = generos[0] ?? "SHOW";
             const genreColor = getGenreColor(genero);
             const horario = show.horario_inicio?.substring(0, 5) ?? "--:--";
             const detail = showToDetailParams(show);
@@ -141,6 +143,18 @@ export default function AllConfirmedShows({ theme: themeKey, detailScreen }: Pro
                     <FontAwesome5 name="check-circle" size={9} color={DS.success} />
                     <Text style={[styles.confirmedBadgeText, { color: DS.success }]}>Show confirmado</Text>
                   </View>
+                  {generos.length > 0 && (
+                    <View style={styles.genreRow}>
+                      {generos.map((genre) => {
+                        const color = getGenreColor(genre);
+                        return (
+                          <View key={`${show.id}-${genre}`} style={[styles.genreBadge, { borderColor: color }]}>
+                            <Text style={[styles.genreBadgeText, { color }]}>{genre}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
                 <FontAwesome5 name="chevron-right" size={12} color={DS.textSecondary} />
               </TouchableOpacity>
@@ -198,4 +212,7 @@ const styles = StyleSheet.create({
   showSub: { fontFamily: "Montserrat-Regular", fontSize: 11 },
   confirmedBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   confirmedBadgeText: { fontFamily: "Montserrat-Bold", fontSize: 9, letterSpacing: 0.3 },
+  genreRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
+  genreBadge: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  genreBadgeText: { fontFamily: "Montserrat-Bold", fontSize: 9, letterSpacing: 0.5 },
 });

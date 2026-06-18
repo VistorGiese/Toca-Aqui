@@ -20,6 +20,8 @@ export interface Booking {
   horario_inicio: string;
   horario_fim: string;
   status: BookingStatus;
+  cache_minimo?: number;
+  cache_maximo?: number;
   preco_ingresso_inteira?: number;
   nome_estabelecimento?: string;
   banda?: {

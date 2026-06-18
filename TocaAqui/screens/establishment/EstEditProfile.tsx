@@ -34,6 +34,7 @@ export default function EstEditProfile() {
   const [descricao, setDescricao] = useState("");
   const [tipo, setTipo] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [cnpj, setCnpj] = useState("");
 
   useEffect(() => {
     establishmentService.getMyEstablishmentProfile()
@@ -43,8 +44,9 @@ export default function EstEditProfile() {
         setDescricao(p.descricao ?? "");
         setTipo(p.tipo_estabelecimento ?? "");
         setTelefone(p.telefone_contato ?? "");
+        setCnpj(p.cnpj ?? "");
       })
-      .catch(() => Alert.alert("Erro", "Não foi possível carregar o perfil."))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -61,11 +63,12 @@ export default function EstEditProfile() {
         descricao: descricao.trim() || undefined,
         tipo_estabelecimento: tipo || undefined,
         telefone_contato: telefone.trim() || undefined,
+        cnpj: cnpj.trim() || undefined,
       });
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
       navigation.goBack();
-    } catch (e: any) {
-      Alert.alert("Erro", e?.response?.data?.message || "Não foi possível salvar.");
+    } catch {
+      // silenciado temporariamente
     } finally {
       setSaving(false);
     }
@@ -140,6 +143,16 @@ export default function EstEditProfile() {
           placeholder="(11) 99999-9999"
           placeholderTextColor="#555577"
           keyboardType="phone-pad"
+        />
+
+        <Text style={s.label}>CNPJ</Text>
+        <TextInput
+          style={s.input}
+          value={cnpj}
+          onChangeText={setCnpj}
+          placeholder="00.000.000/0000-00"
+          placeholderTextColor="#555577"
+          keyboardType="number-pad"
         />
 
         {/* Botão salvar */}

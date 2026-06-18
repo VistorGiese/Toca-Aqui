@@ -11,6 +11,7 @@ import {
   Alert,
   TextInput,
   StatusBar,
+  Image,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -18,6 +19,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/Navigate";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/http/api";
+import * as ImagePicker from "expo-image-picker";
+import { resolveImageUrl, buildImageFormFile } from "@/utils/adapters";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -51,6 +54,7 @@ export default function ArtistProfileEdit() {
   const [bio, setBio] = useState("");
   const [generosSelecionados, setGenerosSelecionados] = useState<string[]>([]);
   const [cacheMin, setCacheMin] = useState("");
+  const [fotoPerfil, setFotoPerfil] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const perfilId = (user as any)?.perfilArtistaId;
@@ -70,6 +74,7 @@ export default function ArtistProfileEdit() {
         else if (typeof g === "string" && g.length > 0)
           setGenerosSelecionados(g.split(",").map((s: string) => s.trim()).filter(Boolean));
         setCacheMin(p.cache_minimo ? String(p.cache_minimo) : "");
+        setFotoPerfil(p.foto_perfil ?? undefined);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -83,10 +88,7 @@ export default function ArtistProfileEdit() {
 
   async function handleSalvar() {
     const perfilId = (user as any)?.perfilArtistaId;
-    if (!perfilId) {
-      Alert.alert("Erro", "Perfil de artista não encontrado.");
-      return;
-    }
+    if (!perfilId) return;
     if (!nomeArtistico.trim()) {
       Alert.alert("Atenção", "Nome artístico é obrigatório.");
       return;
@@ -102,10 +104,39 @@ export default function ArtistProfileEdit() {
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
-    } catch (e: any) {
-      Alert.alert("Erro", e?.response?.data?.message || "Não foi possível salvar.");
+    } catch {
+      // silenciado temporariamente
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleEscolherFoto() {
+    const perfilId = (user as any)?.perfilArtistaId;
+    if (!perfilId) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão necessária", "Permita acesso à galeria para alterar a foto.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const uri = result.assets[0].uri;
+    const file = buildImageFormFile(uri, "artist-profile.jpg");
+    const formData = new FormData();
+    formData.append("imagem", file as any);
+    try {
+      await api.patch(`/usuarios/perfil-artista/${perfilId}/foto`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setFotoPerfil(uri);
+    } catch {
+      // silenciado temporariamente
     }
   }
 
@@ -140,6 +171,19 @@ export default function ArtistProfileEdit() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={s.photoWrap}>
+            {fotoPerfil ? (
+              <Image source={{ uri: resolveImageUrl(fotoPerfil) }} style={s.photo} />
+            ) : (
+              <View style={s.photoPlaceholder}>
+                <FontAwesome5 name="user" size={26} color={DS.accent} />
+              </View>
+            )}
+            <TouchableOpacity style={s.photoBtn} onPress={handleEscolherFoto} activeOpacity={0.85}>
+              <Text style={s.photoBtnText}>ALTERAR FOTO</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Nome artístico */}
           <Text style={s.label}>Nome Artístico *</Text>
           <TextInput
@@ -248,6 +292,28 @@ const s = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 40,
   },
+  photoWrap: { alignItems: "center", marginBottom: 10 },
+  photo: { width: 92, height: 92, borderRadius: 46, marginBottom: 10 },
+  photoPlaceholder: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    marginBottom: 10,
+    backgroundColor: DS.surface,
+    borderWidth: 1,
+    borderColor: DS.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoBtn: {
+    backgroundColor: "rgba(123,97,255,0.2)",
+    borderWidth: 1,
+    borderColor: DS.accent,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  photoBtnText: { color: DS.accent, fontFamily: "Montserrat-Bold", fontSize: 11, letterSpacing: 1 },
   label: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: 13,

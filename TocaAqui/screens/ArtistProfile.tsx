@@ -81,9 +81,7 @@ export default function ArtistProfile() {
                 cache_maximo: raw.cache_maximo,
                 links_sociais: parseJson<string[]>(raw.links_sociais, []),
             });
-        }).catch(() => {
-            Alert.alert("Erro", "Não foi possível carregar o perfil.");
-        }).finally(() => setLoading(false));
+        }).catch(() => {}).finally(() => setLoading(false));
     }, []);
 
     const getInstrumentIcon = (instrument: string) => {

@@ -5,6 +5,7 @@ export interface ArtistaPublico {
   nome_artistico: string;
   biografia?: string;
   foto_perfil?: string;
+  press_kit?: string[] | string;
   generos?: string[];
   instrumentos?: string[];
   total_seguidores: number;
@@ -34,8 +35,8 @@ export interface Preferencias {
 
 export const artistaPublicoService = {
   async getPerfilPublico(artistaId: number): Promise<ArtistaPublico> {
-    const response = await api.get<{ artista: ArtistaPublico }>(`/artistas/${artistaId}/publico`);
-    return response.data.artista;
+    const response = await api.get<{ perfil: ArtistaPublico }>(`/artistas/${artistaId}/publico`);
+    return response.data.perfil;
   },
 
   async seguirOuDesseguir(artistaId: number): Promise<{ seguindo: boolean; total_seguidores: number }> {
