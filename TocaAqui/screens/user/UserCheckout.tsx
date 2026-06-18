@@ -29,6 +29,7 @@ import {
   getTicketBaseUnitPrice,
   getTicketHalfUnitPrice,
 } from "@/utils/ticketPricing";
+import FieldError from "@/components/ui/FieldError";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserCheckout">;
 
@@ -75,6 +76,7 @@ export default function UserCheckout({ route, navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   const { control, handleSubmit } = useForm<FormData>({
+    mode: "onTouched",
     defaultValues: {
       nome: "",
       cpf: "",
@@ -283,17 +285,18 @@ export default function UserCheckout({ route, navigation }: Props) {
           <Controller
             control={control}
             name="nome"
-            rules={{ required: true }}
-            render={({ field: { onChange, value } }) => (
+            rules={{ required: "Nome completo é obrigatório" }}
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>NOME COMPLETO</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, error && styles.inputError]}
                   placeholder="Seu nome completo"
                   placeholderTextColor="#555577"
                   value={value}
                   onChangeText={onChange}
                 />
+                <FieldError message={error?.message} />
               </View>
             )}
           />
@@ -301,18 +304,22 @@ export default function UserCheckout({ route, navigation }: Props) {
           <Controller
             control={control}
             name="cpf"
-            rules={{ required: true }}
-            render={({ field: { onChange, value } }) => (
+            rules={{
+              required: "CPF é obrigatório",
+              validate: (v) => v.replace(/\D/g, "").length === 11 || "CPF inválido",
+            }}
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>CPF</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, error && styles.inputError]}
                   placeholder="000.000.000-00"
                   placeholderTextColor="#555577"
                   value={value}
                   onChangeText={(text) => onChange(formatCpf(text))}
                   keyboardType="numeric"
                 />
+                <FieldError message={error?.message} />
               </View>
             )}
           />
@@ -662,6 +669,9 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Regular",
     fontSize: 14,
     color: "#FFFFFF",
+  },
+  inputError: {
+    borderColor: "#EF4444",
   },
   cardRow: { flexDirection: "row" },
   payTabs: {

@@ -8,6 +8,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
+import FieldError from "@/components/ui/FieldError";
 
 const DS = {
   bg: "#09090F", card: "#13101F", surface: "#0F0B1E",
@@ -46,6 +47,7 @@ export default function EstRateArtist() {
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
   const [comentario, setComentario] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState("");
 
   const toggleChip = (label: string) => {
     setSelectedChips((prev) =>
@@ -59,9 +61,10 @@ export default function EstRateArtist() {
 
   const handleEnviar = async () => {
     if (rating === 0) {
-      Alert.alert("Atenção", "Selecione uma avaliação em estrelas.");
+      setRatingError("Selecione uma avaliação em estrelas");
       return;
     }
+    setRatingError("");
     setSubmitting(true);
     try {
       await establishmentService.rateArtist(contractId, {
@@ -104,7 +107,7 @@ export default function EstRateArtist() {
         {/* Estrelas */}
         <View style={s.starsRow}>
           {Array.from({ length: 5 }).map((_, i) => (
-            <TouchableOpacity key={i} onPress={() => setRating(i + 1)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity key={i} onPress={() => { setRatingError(""); setRating(i + 1); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <FontAwesome5
                 name="star"
                 size={40}
@@ -114,6 +117,7 @@ export default function EstRateArtist() {
             </TouchableOpacity>
           ))}
         </View>
+        <FieldError message={ratingError} />
 
         {rating > 0 && (
           <Text style={s.ratingLabel}>{RATING_LABELS[rating]}</Text>

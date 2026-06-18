@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors } from "@/utils/colors";
 import Input from "@/components/ui/Input";
+import FieldError from "@/components/ui/FieldError";
 import OnboardingEstShell from "./components/OnboardingEstShell";
 import LocationPickerModal from "./components/LocationPickerModal";
 import WeekScheduleEditor from "./components/WeekScheduleEditor";
@@ -26,7 +27,11 @@ export default function OnboardingEstFuncionamentoScreen() {
 
         <Text style={s.fieldLabel}>ESTADO</Text>
         <TouchableOpacity
-          style={[s.selector, !vm.draft.estado && s.selectorEmpty]}
+          style={[
+            s.selector,
+            !vm.draft.estado && s.selectorEmpty,
+            vm.errors.estado && s.selectorError,
+          ]}
           onPress={() => vm.openPicker("estado")}
           activeOpacity={0.75}
         >
@@ -41,6 +46,7 @@ export default function OnboardingEstFuncionamentoScreen() {
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textMuted} />
           )}
         </TouchableOpacity>
+        <FieldError message={vm.errors.estado} />
 
         <Text style={[s.fieldLabel, { marginTop: 12 }]}>CIDADE</Text>
         <TouchableOpacity
@@ -48,6 +54,7 @@ export default function OnboardingEstFuncionamentoScreen() {
             s.selector,
             !vm.draft.cidade && s.selectorEmpty,
             !vm.draft.estado && s.selectorDisabled,
+            vm.errors.cidade && s.selectorError,
           ]}
           onPress={() => vm.draft.estado && vm.openPicker("cidade")}
           activeOpacity={vm.draft.estado ? 0.75 : 1}
@@ -63,6 +70,7 @@ export default function OnboardingEstFuncionamentoScreen() {
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textMuted} />
           )}
         </TouchableOpacity>
+        <FieldError message={vm.errors.cidade} />
 
         <View style={[s.row, { marginTop: 12 }]}>
           <View style={{ flex: 1 }}>
@@ -71,6 +79,7 @@ export default function OnboardingEstFuncionamentoScreen() {
               placeholder="Ex: Av. Paulista"
               value={vm.draft.endereco}
               onChangeText={vm.setEndereco}
+              error={vm.errors.endereco}
               containerStyle={{ width: "100%" }}
             />
           </View>
@@ -81,6 +90,7 @@ export default function OnboardingEstFuncionamentoScreen() {
               value={vm.draft.numero}
               onChangeText={vm.setNumero}
               keyboardType="numeric"
+              error={vm.errors.numero}
               containerStyle={{ width: "100%" }}
             />
           </View>

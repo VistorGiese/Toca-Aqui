@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors } from "@/utils/colors";
 import OnboardingEstShell from "./components/OnboardingEstShell";
+import FieldError from "@/components/ui/FieldError";
 import PhotoGalleryEditor from "./components/PhotoGalleryEditor";
 import { onboardingStyles as s } from "./styles";
 import { useOnboardingEstApresentacao } from "./hooks/useOnboardingEstApresentacao";
@@ -29,7 +30,7 @@ export default function OnboardingEstApresentacaoScreen() {
       }
     >
       <Text style={s.sectionLabel}>SOBRE NOSSO ESPAÇO</Text>
-      <View style={s.bioContainer}>
+      <View style={[s.bioContainer, vm.bioError ? s.bioContainerError : null]}>
         <TextInput
           style={s.bioInput}
           placeholder="Descreva a acústica, a vibração e o que torna seu palco único..."
@@ -41,6 +42,8 @@ export default function OnboardingEstApresentacaoScreen() {
         />
         <Text style={s.bioCounter}>{vm.bio.length} / 1000</Text>
       </View>
+      <FieldError message={vm.bioError} />
+      <FieldError message={vm.submitError} />
 
       <Text style={[s.sectionLabel, { marginTop: 20 }]}>GALERIA DE FOTOS</Text>
       <PhotoGalleryEditor photos={vm.fotos} onAdd={vm.addPhotos} onRemove={vm.removePhoto} />

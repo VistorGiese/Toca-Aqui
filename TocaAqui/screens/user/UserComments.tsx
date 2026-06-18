@@ -17,6 +17,7 @@ import { UserStackParamList } from "@/navigation/UserNavigator";
 import { comentarioService, Comentario } from "@/http/comentarioService";
 import { resolveImageUrl } from "@/utils/adapters";
 import { useAuth } from "@/contexts/AuthContext";
+import FieldError from "@/components/ui/FieldError";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserComments">;
 
@@ -72,6 +73,7 @@ export default function UserComments({ route, navigation }: Props) {
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
+  const [commentError, setCommentError] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -94,7 +96,11 @@ export default function UserComments({ route, navigation }: Props) {
   }, [loadComentarios]);
 
   async function handlePublish() {
-    if (newComment.trim().length === 0) return;
+    if (newComment.trim().length === 0) {
+      setCommentError("Comentário é obrigatório");
+      return;
+    }
+    setCommentError("");
     try {
       setPublishing(true);
       const criado = await comentarioService.criarComentario({
@@ -151,25 +157,29 @@ export default function UserComments({ route, navigation }: Props) {
 
       <Text style={styles.showSubtitle} numberOfLines={1}>{showTitle}</Text>
 
-      <View style={styles.inputCard}>
+      <View style={[styles.inputCard, commentError ? styles.inputCardError : null]}>
         <TextInput
           style={styles.commentInput}
           placeholder="Compartilhe sua experiência..."
           placeholderTextColor="#555577"
           value={newComment}
-          onChangeText={(t) => setNewComment(t.slice(0, MAX_CHARS))}
+          onChangeText={(t) => {
+            setCommentError("");
+            setNewComment(t.slice(0, MAX_CHARS));
+          }}
           multiline
           numberOfLines={3}
           textAlignVertical="top"
         />
+        <FieldError message={commentError} />
         <View style={styles.inputFooter}>
           <Text style={styles.charCounter}>
             {newComment.length}/{MAX_CHARS}
           </Text>
           <TouchableOpacity
-            style={[styles.publishBtn, (newComment.trim().length === 0 || publishing) && styles.publishBtnDisabled]}
+            style={[styles.publishBtn, publishing && styles.publishBtnDisabled]}
             onPress={handlePublish}
-            disabled={newComment.trim().length === 0 || publishing}
+            disabled={publishing}
           >
             <Text style={styles.publishBtnText}>PUBLICAR</Text>
           </TouchableOpacity>
@@ -269,6 +279,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.08)",
     padding: 14,
     marginBottom: 16,
+  },
+  inputCardError: {
+    borderColor: "#EF4444",
   },
   commentInput: {
     fontFamily: "Montserrat-Regular",

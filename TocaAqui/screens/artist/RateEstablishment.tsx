@@ -14,6 +14,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/Navigate";
 import { contractService } from "@/http/contractService";
+import FieldError from "@/components/ui/FieldError";
 
 const DS = {
   bg: "#09090F",
@@ -63,6 +64,7 @@ export default function RateEstablishment() {
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
   const [comentario, setComentario] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState("");
 
   const toggleChip = (label: string) => {
     setSelectedChips((prev) =>
@@ -72,9 +74,10 @@ export default function RateEstablishment() {
 
   const handleEnviar = async () => {
     if (rating === 0) {
-      Alert.alert("Atenção", "Selecione uma avaliação em estrelas.");
+      setRatingError("Selecione uma avaliação em estrelas");
       return;
     }
+    setRatingError("");
 
     setSubmitting(true);
     try {
@@ -125,7 +128,10 @@ export default function RateEstablishment() {
           {Array.from({ length: 5 }).map((_, i) => (
             <TouchableOpacity
               key={i}
-              onPress={() => setRating(i + 1)}
+              onPress={() => {
+                setRatingError("");
+                setRating(i + 1);
+              }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <FontAwesome5
@@ -137,6 +143,7 @@ export default function RateEstablishment() {
             </TouchableOpacity>
           ))}
         </View>
+        <FieldError message={ratingError} />
 
         {/* Rating Label */}
         {rating > 0 && (

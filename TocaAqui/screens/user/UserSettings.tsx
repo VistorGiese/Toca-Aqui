@@ -19,6 +19,7 @@ import { UserStackParamList } from "@/navigation/UserNavigator";
 import { useAuth } from "@/contexts/AuthContext";
 import { userService } from "@/http/userService";
 import { preferenciaService } from "@/http/artistaPublicoService";
+import FieldError from "@/components/ui/FieldError";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserSettings">;
 
@@ -82,17 +83,23 @@ export default function UserSettings({ navigation }: Props) {
   const [novoEmail, setNovoEmail] = useState("");
   const [senhaEmail, setSenhaEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
+  const [emailErrors, setEmailErrors] = useState<{ novoEmail?: string; senhaEmail?: string }>({});
 
   // Excluir conta
   const [deleteModal, setDeleteModal] = useState(false);
   const [senhaDelete, setSenhaDelete] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [senhaDeleteError, setSenhaDeleteError] = useState("");
 
   async function handleAlterarEmail() {
-    if (!novoEmail.trim() || !senhaEmail) {
-      Alert.alert("Atenção", "Preencha o novo email e sua senha.");
+    const nextErrors: typeof emailErrors = {};
+    if (!novoEmail.trim()) nextErrors.novoEmail = "Novo e-mail é obrigatório";
+    if (!senhaEmail) nextErrors.senhaEmail = "Senha é obrigatória";
+    if (Object.keys(nextErrors).length > 0) {
+      setEmailErrors(nextErrors);
       return;
     }
+    setEmailErrors({});
     setEmailLoading(true);
     try {
       await userService.alterarEmail(novoEmail.trim(), senhaEmail);
@@ -130,9 +137,10 @@ export default function UserSettings({ navigation }: Props) {
 
   async function handleExcluirConta() {
     if (!senhaDelete) {
-      Alert.alert("Atenção", "Digite sua senha para confirmar.");
+      setSenhaDeleteError("Senha é obrigatória");
       return;
     }
+    setSenhaDeleteError("");
     setDeleteLoading(true);
     try {
       await userService.excluirConta(senhaDelete);
@@ -466,23 +474,31 @@ export default function UserSettings({ navigation }: Props) {
           </View>
           <Text style={styles.modalLabel}>Novo e-mail</Text>
           <TextInput
-            style={styles.modalInput}
+            style={[styles.modalInput, emailErrors.novoEmail && styles.modalInputError]}
             placeholder="novo@email.com"
             placeholderTextColor="#555577"
             value={novoEmail}
-            onChangeText={setNovoEmail}
+            onChangeText={(v) => {
+              setEmailErrors((e) => ({ ...e, novoEmail: undefined }));
+              setNovoEmail(v);
+            }}
             autoCapitalize="none"
             keyboardType="email-address"
           />
+          <FieldError message={emailErrors.novoEmail} />
           <Text style={styles.modalLabel}>Confirme sua senha</Text>
           <TextInput
-            style={styles.modalInput}
+            style={[styles.modalInput, emailErrors.senhaEmail && styles.modalInputError]}
             placeholder="••••••••"
             placeholderTextColor="#555577"
             value={senhaEmail}
-            onChangeText={setSenhaEmail}
+            onChangeText={(v) => {
+              setEmailErrors((e) => ({ ...e, senhaEmail: undefined }));
+              setSenhaEmail(v);
+            }}
             secureTextEntry
           />
+          <FieldError message={emailErrors.senhaEmail} />
           <TouchableOpacity
             style={[styles.modalBtn, emailLoading && { opacity: 0.7 }]}
             onPress={handleAlterarEmail}
@@ -519,13 +535,17 @@ export default function UserSettings({ navigation }: Props) {
           </Text>
           <Text style={styles.modalLabel}>Senha</Text>
           <TextInput
-            style={styles.modalInput}
+            style={[styles.modalInput, senhaDeleteError && styles.modalInputError]}
             placeholder="••••••••"
             placeholderTextColor="#555577"
             value={senhaDelete}
-            onChangeText={setSenhaDelete}
+            onChangeText={(v) => {
+              setSenhaDeleteError("");
+              setSenhaDelete(v);
+            }}
             secureTextEntry
           />
+          <FieldError message={senhaDeleteError} />
           <TouchableOpacity
             style={[styles.modalBtn, styles.modalBtnDanger, deleteLoading && { opacity: 0.7 }]}
             onPress={handleExcluirConta}
@@ -813,7 +833,10 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: "Montserrat-Regular",
     fontSize: 14,
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+  modalInputError: {
+    borderColor: "#EF4444",
   },
   modalBtn: {
     backgroundColor: "#A78BFA",

@@ -2,6 +2,7 @@ import React from "react";
 import Input from "@/components/ui/Input";
 import OnboardingEstShell from "./components/OnboardingEstShell";
 import EstGenreChips from "./components/EstGenreChips";
+import FieldError from "@/components/ui/FieldError";
 import SoundStructureSection from "./components/SoundStructureSection";
 import { useOnboardingEstPerfil } from "./hooks/useOnboardingEstPerfil";
 
@@ -19,6 +20,7 @@ export default function OnboardingEstPerfilScreen() {
       secondaryAction={{ label: "VOLTAR", onPress: vm.goBack }}
     >
       <EstGenreChips selected={vm.generos} onToggle={vm.toggleGenero} />
+      <FieldError message={vm.generosError} />
 
       <SoundStructureSection
         enabled={vm.temEstrutura}

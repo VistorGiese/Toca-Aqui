@@ -125,6 +125,12 @@ export const onboardingStyles = StyleSheet.create({
   selectorEmpty: {
     borderColor: colors.inputBorder,
   },
+  selectorError: {
+    borderColor: colors.error,
+  },
+  bioContainerError: {
+    borderColor: colors.error,
+  },
   selectorText: {
     fontFamily: "Montserrat-Regular",
     fontSize: 14,

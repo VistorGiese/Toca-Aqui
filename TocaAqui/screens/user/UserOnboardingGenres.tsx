@@ -11,6 +11,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/Navigate";
 import { preferenciaService } from "@/http/artistaPublicoService";
+import FieldError from "@/components/ui/FieldError";
 
 type Props = NativeStackScreenProps<RootStackParamList, "UserOnboardingGenres">;
 
@@ -29,15 +30,21 @@ const GENRES = [
 
 export default function UserOnboardingGenres({ navigation }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
+  const [generosError, setGenerosError] = useState("");
 
   function toggleGenre(key: string) {
+    setGenerosError("");
     setSelected((prev) =>
       prev.includes(key) ? prev.filter((g) => g !== key) : [...prev, key]
     );
   }
 
   async function handleNext() {
-    if (selected.length < 2) return;
+    if (selected.length < 2) {
+      setGenerosError("Selecione pelo menos 2 gêneros");
+      return;
+    }
+    setGenerosError("");
     try {
       await preferenciaService.salvar({ generos_favoritos: selected });
     } catch {}
@@ -119,10 +126,10 @@ export default function UserOnboardingGenres({ navigation }: Props) {
 
       {/* Next Button */}
       <View style={styles.footer}>
+        <FieldError message={generosError} />
         <TouchableOpacity
-          style={[styles.nextBtn, selected.length < 2 && styles.nextBtnDisabled]}
+          style={styles.nextBtn}
           onPress={handleNext}
-          disabled={selected.length < 2}
           activeOpacity={0.8}
         >
           <Text style={styles.nextBtnText}>PRÓXIMO</Text>

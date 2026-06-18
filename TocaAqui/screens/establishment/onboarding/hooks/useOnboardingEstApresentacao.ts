@@ -19,10 +19,15 @@ export function useOnboardingEstApresentacao() {
   const { draft, updateDraft, resetDraft } = useEstablishmentOnboarding();
   const { refreshPaginas, token } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [bioError, setBioError] = useState("");
 
   const setBio = useCallback(
     (bio: string) => {
-      if (bio.length <= 1000) updateDraft({ bio });
+      if (bio.length <= 1000) {
+        setBioError("");
+        updateDraft({ bio });
+      }
     },
     [updateDraft]
   );
@@ -58,9 +63,10 @@ export function useOnboardingEstApresentacao() {
 
   const submit = useCallback(async () => {
     if (!draft.bio.trim()) {
-      Alert.alert("Atenção", "Escreva uma descrição do seu espaço.");
+      setBioError("Descrição é obrigatória");
       return;
     }
+    setBioError("");
 
     const storedToken = token ?? (await AsyncStorage.getItem("token"));
     if (!storedToken) {
@@ -71,15 +77,16 @@ export function useOnboardingEstApresentacao() {
     }
 
     const telefone = sanitizePhone(draft.telefone);
-      const cnpj = sanitizeCnpj(draft.cnpj);
+    const cnpj = sanitizeCnpj(draft.cnpj);
     if (telefone.length < 8) {
-      Alert.alert("Atenção", "Informe um telefone válido no passo Identidade (mínimo 8 dígitos).");
+      setSubmitError("Telefone inválido no passo Identidade (mínimo 8 dígitos)");
       return;
     }
-      if (cnpj && cnpj.length !== 14) {
-        Alert.alert("Atenção", "Informe um CNPJ válido no passo Identidade.");
-        return;
-      }
+    if (cnpj && cnpj.length !== 14) {
+      setSubmitError("CNPJ inválido no passo Identidade");
+      return;
+    }
+    setSubmitError("");
 
     setLoading(true);
     try {
@@ -140,6 +147,8 @@ export function useOnboardingEstApresentacao() {
 
   return {
     bio: draft.bio,
+    bioError,
+    submitError,
     fotos: draft.fotosUris,
     loading,
     setBio,

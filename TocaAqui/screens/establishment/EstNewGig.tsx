@@ -13,6 +13,7 @@ import { establishmentService } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
 import { isValidHHMM, normalizeDateToISO, normalizeTimeToHHMM } from "@/utils/datetime";
 import { resolveImageUrl } from "@/utils/adapters";
+import FieldError from "@/components/ui/FieldError";
 
 const DS = {
   bg: "#09090F", surface: "#161028", card: "#1E1635", border: "#2D2545",
@@ -54,6 +55,21 @@ export default function EstNewGig() {
   const [generos, setGeneros] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<{
+    titulo?: string;
+    data?: string;
+    inicio?: string;
+    fim?: string;
+  }>({});
+
+  const clearError = (field: keyof typeof errors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
   const loadGig = useCallback(async () => {
     if (!gigId) return;
@@ -94,14 +110,24 @@ export default function EstNewGig() {
     const inicioNormalizado = normalizeTimeToHHMM(inicio);
     const fimNormalizado = normalizeTimeToHHMM(fim);
 
-    if (!titulo.trim()) { Alert.alert("Atenção", "Informe o título do evento."); return; }
-    if (!dataNormalizada) { Alert.alert("Atenção", "Selecione uma data válida para o evento."); return; }
-    if (!isValidHHMM(inicioNormalizado)) { Alert.alert("Atenção", "Informe o horário de início no formato HH:MM."); return; }
-    if (!isValidHHMM(fimNormalizado)) { Alert.alert("Atenção", "Informe o horário de fim no formato HH:MM."); return; }
-    if (inicioNormalizado === fimNormalizado) {
-      Alert.alert("Atenção", "O horário de início deve ser diferente do horário de fim.");
+    const nextErrors: typeof errors = {};
+    if (!titulo.trim()) nextErrors.titulo = "Título do evento é obrigatório";
+    if (!dataNormalizada) nextErrors.data = "Data do evento é obrigatória";
+    if (!isValidHHMM(inicioNormalizado)) nextErrors.inicio = "Horário de início inválido (HH:MM)";
+    if (!isValidHHMM(fimNormalizado)) nextErrors.fim = "Horário de fim inválido (HH:MM)";
+    if (
+      isValidHHMM(inicioNormalizado) &&
+      isValidHHMM(fimNormalizado) &&
+      inicioNormalizado === fimNormalizado
+    ) {
+      nextErrors.inicio = "Início e fim devem ser diferentes";
+      nextErrors.fim = "Início e fim devem ser diferentes";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
+    setErrors({});
 
     setSaving(true);
     try {
@@ -189,12 +215,16 @@ export default function EstNewGig() {
         {/* Título */}
         <Text style={s.fieldLabel}>TÍTULO DO EVENTO</Text>
         <TextInput
-          style={s.input}
+          style={[s.input, errors.titulo && s.inputError]}
           placeholder="Ex: Festival de Inverno 2024"
           placeholderTextColor={DS.border}
           value={titulo}
-          onChangeText={setTitulo}
+          onChangeText={(v) => {
+            clearError("titulo");
+            setTitulo(v);
+          }}
         />
+        <FieldError message={errors.titulo} />
 
         <Text style={s.fieldLabel}>CAPA DO EVENTO</Text>
         <TouchableOpacity style={s.coverPicker} onPress={handleSelectCover} activeOpacity={0.85}>
@@ -210,39 +240,55 @@ export default function EstNewGig() {
 
         {/* Data — picker */}
         <Text style={s.fieldLabel}>DATA DO EVENTO</Text>
-        <TouchableOpacity style={s.dateBtn} onPress={() => setShowCalendar(true)} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[s.dateBtn, errors.data && s.inputError]}
+          onPress={() => {
+            clearError("data");
+            setShowCalendar(true);
+          }}
+          activeOpacity={0.8}
+        >
           <FontAwesome5 name="calendar-alt" size={15} color={DS.accent} />
           <Text style={[s.dateBtnText, !dataISO && { color: DS.border }]}>
             {dataISO ? isoToDisplay(dataISO) : "Selecionar data"}
           </Text>
           <FontAwesome5 name="chevron-down" size={12} color={DS.textSecondary} />
         </TouchableOpacity>
+        <FieldError message={errors.data} />
 
         {/* Horários */}
         <View style={s.row}>
           <View style={{ flex: 1 }}>
             <Text style={s.fieldLabel}>INÍCIO</Text>
             <TextInput
-              style={s.input}
+              style={[s.input, errors.inicio && s.inputError]}
               placeholder="19:00"
               placeholderTextColor={DS.border}
               value={inicio}
-              onChangeText={v => setInicio(maskTime(v))}
+              onChangeText={(v) => {
+                clearError("inicio");
+                setInicio(maskTime(v));
+              }}
               keyboardType="numeric"
               maxLength={5}
             />
+            <FieldError message={errors.inicio} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.fieldLabel}>FIM</Text>
             <TextInput
-              style={s.input}
+              style={[s.input, errors.fim && s.inputError]}
               placeholder="23:00"
               placeholderTextColor={DS.border}
               value={fim}
-              onChangeText={v => setFim(maskTime(v))}
+              onChangeText={(v) => {
+                clearError("fim");
+                setFim(maskTime(v));
+              }}
               keyboardType="numeric"
               maxLength={5}
             />
+            <FieldError message={errors.fim} />
           </View>
         </View>
 
@@ -365,6 +411,7 @@ export default function EstNewGig() {
             <Calendar
               minDate={today}
               onDayPress={day => {
+                clearError("data");
                 setDataISO(day.dateString);
                 setShowCalendar(false);
               }}
@@ -399,6 +446,7 @@ const s = StyleSheet.create({
   fieldLabel: { fontFamily: "Montserrat-SemiBold", fontSize: 11, color: DS.textSecondary, letterSpacing: 2, marginBottom: 8, marginTop: 16 },
   fieldHint: { fontFamily: "Montserrat-Regular", fontSize: 11, color: DS.textSecondary, marginTop: 6, lineHeight: 16 },
   input: { backgroundColor: DS.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, color: DS.textPrimary, fontFamily: "Montserrat-Regular", fontSize: 14, borderWidth: 1, borderColor: DS.border },
+  inputError: { borderColor: DS.danger },
   dateBtn: { flexDirection: "row", alignItems: "center", backgroundColor: DS.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: DS.border, gap: 10 },
   dateBtnText: { flex: 1, fontFamily: "Montserrat-Regular", fontSize: 14, color: DS.textPrimary },
   row: { flexDirection: "row", gap: 12 },

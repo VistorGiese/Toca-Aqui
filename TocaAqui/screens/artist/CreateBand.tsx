@@ -21,6 +21,7 @@ import { colors, genreColors, getGenreColor } from "@/utils/colors";
 import { bandService } from "@/http/bandService";
 import { artistService, ArtistSearchResult } from "@/http/artistService";
 import { useAuth } from "@/contexts/AuthContext";
+import FieldError from "@/components/ui/FieldError";
 import { showApiError } from "@/utils/errorHandler";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -52,6 +53,7 @@ export default function CreateBand() {
   const { user, signOut } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [generosError, setGenerosError] = useState("");
 
   // Member search state
   const [memberSearch, setMemberSearch] = useState("");
@@ -103,6 +105,7 @@ export default function CreateBand() {
   });
 
   const toggleGenre = (genre: string) => {
+    setGenerosError("");
     setSelectedGenres((prev) =>
       prev.includes(genre)
         ? prev.filter((g) => g !== genre)
@@ -112,8 +115,10 @@ export default function CreateBand() {
 
   async function onSubmit(data: CreateBandForm) {
     if (selectedGenres.length === 0) {
+      setGenerosError("Selecione pelo menos um gênero");
       return;
     }
+    setGenerosError("");
 
     setIsSubmitting(true);
     try {
@@ -259,10 +264,8 @@ export default function CreateBand() {
           {/* Genre label */}
           <View style={styles.genreLabelRow}>
             <Text style={styles.genreLabel}>Gêneros musicais</Text>
-            {selectedGenres.length === 0 && (
-              <Text style={styles.genreRequired}>*Selecione ao menos um</Text>
-            )}
           </View>
+          <FieldError message={generosError} />
 
           <View style={styles.genreContainer}>
             {AVAILABLE_GENRES.map((genre) => {
