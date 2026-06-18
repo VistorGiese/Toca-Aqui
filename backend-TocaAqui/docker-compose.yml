@@ -27,13 +27,13 @@ services:
       - FRONTEND_URL=${FRONTEND_URL}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - LOKI_URL=http://loki:3100
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-      elasticsearch:
+      loki:
         condition: service_healthy
     networks:
       - toca-aqui-network
@@ -74,33 +74,34 @@ services:
     command: redis-server --appendonly yes
     restart: unless-stopped
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+  loki:
+    image: grafana/loki:3.3.2
     ports:
-      - "9200:9200"
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+      - loki_data:/loki
     networks:
       - toca-aqui-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
-      interval: 20s
-      timeout: 10s
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
       retries: 10
     restart: unless-stopped
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
+  grafana:
+    image: grafana/grafana:10.4.3
     ports:
-      - "5601:5601"
+      - "3001:3000"
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
-      elasticsearch:
+      loki:
         condition: service_healthy
     networks:
       - toca-aqui-network
@@ -124,7 +125,9 @@ volumes:
     driver: local
   redis_data:
     driver: local
-  elasticsearch_data:
+  loki_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:

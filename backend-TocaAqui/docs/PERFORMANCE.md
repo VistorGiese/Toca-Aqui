@@ -43,4 +43,4 @@ Invalidação via `redisService.invalidatePattern('contratos:*')` após mutaçõ
 - **Rate limiter** via Redis implementado em `src/middleware/rateLimiter.ts` — protege contra burst de requisições
 - **Cache distribuído** com Redis — suporta múltiplas instâncias do app (horizontal scaling)
 - **Nginx** como reverse proxy e load balancer — já configurado no `docker-compose.yml`
-- **Elasticsearch** para logs centralizados — permite análise de performance em produção via Kibana
+- **Loki** para logs centralizados — permite análise de performance em produção via Grafana

@@ -35,7 +35,7 @@ export class ContractService {
 
     // Verificar se já existe contrato para esta aplicação
     const existente = await ContractModel.findOne({ where: { aplicacao_id: aplicacaoId } });
-    if (existente) return existente;
+    if (existente) throw new AppError('Já existe contrato para esta candidatura', 400);
 
     // Carregar evento
     const evento = await BookingModel.findByPk(aplicacao.evento_id);

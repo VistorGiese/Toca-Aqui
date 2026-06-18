@@ -83,6 +83,19 @@ export function makeContractData(
   };
 }
 
+export function makeBandApplicationData(
+  evento_id: number,
+  overrides: Record<string, unknown> = {}
+) {
+  return {
+    evento_id,
+    mensagem: 'Proposta de aplicação',
+    valor_proposto: 1500,
+    status: 'pendente',
+    ...overrides, // usar para setar artista_id e/ou banda_id
+  };
+}
+
 export function makeBookingData(
   perfil_estabelecimento_id: number,
   overrides: Record<string, unknown> = {}
