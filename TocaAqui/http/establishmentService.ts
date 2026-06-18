@@ -1,5 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
+import {
+  ArtistProfileSnapshot,
+  mergeArtistSnapshots,
+  normalizeArtistProfileSnapshot,
+} from "@/utils/artistProfile";
 
 export interface Gig {
   id: number;
@@ -64,6 +69,7 @@ export interface Candidatura {
   shows_realizados?: number;
   favorited?: boolean;
   valor_proposto?: number;
+  profileSnapshot?: ArtistProfileSnapshot;
 }
 
 export interface GigApplicationsResult {
@@ -97,10 +103,29 @@ function normalizeCandidatura(raw: any): Candidatura {
     ? raw.Band.generos_musicais
     : [];
 
+  const artistProfileRaw = raw?.ArtistProfile as Record<string, unknown> | undefined;
+  const artistaId = raw?.artista_id ?? raw?.artist_id;
+  let profileSnapshot: ArtistProfileSnapshot | undefined;
+  if (artistaId && artistProfileRaw) {
+    profileSnapshot = normalizeArtistProfileSnapshot({
+      ...artistProfileRaw,
+      id: artistProfileRaw.id ?? artistaId,
+    });
+  } else if (artistaId) {
+    profileSnapshot = normalizeArtistProfileSnapshot({
+      id: artistaId,
+      nome_artistico: raw?.nome_artista ?? raw?.nome_artistico,
+      foto_perfil: raw?.foto_artista,
+      generos: raw?.genero ? [raw.genero] : undefined,
+      nota_media: raw?.nota_media,
+      shows_realizados: raw?.shows_realizados,
+    });
+  }
+
   return {
     id: applicationId,
     evento_id: normalizedEventoId,
-    artista_id: raw?.artista_id ?? raw?.artist_id,
+    artista_id: artistaId,
     banda_id: raw?.banda_id ?? raw?.band_id,
     mensagem: raw?.mensagem ?? raw?.message,
     status: (normalizedStatus ?? "pendente") as Candidatura["status"],
@@ -117,10 +142,11 @@ function normalizeCandidatura(raw: any): Candidatura {
       raw?.genero ??
       (Array.isArray(raw?.ArtistProfile?.generos) ? raw.ArtistProfile.generos[0] : undefined) ??
       generosBanda[0],
-    nota_media: raw?.nota_media,
-    shows_realizados: raw?.shows_realizados,
+    nota_media: raw?.nota_media ?? profileSnapshot?.nota_media,
+    shows_realizados: raw?.shows_realizados ?? profileSnapshot?.shows_realizados,
     favorited: raw?.favorited,
     valor_proposto: raw?.valor_proposto,
+    profileSnapshot,
   };
 }
 
@@ -141,24 +167,40 @@ export interface EstablishmentProfile {
   capacidade?: number;
 }
 
-export interface ArtistPublicProfile {
-  id: number;
-  nome_artistico?: string;
+export type ArtistPublicProfile = ArtistProfileSnapshot & {
   nome?: string;
   foto_url?: string;
-  foto_perfil?: string;
   tipo?: string;
-  tipo_atuacao?: string;
-  generos?: string[];
-  nota_media?: number;
-  shows_realizados?: number;
-  cache_minimo?: number;
-  cache_maximo?: number;
   cache_medio?: number;
-  biografia?: string;
+};
+
+export interface EstablishmentPublicProfile {
+  id: number;
+  nome_estabelecimento: string;
+  tipo_estabelecimento?: string;
+  generos_musicais?: string;
+  foto_url?: string;
+  nota_media?: number;
+  descricao?: string;
+  horario_abertura?: string;
+  horario_fechamento?: string;
+  telefone_contato?: string;
+  capacidade?: number;
+  fotos?: string | string[];
   cidade?: string;
   estado?: string;
+  Address?: {
+    id?: number;
+    rua?: string;
+    numero?: string;
+    bairro?: string;
+    cidade?: string;
+    estado?: string;
+    cep?: string;
+  };
 }
+
+export type { ArtistProfileSnapshot };
 
 export interface BandPublicProfile {
   id: number;
@@ -281,11 +323,201 @@ const searchArtists = async (params?: { q?: string; genero?: string }): Promise<
   return toArray<ArtistPublicProfile>(r.data);
 };
 
-const getArtistPublicProfile = async (artistId: number): Promise<ArtistPublicProfile> => {
-  const r = await api.get(`/artistas/${artistId}/publico`);
-  // Backend retorna { message, perfil } — extrair o perfil
-  const data = r.data as any;
-  return data?.perfil ?? data;
+const searchEstablishments = async (params?: {
+  limit?: number;
+  nome?: string;
+  tipo?: string;
+  cidade?: string;
+  genero?: string;
+}): Promise<EstablishmentPublicProfile[]> => {
+  const r = await api.get("/estabelecimentos", { params });
+  return toArray<EstablishmentPublicProfile>(r.data);
+};
+
+function normalizeEstablishmentProfile(raw: Record<string, unknown>): EstablishmentPublicProfile {
+  const address = raw.Address as EstablishmentPublicProfile["Address"] | undefined;
+  return {
+    id: Number(raw.id),
+    nome_estabelecimento: String(raw.nome_estabelecimento ?? ""),
+    tipo_estabelecimento:
+      raw.tipo_estabelecimento != null ? String(raw.tipo_estabelecimento) : undefined,
+    generos_musicais:
+      raw.generos_musicais != null ? String(raw.generos_musicais) : undefined,
+    foto_url: raw.foto_url != null ? String(raw.foto_url) : undefined,
+    nota_media: raw.nota_media != null ? Number(raw.nota_media) : undefined,
+    descricao: raw.descricao != null ? String(raw.descricao) : undefined,
+    horario_abertura:
+      raw.horario_abertura != null ? String(raw.horario_abertura) : undefined,
+    horario_fechamento:
+      raw.horario_fechamento != null ? String(raw.horario_fechamento) : undefined,
+    telefone_contato:
+      raw.telefone_contato != null ? String(raw.telefone_contato) : undefined,
+    capacidade: raw.capacidade != null ? Number(raw.capacidade) : undefined,
+    fotos: raw.fotos as string | string[] | undefined,
+    Address: address,
+    cidade: address?.cidade ?? (raw.cidade != null ? String(raw.cidade) : undefined),
+    estado: address?.estado ?? (raw.estado != null ? String(raw.estado) : undefined),
+  };
+}
+
+const getEstablishmentById = async (id: number): Promise<EstablishmentPublicProfile> => {
+  const r = await api.get(`/estabelecimentos/${id}`);
+  const body = r.data as Record<string, unknown>;
+  const raw = (body.data ?? body) as Record<string, unknown>;
+  return normalizeEstablishmentProfile(raw);
+};
+
+/** Busca registro completo em endpoints que já retornam todos os campos da tabela. */
+const fetchFullArtistFromContracts = async (
+  artistId: number
+): Promise<ArtistProfileSnapshot | null> => {
+  try {
+    const r = await api.get("/contratos/meus");
+    const contracts = toArray<Record<string, unknown>>(r.data);
+    for (const contract of contracts) {
+      const profile =
+        (contract.ArtistProfile as Record<string, unknown> | undefined) ??
+        (contract.artistProfile as Record<string, unknown> | undefined);
+      const contractArtistId = Number(contract.artista_id ?? profile?.id);
+      if (profile && contractArtistId === artistId) {
+        return normalizeArtistProfileSnapshot({ ...profile, id: artistId });
+      }
+    }
+  } catch {
+    // endpoint pode falhar se usuário não tiver contratos
+  }
+  return null;
+};
+
+const fetchFullArtistFromFavorites = async (
+  artistId: number
+): Promise<ArtistProfileSnapshot | null> => {
+  try {
+    const r = await api.get("/favoritos", { params: { tipo: "perfil_artista" } });
+    const payload = r.data as Record<string, unknown>;
+    const favoritos = toArray<Record<string, unknown>>(payload.favoritos ?? payload);
+    for (const fav of favoritos) {
+      const item = (fav.item ?? fav) as Record<string, unknown>;
+      if (Number(item?.id) === artistId) {
+        return normalizeArtistProfileSnapshot(item);
+      }
+    }
+  } catch {
+    // ignorar — favoritos são opcionais
+  }
+  return null;
+};
+
+/** GET /shows/buscar?tipo=artistas retorna todos os campos de perfis_artistas (sem alterar backend). */
+const fetchFullArtistFromShowSearch = async (
+  artistId: number,
+  nomeArtistico?: string
+): Promise<ArtistProfileSnapshot | null> => {
+  const queries = new Set<string>();
+  const trimmed = nomeArtistico?.trim();
+  if (trimmed) {
+    queries.add(trimmed);
+    const firstWord = trimmed.split(/\s+/)[0];
+    if (firstWord && firstWord.length >= 2) {
+      queries.add(firstWord);
+    }
+  }
+  // Backend exige q não vazio — fallback amplo para localizar o id na lista
+  if (queries.size === 0) {
+    queries.add("a");
+  }
+
+  for (const q of queries) {
+    try {
+      const r = await api.get("/shows/buscar", { params: { q, tipo: "artistas" } });
+      const payload = r.data as Record<string, unknown>;
+      const resultados = toArray<Record<string, unknown>>(payload.resultados ?? payload);
+      const found = resultados.find((item) => Number(item.id) === artistId);
+      if (found) {
+        return normalizeArtistProfileSnapshot(found);
+      }
+    } catch {
+      // tenta próxima query
+    }
+  }
+  return null;
+};
+
+/** Busca artista via GET /artistas/busca + enriquecimento de contratos/favoritos. */
+const findArtistById = async (
+  artistId: number,
+  hint?: Partial<ArtistProfileSnapshot>
+): Promise<ArtistProfileSnapshot> => {
+  const pick = (list: ArtistPublicProfile[]) =>
+    list.find((item) => item.id === artistId);
+
+  let base: ArtistProfileSnapshot | null = null;
+
+  if (hint?.nome_artistico?.trim()) {
+    const byName = await searchArtists({ q: hint.nome_artistico.trim() });
+    const found = pick(byName);
+    if (found) {
+      base = normalizeArtistProfileSnapshot(found as Record<string, unknown>);
+    }
+  }
+
+  if (!base) {
+    const list = await searchArtists();
+    const found = pick(list);
+    if (found) {
+      base = normalizeArtistProfileSnapshot(found as Record<string, unknown>);
+    }
+  }
+
+  if (!base && hint) {
+    base = normalizeArtistProfileSnapshot({ id: artistId, ...hint });
+  }
+
+  const nomeParaBusca = hint?.nome_artistico ?? base?.nome_artistico;
+
+  const [fromContracts, fromFavorites, fromShowSearch] = await Promise.all([
+    fetchFullArtistFromContracts(artistId),
+    fetchFullArtistFromFavorites(artistId),
+    fetchFullArtistFromShowSearch(artistId, nomeParaBusca),
+  ]);
+
+  if (fromContracts) {
+    base = base
+      ? mergeArtistSnapshots(base, fromContracts)
+      : fromContracts;
+  }
+  if (fromFavorites) {
+    base = base
+      ? mergeArtistSnapshots(base, fromFavorites)
+      : fromFavorites;
+  }
+  if (fromShowSearch) {
+    base = base
+      ? mergeArtistSnapshots(base, fromShowSearch)
+      : fromShowSearch;
+  }
+
+  if (hint) {
+    base = base
+      ? mergeArtistSnapshots(base, hint)
+      : normalizeArtistProfileSnapshot({ id: artistId, ...hint });
+  }
+
+  if (!base) {
+    throw new Error("Artista não encontrado");
+  }
+
+  if (
+    (!base.instrumentos?.length || !base.estrutura_som?.length) &&
+    base.nome_artistico
+  ) {
+    const enriched = await fetchFullArtistFromShowSearch(artistId, base.nome_artistico);
+    if (enriched) {
+      base = mergeArtistSnapshots(base, enriched);
+    }
+  }
+
+  return base;
 };
 
 const getBandById = async (bandaId: number): Promise<BandPublicProfile> => {
@@ -502,7 +734,7 @@ export const establishmentService = {
   getMyGigs, createGig, getGigById, updateGig, deleteGig,
   uploadGigCover,
   getGigApplications, acceptApplication, rejectApplication,
-  searchArtists, getArtistPublicProfile, getBandById,
+  searchArtists, searchEstablishments, getEstablishmentById, findArtistById, getBandById,
   getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getContractById,
   getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,

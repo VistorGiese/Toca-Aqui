@@ -14,8 +14,14 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/contexts/AuthContext";
 import { contractService, Contract } from "@/http/contractService";
 import { showService, Show, showToDetailParams } from "@/http/showService";
+import { ArtistPublicProfile, EstablishmentPublicProfile } from "@/http/establishmentService";
 import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 import { getGenreColor } from "@/utils/colors";
+import { useRecommendedHome } from "@/hooks/useRecommendedHome";
+import {
+  RecommendedArtistsSection,
+  RecommendedEstablishmentsSection,
+} from "@/components/home";
 
 const DS = {
   bg: "#09090F",
@@ -55,6 +61,7 @@ export default function ArtistHome() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [upcomingShows, setUpcomingShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
+  const { artists, establishments, loading: loadingRecommended } = useRecommendedHome();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,6 +96,21 @@ export default function ArtistHome() {
 
   const goToAllConfirmed = () => {
     navigation.navigate("ArtistAllConfirmedShows");
+  };
+
+  const goToArtistProfile = (artist: ArtistPublicProfile) => {
+    navigation.navigate("UserArtistProfile", {
+      artistId: artist.id,
+      profile: artist,
+      canBuyTickets: false,
+    });
+  };
+
+  const goToEstablishment = (establishment: EstablishmentPublicProfile) => {
+    navigation.navigate("UserEstablishmentProfile", {
+      establishmentId: establishment.id,
+      canBuyTickets: false,
+    });
   };
 
   const getFirstName = () => {
@@ -207,6 +229,18 @@ export default function ArtistHome() {
             );
           })
         )}
+
+        <RecommendedArtistsSection
+          artists={artists}
+          loading={loadingRecommended}
+          onPressArtist={goToArtistProfile}
+        />
+
+        <RecommendedEstablishmentsSection
+          establishments={establishments}
+          loading={loadingRecommended}
+          onPressEstablishment={goToEstablishment}
+        />
 
         {/* Últimas Candidaturas */}
         <View style={styles.sectionHeader}>

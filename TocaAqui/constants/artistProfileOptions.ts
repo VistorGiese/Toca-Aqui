@@ -1,0 +1,46 @@
+export const GENEROS_OPCOES = [
+  "Rock",
+  "Pop",
+  "Samba",
+  "Forró",
+  "Pagode",
+  "MPB",
+  "Jazz",
+  "Blues",
+  "Funk",
+  "Eletrônico",
+  "Reggae",
+  "Hip Hop",
+  "Gospel",
+  "Clássico",
+  "Sertanejo",
+  "Metal",
+  "Indie",
+];
+
+export const INSTRUMENTOS_OPCOES = [
+  "Violão",
+  "Guitarra",
+  "Baixo",
+  "Bateria",
+  "Teclado",
+  "Piano",
+  "Vocal",
+  "Saxofone",
+  "Trompete",
+  "Flauta",
+  "Violino",
+  "DJ / Controlador",
+  "Percussão",
+  "Harmonica",
+  "Ukulele",
+];
+
+export const EQUIPAMENTOS_OPCOES = [
+  "P.A. / Caixas",
+  "Microfones",
+  "Mesa de Som",
+  "Retornos",
+  "Iluminação",
+  "Cabos / DI",
+];

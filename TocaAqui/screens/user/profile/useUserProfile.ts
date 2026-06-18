@@ -5,11 +5,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { useAuth } from "@/contexts/AuthContext";
+import { preferenciaService } from "@/http/artistaPublicoService";
 import {
-  artistaPublicoService,
-  ArtistaPublico,
-  preferenciaService,
-} from "@/http/artistaPublicoService";
+  favoriteService,
+  FavoriteArtistItem,
+  FavoriteEstablishmentItem,
+} from "@/http/favoriteService";
 import { ingressoService, Ingresso } from "@/http/ingressoService";
 import { userService } from "@/http/userService";
 import { resolveImageUrl } from "@/utils/adapters";
@@ -21,7 +22,10 @@ export function useUserProfile(): UserProfileViewModel {
   const navigation = useNavigation<NavProp>();
   const { user } = useAuth();
 
-  const [artistasSeguidos, setArtistasSeguidos] = useState<ArtistaPublico[]>([]);
+  const [artistasFavoritados, setArtistasFavoritados] = useState<FavoriteArtistItem[]>([]);
+  const [estabelecimentosFavoritados, setEstabelecimentosFavoritados] = useState<
+    FavoriteEstablishmentItem[]
+  >([]);
   const [proximosShows, setProximosShows] = useState<Ingresso[]>([]);
   const [showsPassados, setShowsPassados] = useState<Ingresso[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,15 +35,20 @@ export function useUserProfile(): UserProfileViewModel {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [artistas, ingressosProximos, ingressosPassados, perfil, prefs] = await Promise.allSettled([
-      artistaPublicoService.getArtistasQueSigo(),
-      ingressoService.getMeusIngressos("proximos"),
-      ingressoService.getMeusIngressos("passados"),
-      userService.getProfile(),
-      preferenciaService.buscar(),
-    ]);
+    const [favArtistas, favEstabelecimentos, ingressosProximos, ingressosPassados, perfil, prefs] =
+      await Promise.allSettled([
+        favoriteService.listFavoriteArtists(),
+        favoriteService.listFavoriteEstablishments(),
+        ingressoService.getMeusIngressos("proximos"),
+        ingressoService.getMeusIngressos("passados"),
+        userService.getProfile(),
+        preferenciaService.buscar(),
+      ]);
 
-    if (artistas.status === "fulfilled") setArtistasSeguidos(artistas.value);
+    if (favArtistas.status === "fulfilled") setArtistasFavoritados(favArtistas.value);
+    if (favEstabelecimentos.status === "fulfilled") {
+      setEstabelecimentosFavoritados(favEstabelecimentos.value);
+    }
     if (ingressosProximos.status === "fulfilled") setProximosShows(ingressosProximos.value);
     if (ingressosPassados.status === "fulfilled") setShowsPassados(ingressosPassados.value);
     if (perfil.status === "fulfilled") {
@@ -97,12 +106,17 @@ export function useUserProfile(): UserProfileViewModel {
     (artistId: number) => navigation.navigate("UserArtistProfile", { artistId }),
     [navigation]
   );
+  const goToEstablishment = useCallback(
+    (establishmentId: number) =>
+      navigation.navigate("UserEstablishmentProfile", { establishmentId }),
+    [navigation]
+  );
   const goToAllTickets = useCallback(() => navigation.navigate("UserTickets"), [navigation]);
 
   const stats: UserProfileStat[] = [
-    { label: 'SHOWS\nPASSADOS', value: showsPassados.length },
-    { label: 'PROXIMOS\nSHOWS', value: proximosShows.length },
-    { label: 'ARTISTAS\nSEGUIDOS', value: artistasSeguidos.length },
+    { label: "SHOWS\nPASSADOS", value: showsPassados.length },
+    { label: "PROXIMOS\nSHOWS", value: proximosShows.length },
+    { label: "LOCAIS\nFAVORITOS", value: estabelecimentosFavoritados.length },
   ];
 
   return {
@@ -112,12 +126,14 @@ export function useUserProfile(): UserProfileViewModel {
     uploadingFoto,
     loading,
     proximosShows,
-    artistasSeguidos,
+    artistasFavoritados,
+    estabelecimentosFavoritados,
     stats,
     handleSelecionarFoto,
     goToSettings,
     goToShowDetail,
     goToArtist,
+    goToEstablishment,
     goToAllTickets,
   };
 }

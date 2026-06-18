@@ -8,12 +8,22 @@ import {
   StatusBar,
   ActivityIndicator,
   Image,
+  Alert,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { getGenreColor } from "@/utils/colors";
 import { artistaPublicoService, ArtistaPublico } from "@/http/artistaPublicoService";
+import { establishmentService } from "@/http/establishmentService";
+import { favoriteService } from "@/http/favoriteService";
+import { artistProfileService } from "@/http/artistProfileService";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  ArtistProfileSnapshot,
+  mergeArtistSnapshots,
+  snapshotToArtistaPublico,
+} from "@/utils/artistProfile";
 import { resolveImageUrl, parsePressKit } from "@/utils/adapters";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserArtistProfile">;
@@ -28,13 +38,6 @@ function formatShowDate(dataShow: string): string {
   } catch {
     return dataShow;
   }
-}
-
-function formatFollowers(total: number): string {
-  if (total >= 1000) {
-    return `${Math.floor(total / 1000)}k`;
-  }
-  return String(total);
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -53,43 +56,172 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+function InstrumentChipList({ items }: { items: string[] }) {
+  if (items.length === 0) {
+    return <Text style={styles.emptySection}>Nenhum instrumento informado</Text>;
+  }
+  return (
+    <View style={styles.chipsWrap}>
+      {items.map((item) => {
+        const color = getGenreColor(item.toUpperCase());
+        return (
+          <View key={item} style={[styles.chip, { borderColor: color + "88", backgroundColor: color + "18" }]}>
+            <FontAwesome5 name="music" size={10} color={color} style={{ marginRight: 6 }} />
+            <Text style={[styles.chipText, { color }]}>{item}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function SoundStructureSection({
+  temEstrutura,
+  equipamentos,
+}: {
+  temEstrutura?: boolean;
+  equipamentos: string[];
+}) {
+  if (temEstrutura === false) {
+    return <Text style={styles.emptySection}>Não possui estrutura de som própria</Text>;
+  }
+  if (equipamentos.length > 0) {
+    return (
+      <View style={styles.chipsWrap}>
+        {equipamentos.map((item) => (
+          <View
+            key={item}
+            style={[styles.chip, { borderColor: "#6DB88588", backgroundColor: "#6DB88518" }]}
+          >
+            <FontAwesome5 name="volume-up" size={10} color="#6DB885" style={{ marginRight: 6 }} />
+            <Text style={[styles.chipText, { color: "#6DB885" }]}>{item}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
+  return (
+    <Text style={styles.emptySection}>
+      {temEstrutura ? "Possui estrutura, mas nenhum equipamento listado" : "Nenhum equipamento informado"}
+    </Text>
+  );
+}
+
 export default function UserArtistProfile({ route, navigation }: Props) {
-  const { artistId } = route.params;
+  const { artistId, profile: profileHint, canBuyTickets = true } = route.params;
+  const { user } = useAuth();
   const [artista, setArtista] = useState<ArtistaPublico | null>(null);
+  const [profileSnapshot, setProfileSnapshot] = useState<ArtistProfileSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
-  const [following, setFollowing] = useState(false);
-  const [totalSeguidores, setTotalSeguidores] = useState(0);
-  const [followLoading, setFollowLoading] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  const isOwnProfile = user?.perfilArtistaId === artistId;
 
   const loadArtista = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await artistaPublicoService.getPerfilPublico(artistId);
-      setArtista(data);
-      setFollowing(data.seguindo);
-      setTotalSeguidores(data.total_seguidores);
+      const ownProfilePromise =
+        user?.perfilArtistaId === artistId
+          ? artistProfileService.getMyProfile()
+          : Promise.resolve(null);
+
+      const [snapshotResult, publicoResult, ownProfileResult] = await Promise.allSettled([
+        establishmentService.findArtistById(artistId, profileHint),
+        artistaPublicoService.getPerfilPublico(artistId),
+        ownProfilePromise,
+      ]);
+
+      let snapshot: ArtistProfileSnapshot | null = null;
+
+      if (snapshotResult.status === "fulfilled") {
+        snapshot = snapshotResult.value;
+      } else if (profileHint) {
+        snapshot = mergeArtistSnapshots({ id: artistId, ...profileHint }, profileHint);
+      }
+
+      if (ownProfileResult.status === "fulfilled" && ownProfileResult.value) {
+        const own = ownProfileResult.value;
+        snapshot = mergeArtistSnapshots(snapshot ?? { id: artistId }, {
+          instrumentos: own.instrumentos,
+          estrutura_som: own.estrutura_som,
+          tem_estrutura_som: own.tem_estrutura_som,
+          generos: own.generos,
+          biografia: own.biografia,
+          foto_perfil: own.foto_perfil,
+          press_kit: own.press_kit,
+          cache_minimo: own.cache_minimo,
+          cache_maximo: own.cache_maximo,
+          cidade: own.cidade,
+          estado: own.estado,
+          links_sociais: own.links_sociais,
+        });
+      }
+
+      setProfileSnapshot(snapshot);
+
+      let base: ArtistaPublico | null = snapshot ? snapshotToArtistaPublico(snapshot) : null;
+
+      if (publicoResult.status === "fulfilled") {
+        const pub = publicoResult.value;
+        base = base
+          ? {
+              ...base,
+              ...pub,
+              id: artistId,
+              nome_artistico: pub.nome_artistico ?? base.nome_artistico,
+              generos: pub.generos?.length ? pub.generos : base.generos,
+              instrumentos: snapshot?.instrumentos?.length
+                ? snapshot.instrumentos
+                : pub.instrumentos?.length
+                  ? pub.instrumentos
+                  : base.instrumentos,
+              press_kit: snapshot?.press_kit?.length ? snapshot.press_kit : pub.press_kit ?? base.press_kit,
+              foto_perfil: snapshot?.foto_perfil ?? pub.foto_perfil ?? base.foto_perfil,
+              biografia: pub.biografia ?? base.biografia,
+              ProximosShows: pub.ProximosShows?.length ? pub.ProximosShows : base.ProximosShows,
+            }
+          : pub;
+      }
+
+      setArtista(base);
     } catch {
-      // silenciado temporariamente
+      setArtista(null);
+      setProfileSnapshot(null);
     } finally {
       setLoading(false);
     }
-  }, [artistId]);
+  }, [artistId, profileHint, user?.perfilArtistaId]);
+
+  const loadFavoriteStatus = useCallback(async () => {
+    if (isOwnProfile) {
+      setIsFavorite(false);
+      return;
+    }
+    const favorited = await favoriteService.check("perfil_artista", artistId);
+    setIsFavorite(favorited);
+  }, [artistId, isOwnProfile]);
 
   useEffect(() => {
     loadArtista();
   }, [loadArtista]);
 
-  async function handleFollowToggle() {
-    if (!artista || followLoading) return;
-    setFollowLoading(true);
+  useEffect(() => {
+    if (!loading && artista) {
+      loadFavoriteStatus();
+    }
+  }, [loading, artista, loadFavoriteStatus]);
+
+  async function toggleFavorite() {
+    if (isOwnProfile || favoriteLoading) return;
+    setFavoriteLoading(true);
     try {
-      const result = await artistaPublicoService.seguirOuDesseguir(artistId);
-      setFollowing(result.seguindo);
-      setTotalSeguidores(result.total_seguidores);
+      const next = await favoriteService.toggleArtist(artistId, isFavorite);
+      setIsFavorite(next);
     } catch {
-      // silenciado temporariamente
+      Alert.alert("Erro", "Não foi possível atualizar seus favoritos. Faça login e tente novamente.");
     } finally {
-      setFollowLoading(false);
+      setFavoriteLoading(false);
     }
   }
 
@@ -126,35 +258,61 @@ export default function UserArtistProfile({ route, navigation }: Props) {
   const primeiroGenero = artista.generos?.[0] ?? "";
   const genreLabel = primeiroGenero.toUpperCase();
   const genreColor = getGenreColor(genreLabel || "OUTROS");
-  const headerColor = genreColor + "88";
-  const avatarColor = genreColor + "66";
-  const rating = artista.media_nota ?? 0;
+  const rating = artista.media_nota ?? profileSnapshot?.nota_media ?? 0;
   const shows = artista.ProximosShows ?? [];
-  const avatarUrl = resolveImageUrl(artista.foto_perfil);
-  const pressKitPhotos = parsePressKit(artista.press_kit)
+  const avatarUrl = resolveImageUrl(profileSnapshot?.foto_perfil ?? artista.foto_perfil);
+  const pressKitRaw = profileSnapshot?.press_kit ?? artista.press_kit;
+  const galleryPhotos = parsePressKit(pressKitRaw)
     .map((path) => resolveImageUrl(path))
     .filter(Boolean) as string[];
-  const locationLabel = [artista.cidade, artista.estado].filter(Boolean).join(", ") || "Cidade não informada";
+  const instrumentos = profileSnapshot?.instrumentos?.length
+    ? profileSnapshot.instrumentos
+    : artista.instrumentos ?? [];
+  const estruturaSom = profileSnapshot?.estrutura_som ?? [];
+  const temEstruturaSom = profileSnapshot?.tem_estrutura_som;
+  const locationLabel =
+    [profileSnapshot?.cidade ?? artista.cidade, profileSnapshot?.estado ?? artista.estado]
+      .filter(Boolean)
+      .join(", ") || "Cidade não informada";
+  const coverUrl = avatarUrl ?? galleryPhotos[0] ?? null;
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      <View style={[styles.headerImage, { backgroundColor: headerColor }]}>
+      <View style={[styles.headerImage, !coverUrl && { backgroundColor: genreColor + "88" }]}>
+        {coverUrl ? <Image source={{ uri: coverUrl }} style={styles.coverImage} /> : null}
         <View style={styles.headerOverlay} />
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <FontAwesome5 name="arrow-left" size={16} color="#FFFFFF" />
         </TouchableOpacity>
+
+        {!isOwnProfile ? (
+          <TouchableOpacity
+            style={styles.favoriteHeaderBtn}
+            onPress={toggleFavorite}
+            disabled={favoriteLoading}
+            activeOpacity={0.85}
+          >
+            {favoriteLoading ? (
+              <ActivityIndicator size="small" color="#A78BFA" />
+            ) : (
+              <FontAwesome5
+                name="heart"
+                size={18}
+                color={isFavorite ? "#A78BFA" : "#FFFFFF"}
+                solid={isFavorite}
+              />
+            )}
+          </TouchableOpacity>
+        ) : null}
 
         <View style={styles.avatarContainer}>
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-              <FontAwesome5 name="microphone" size={28} color="rgba(255,255,255,0.6)" />
+            <View style={[styles.avatar, { backgroundColor: genreColor + "66" }]}>
+              <FontAwesome5 name="microphone" size={28} color="rgba(255,255,255,0.85)" />
             </View>
           )}
         </View>
@@ -167,19 +325,17 @@ export default function UserArtistProfile({ route, navigation }: Props) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.artistHeader}>
-          <View>
-            <View style={[styles.genreBadge, { backgroundColor: genreColor + "22" }]}>
-              <Text style={[styles.genreBadgeText, { color: genreColor }]}>
-                {genreLabel || "ARTISTA"}
-              </Text>
-            </View>
-            {rating > 0 && (
-              <View style={styles.ratingRow}>
-                <StarRating rating={rating} />
-                <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
-              </View>
-            )}
+          <View style={[styles.genreBadge, { backgroundColor: genreColor + "22" }]}>
+            <Text style={[styles.genreBadgeText, { color: genreColor }]}>
+              {genreLabel || "ARTISTA"}
+            </Text>
           </View>
+          {rating > 0 && (
+            <View style={styles.ratingRow}>
+              <StarRating rating={rating} />
+              <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.artistName}>{artista.nome_artistico}</Text>
@@ -187,17 +343,6 @@ export default function UserArtistProfile({ route, navigation }: Props) {
           <FontAwesome5 name="map-marker-alt" size={12} color="#555577" />
           <Text style={styles.locationText}>{locationLabel}</Text>
         </View>
-
-        {pressKitPhotos.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fotos</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pressKitRow}>
-              {pressKitPhotos.map((uri) => (
-                <Image key={uri} source={{ uri }} style={styles.pressKitImage} />
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
 
         {artista.biografia ? (
           <View style={styles.section}>
@@ -207,27 +352,30 @@ export default function UserArtistProfile({ route, navigation }: Props) {
         ) : null}
 
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Vídeos</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>VER TODOS</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.videosRow}
-          >
-            {[0, 1, 2].map((i) => (
-              <TouchableOpacity key={i} style={styles.videoThumb} activeOpacity={0.8}>
-                <View style={styles.videoInner}>
-                  <View style={styles.playBtn}>
-                    <FontAwesome5 name="play" size={14} color="#FFFFFF" />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <Text style={styles.sectionTitle}>Instrumentos</Text>
+          <InstrumentChipList items={instrumentos} />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Estrutura de som</Text>
+          <SoundStructureSection temEstrutura={temEstruturaSom} equipamentos={estruturaSom} />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Galeria</Text>
+          {galleryPhotos.length === 0 ? (
+            <Text style={styles.emptySection}>Nenhuma foto adicionada no cadastro</Text>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.galleryRow}
+            >
+              {galleryPhotos.map((uri) => (
+                <Image key={uri} source={{ uri }} style={styles.galleryImage} />
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -251,27 +399,17 @@ export default function UserArtistProfile({ route, navigation }: Props) {
                     {show.EstablishmentProfile?.nome_estabelecimento ?? "Local não informado"}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.buyTicketBtn}
-                  onPress={() => goToCheckout(show)}
-                >
-                  <Text style={styles.buyTicketText}>COMPRAR</Text>
-                </TouchableOpacity>
+                {canBuyTickets ? (
+                  <TouchableOpacity
+                    style={styles.buyTicketBtn}
+                    onPress={() => goToCheckout(show)}
+                  >
+                    <Text style={styles.buyTicketText}>COMPRAR</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             ))
           )}
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{formatFollowers(totalSeguidores)}</Text>
-            <Text style={styles.statLabel}>SEGUIDORES</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>—</Text>
-            <Text style={styles.statLabel}>OUVINTES/MÊS</Text>
-          </View>
         </View>
 
         <View style={{ height: 100 }} />
@@ -279,24 +417,12 @@ export default function UserArtistProfile({ route, navigation }: Props) {
 
       <View style={styles.stickyBottom}>
         <TouchableOpacity
-          style={[styles.followBtn, following && styles.followBtnActive]}
-          onPress={handleFollowToggle}
+          style={styles.backBottomBtn}
+          onPress={() => navigation.goBack()}
           activeOpacity={0.85}
-          disabled={followLoading}
         >
-          {followLoading ? (
-            <ActivityIndicator size="small" color={following ? "#A78BFA" : "#FFFFFF"} style={{ marginRight: 8 }} />
-          ) : (
-            <FontAwesome5
-              name={following ? "user-check" : "user-plus"}
-              size={14}
-              color={following ? "#A78BFA" : "#FFFFFF"}
-              style={{ marginRight: 8 }}
-            />
-          )}
-          <Text style={[styles.followBtnText, following && styles.followBtnTextActive]}>
-            {following ? "SEGUINDO" : "SEGUIR ARTISTA"}
-          </Text>
+          <FontAwesome5 name="arrow-left" size={14} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Text style={styles.backBottomBtnText}>VOLTAR</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -338,14 +464,18 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   headerImage: {
-    height: 200,
+    height: 220,
     position: "relative",
     justifyContent: "flex-end",
     alignItems: "center",
   },
+  coverImage: {
+    ...StyleSheet.absoluteFillObject,
+    resizeMode: "cover",
+  },
   headerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
   backBtn: {
     position: "absolute",
@@ -357,11 +487,25 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
+  },
+  favoriteHeaderBtn: {
+    position: "absolute",
+    top: 52,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
   },
   avatarContainer: {
     position: "absolute",
     bottom: -44,
     alignSelf: "center",
+    zIndex: 2,
   },
   avatar: {
     width: 88,
@@ -416,30 +560,35 @@ const styles = StyleSheet.create({
     color: "#A0A0B8",
   },
   section: { marginBottom: 24 },
-  pressKitRow: { gap: 10 },
-  pressKitImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 10,
-    backgroundColor: "#161028",
-  },
   sectionTitle: {
     fontFamily: "Montserrat-Bold",
     fontSize: 16,
     color: "#FFFFFF",
     marginBottom: 12,
   },
-  sectionTitleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+  galleryRow: { gap: 10 },
+  galleryImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 12,
+    backgroundColor: "#161028",
   },
-  seeAll: {
+  chipsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  chipText: {
     fontFamily: "Montserrat-SemiBold",
-    fontSize: 11,
-    color: "#A78BFA",
-    letterSpacing: 1,
+    fontSize: 12,
   },
   emptySection: {
     fontFamily: "Montserrat-Regular",
@@ -451,28 +600,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#A0A0B8",
     lineHeight: 22,
-  },
-  videosRow: { gap: 10 },
-  videoThumb: {
-    width: 140,
-    height: 90,
-    borderRadius: 10,
-    overflow: "hidden",
-    backgroundColor: "#1A1040",
-  },
-  videoInner: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
-  playBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(167,139,250,0.8)",
-    alignItems: "center",
-    justifyContent: "center",
   },
   showRow: {
     flexDirection: "row",
@@ -516,33 +643,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 0.5,
   },
-  statsRow: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
-    paddingVertical: 16,
-    marginBottom: 8,
-  },
-  statItem: { flex: 1, alignItems: "center" },
-  statValue: {
-    fontFamily: "AkiraExpanded-Superbold",
-    fontSize: 20,
-    color: "#A78BFA",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: 9,
-    color: "#555577",
-    letterSpacing: 1,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    marginVertical: 4,
-  },
   stickyBottom: {
     position: "absolute",
     bottom: 0,
@@ -555,7 +655,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 28,
   },
-  followBtn: {
+  backBottomBtn: {
     backgroundColor: "#6C5CE7",
     borderRadius: 12,
     paddingVertical: 15,
@@ -563,16 +663,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  followBtnActive: {
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: "#A78BFA",
-  },
-  followBtnText: {
+  backBottomBtnText: {
     fontFamily: "Montserrat-Bold",
     fontSize: 14,
     color: "#FFFFFF",
     letterSpacing: 1,
   },
-  followBtnTextActive: { color: "#A78BFA" },
 });

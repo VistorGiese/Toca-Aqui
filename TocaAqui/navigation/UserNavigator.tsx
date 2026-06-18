@@ -14,6 +14,7 @@ import UserCheckout from "@/screens/user/UserCheckout";
 import UserPurchaseConfirmation from "@/screens/user/UserPurchaseConfirmation";
 import UserTicketDetail from "@/screens/user/UserTicketDetail";
 import UserArtistProfile from "@/screens/user/UserArtistProfile";
+import UserEstablishmentProfile from "@/screens/user/UserEstablishmentProfile";
 import UserRateShow from "@/screens/user/UserRateShow";
 import UserComments from "@/screens/user/UserComments";
 import UserSettings from "@/screens/user/UserSettings";
@@ -60,7 +61,12 @@ export type UserStackParamList = {
     payMethod: "card" | "pix" | "free";
   };
   UserTicketDetail: { ticketId: number };
-  UserArtistProfile: { artistId: number };
+  UserArtistProfile: { artistId: number; profile?: import("@/utils/artistProfile").ArtistProfileSnapshot; canBuyTickets?: boolean };
+  UserEstablishmentProfile: {
+    establishmentId: number;
+    canBuyTickets?: boolean;
+    viewerContext?: "establishment" | "user";
+  };
   UserRateShow: { showId: number; showTitle: string; venueName: string };
   UserComments: { showId: number; showTitle: string };
   UserSettings: undefined;
@@ -155,6 +161,7 @@ export default function UserNavigator() {
       <Stack.Screen name="UserPurchaseConfirmation" component={UserPurchaseConfirmation} />
       <Stack.Screen name="UserTicketDetail" component={UserTicketDetail} />
       <Stack.Screen name="UserArtistProfile" component={UserArtistProfile} />
+      <Stack.Screen name="UserEstablishmentProfile" component={UserEstablishmentProfile} />
       <Stack.Screen name="UserRateShow" component={UserRateShow} />
       <Stack.Screen name="UserComments" component={UserComments} />
       <Stack.Screen name="UserSettings" component={UserSettings} />

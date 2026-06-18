@@ -49,4 +49,7 @@ export const styles = StyleSheet.create({
   listEndSpacing: {
     height: 20,
   },
+  recommendedSection: {
+    paddingHorizontal: 20,
+  },
 });

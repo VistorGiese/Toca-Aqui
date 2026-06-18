@@ -1,4 +1,4 @@
-import { ArtistaPublico } from "@/http/artistaPublicoService";
+import { FavoriteArtistItem, FavoriteEstablishmentItem } from "@/http/favoriteService";
 import { Ingresso } from "@/http/ingressoService";
 import { ProfileStatItem } from "@/components/profile/types";
 
@@ -11,11 +11,13 @@ export interface UserProfileViewModel {
   uploadingFoto: boolean;
   loading: boolean;
   proximosShows: Ingresso[];
-  artistasSeguidos: ArtistaPublico[];
+  artistasFavoritados: FavoriteArtistItem[];
+  estabelecimentosFavoritados: FavoriteEstablishmentItem[];
   stats: UserProfileStat[];
   handleSelecionarFoto: () => Promise<void>;
   goToSettings: () => void;
   goToShowDetail: (showId: number) => void;
   goToArtist: (artistId: number) => void;
+  goToEstablishment: (establishmentId: number) => void;
   goToAllTickets: () => void;
 }

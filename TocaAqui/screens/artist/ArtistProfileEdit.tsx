@@ -18,9 +18,9 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/Navigate";
 import { useAuth } from "@/contexts/AuthContext";
-import api from "@/http/api";
+import { artistProfileService } from "@/http/artistProfileService";
 import * as ImagePicker from "expo-image-picker";
-import { resolveImageUrl, buildImageFormFile } from "@/utils/adapters";
+import { resolveImageUrl } from "@/utils/adapters";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -62,18 +62,14 @@ export default function ArtistProfileEdit() {
       setLoading(false);
       return;
     }
-    api
-      .get(`/artistas/${perfilId}/publico`)
-      .then((r) => {
-        const p = r.data?.perfil ?? r.data?.artista ?? r.data;
+    artistProfileService
+      .getMyProfile()
+      .then((p) => {
         if (!p) return;
         setNomeArtistico(p.nome_artistico ?? "");
         setBio(p.biografia ?? "");
-        const g = p.generos;
-        if (Array.isArray(g)) setGenerosSelecionados(g);
-        else if (typeof g === "string" && g.length > 0)
-          setGenerosSelecionados(g.split(",").map((s: string) => s.trim()).filter(Boolean));
-        setCacheMin(p.cache_minimo ? String(p.cache_minimo) : "");
+        setGenerosSelecionados(p.generos ?? []);
+        setCacheMin(p.cache_minimo ? String(Math.round(p.cache_minimo)) : "");
         setFotoPerfil(p.foto_perfil ?? undefined);
       })
       .catch(() => {})
@@ -95,7 +91,7 @@ export default function ArtistProfileEdit() {
     }
     setSaving(true);
     try {
-      await api.patch(`/usuarios/perfil-artista/${perfilId}`, {
+      await artistProfileService.updateProfile(perfilId, {
         nome_artistico: nomeArtistico.trim(),
         biografia: bio.trim() || undefined,
         generos: generosSelecionados.length > 0 ? generosSelecionados : undefined,
@@ -127,14 +123,9 @@ export default function ArtistProfileEdit() {
     });
     if (result.canceled || !result.assets[0]) return;
     const uri = result.assets[0].uri;
-    const file = buildImageFormFile(uri, "artist-profile.jpg");
-    const formData = new FormData();
-    formData.append("imagem", file as any);
     try {
-      await api.patch(`/usuarios/perfil-artista/${perfilId}/foto`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setFotoPerfil(uri);
+      const path = await artistProfileService.uploadPhoto(perfilId, uri);
+      setFotoPerfil(path);
     } catch {
       // silenciado temporariamente
     }
