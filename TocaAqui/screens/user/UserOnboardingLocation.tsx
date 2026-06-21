@@ -13,6 +13,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/Navigate";
 import { preferenciaService } from "@/http/artistaPublicoService";
+import FieldError from "@/components/ui/FieldError";
 
 type Props = NativeStackScreenProps<RootStackParamList, "UserOnboardingLocation">;
 
@@ -30,6 +31,7 @@ export default function UserOnboardingLocation({ route, navigation }: Props) {
   const [useLocation, setUseLocation] = useState(false);
   const [radius, setRadius] = useState(50);
   const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
+  const [cityError, setCityError] = useState("");
 
   function toggleVenue(v: string) {
     setSelectedVenues((prev) =>
@@ -38,6 +40,11 @@ export default function UserOnboardingLocation({ route, navigation }: Props) {
   }
 
   async function handleStart() {
+    if (!city.trim()) {
+      setCityError("Cidade é obrigatória");
+      return;
+    }
+    setCityError("");
     try {
       await preferenciaService.salvar({
         cidade: city || undefined,
@@ -85,16 +92,20 @@ export default function UserOnboardingLocation({ route, navigation }: Props) {
         <Text style={styles.subtitle}>Onde vamos buscar a próxima vibe?</Text>
 
         {/* City Search */}
-        <View style={styles.searchBox}>
+        <View style={[styles.searchBox, cityError && styles.searchBoxError]}>
           <FontAwesome5 name="map-marker-alt" size={16} color="#A78BFA" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Busque sua cidade..."
             placeholderTextColor="#555577"
             value={city}
-            onChangeText={setCity}
+            onChangeText={(v) => {
+              setCityError("");
+              setCity(v);
+            }}
           />
         </View>
+        <FieldError message={cityError} />
 
         {/* Location Toggle */}
         <View style={styles.toggleRow}>
@@ -236,8 +247,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 4,
     height: 52,
+  },
+  searchBoxError: {
+    borderColor: "#EF4444",
   },
   searchIcon: { marginRight: 12 },
   searchInput: {

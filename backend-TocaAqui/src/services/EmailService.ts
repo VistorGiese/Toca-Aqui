@@ -47,3 +47,24 @@ export const sendPasswordResetEmail = async (email: string, token: string): Prom
     `,
   });
 };
+
+/**
+ * Abstração (DIP) para envio de emails de autenticação. Permite que serviços como
+ * o AuthService dependam de uma interface, não de uma implementação concreta de SMTP.
+ */
+export interface IEmailProvider {
+  sendVerificationEmail(email: string, token: string): Promise<void>;
+  sendPasswordResetEmail(email: string, token: string): Promise<void>;
+}
+
+export class NodemailerEmailProvider implements IEmailProvider {
+  async sendVerificationEmail(email: string, token: string): Promise<void> {
+    return sendVerificationEmail(email, token);
+  }
+
+  async sendPasswordResetEmail(email: string, token: string): Promise<void> {
+    return sendPasswordResetEmail(email, token);
+  }
+}
+
+export const defaultEmailProvider: IEmailProvider = new NodemailerEmailProvider();

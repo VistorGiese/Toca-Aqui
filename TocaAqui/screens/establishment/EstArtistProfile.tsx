@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+﻿import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, StatusBar, Image, Linking, Alert,
@@ -107,7 +107,7 @@ function ArtistProfileContent({
   const nome = profile.nome_artistico ?? "Artista";
   const tipo =
     TIPO_ATUACAO_LABEL[profile.tipo_atuacao ?? ""] ?? profile.tipo_atuacao?.toUpperCase() ?? "ARTISTA";
-  const localizacao = [profile.cidade, profile.estado].filter(Boolean).join(" · ");
+  const localizacao = [profile.cidade, profile.estado].filter(Boolean).join(" ┬À ");
   const fotoUrl = profile.foto_perfil ? resolveImageUrl(profile.foto_perfil) : null;
   const pressKit = parsePressKit(profile.press_kit)
     .map((path) => resolveImageUrl(path))
@@ -137,7 +137,7 @@ function ArtistProfileContent({
       <View style={s.statsRow}>
         <View style={s.statItem}>
           <Text style={[s.statValue, { color: DS.amber }]}>{formatRating(profile.nota_media)}</Text>
-          <Text style={s.statLabel}>AVALIAÇÃO</Text>
+          <Text style={s.statLabel}>AVALIA├ç├âO</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
@@ -149,7 +149,7 @@ function ArtistProfileContent({
           <Text style={[s.statValue, { color: DS.success, fontSize: 14 }]}>
             {formatCacheRange(profile.cache_minimo, profile.cache_maximo)}
           </Text>
-          <Text style={s.statLabel}>CACHÊ</Text>
+          <Text style={s.statLabel}>CACH├è</Text>
         </View>
       </View>
 
@@ -167,7 +167,7 @@ function ArtistProfileContent({
 
       {profile.generos && profile.generos.length > 0 ? (
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Gêneros musicais</Text>
+          <Text style={s.sectionTitle}>G├¬neros musicais</Text>
           <ChipList items={profile.generos} />
         </View>
       ) : null}
@@ -175,34 +175,34 @@ function ArtistProfileContent({
       <View style={s.section}>
         <Text style={s.sectionTitle}>Equipamentos / estrutura de som</Text>
         {profile.tem_estrutura_som === false ? (
-          <Text style={s.emptyHint}>Artista informou que não possui estrutura própria</Text>
+          <Text style={s.emptyHint}>Artista informou que n├úo possui estrutura pr├│pria</Text>
         ) : profile.estrutura_som && profile.estrutura_som.length > 0 ? (
           <ChipList items={profile.estrutura_som} />
         ) : (
           <Text style={s.emptyHint}>
             {profile.tem_estrutura_som
-              ? "Possui estrutura, mas ainda não detalhou os equipamentos"
-              : "Não informado pelo artista"}
+              ? "Possui estrutura, mas ainda n├úo detalhou os equipamentos"
+              : "N├úo informado pelo artista"}
           </Text>
         )}
       </View>
 
       <View style={s.section}>
-        <Text style={s.sectionTitle}>Informações</Text>
+        <Text style={s.sectionTitle}>Informa├º├Áes</Text>
         <View style={s.infoCard}>
           {profile.anos_experiencia != null && (
-            <InfoRow label="Anos de experiência" value={String(profile.anos_experiencia)} />
+            <InfoRow label="Anos de experi├¬ncia" value={String(profile.anos_experiencia)} />
           )}
           {profile.esta_disponivel != null && (
             <InfoRow
-              label="Disponível para shows"
-              value={profile.esta_disponivel ? "Sim" : "Não"}
+              label="Dispon├¡vel para shows"
+              value={profile.esta_disponivel ? "Sim" : "N├úo"}
             />
           )}
           {profile.tem_estrutura_som != null && (
             <InfoRow
               label="Possui estrutura de som"
-              value={profile.tem_estrutura_som ? "Sim" : "Não"}
+              value={profile.tem_estrutura_som ? "Sim" : "N├úo"}
             />
           )}
           {profile.url_portfolio ? (
@@ -210,7 +210,7 @@ function ArtistProfileContent({
               onPress={() => Linking.openURL(profile.url_portfolio!).catch(() => {})}
               activeOpacity={0.8}
             >
-              <InfoRow label="Portfólio" value={profile.url_portfolio} />
+              <InfoRow label="Portf├│lio" value={profile.url_portfolio} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -280,27 +280,27 @@ function BandProfileContent({ band }: { band: BandView }) {
 
       {band.descricao ? (
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Descrição</Text>
+          <Text style={s.sectionTitle}>Descri├º├úo</Text>
           <Text style={s.bodyText}>{band.descricao}</Text>
         </View>
       ) : null}
 
       {band.generos.length > 0 ? (
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Gêneros musicais</Text>
+          <Text style={s.sectionTitle}>G├¬neros musicais</Text>
           <ChipList items={band.generos} />
         </View>
       ) : null}
 
       <View style={s.section}>
-        <Text style={s.sectionTitle}>Informações</Text>
+        <Text style={s.sectionTitle}>Informa├º├Áes</Text>
         <View style={s.infoCard}>
           {band.esta_ativo != null && (
-            <InfoRow label="Banda ativa" value={band.esta_ativo ? "Sim" : "Não"} />
+            <InfoRow label="Banda ativa" value={band.esta_ativo ? "Sim" : "N├úo"} />
           )}
           {band.data_criacao ? (
             <InfoRow
-              label="Data de criação"
+              label="Data de cria├º├úo"
               value={new Date(band.data_criacao).toLocaleDateString("pt-BR")}
             />
           ) : null}
@@ -343,7 +343,7 @@ export default function EstArtistProfile() {
     } catch {
       setArtistProfile(null);
       setBandProfile(null);
-      setErrorMessage("Não foi possível carregar os dados do perfil.");
+      setErrorMessage("N├úo foi poss├¡vel carregar os dados do perfil.");
     } finally {
       setLoading(false);
     }
@@ -366,7 +366,7 @@ export default function EstArtistProfile() {
       const next = await favoriteService.toggleArtist(artistProfile.id, isFavorite);
       setIsFavorite(next);
     } catch {
-      Alert.alert("Erro", "Não foi possível atualizar seus favoritos.");
+      Alert.alert("Erro", "N├úo foi poss├¡vel atualizar seus favoritos.");
     } finally {
       setFavoriteLoading(false);
     }
@@ -385,9 +385,9 @@ export default function EstArtistProfile() {
       <View style={[s.root, { justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }]}>
         <StatusBar barStyle="light-content" backgroundColor={DS.bg} />
         <FontAwesome5 name="user-slash" size={36} color={DS.textSecondary} style={{ marginBottom: 16 }} />
-        <Text style={[s.headerTitle, { textAlign: "center", marginBottom: 8 }]}>Perfil indisponível</Text>
+        <Text style={[s.headerTitle, { textAlign: "center", marginBottom: 8 }]}>Perfil indispon├¡vel</Text>
         <Text style={[s.bodyText, { textAlign: "center", marginBottom: 24 }]}>
-          {errorMessage ?? "Artista ou banda não encontrado(a)."}
+          {errorMessage ?? "Artista ou banda n├úo encontrado(a)."}
         </Text>
         <TouchableOpacity style={s.errorBackBtn} onPress={() => navigation.goBack()} activeOpacity={0.85}>
           <Text style={s.errorBackBtnText}>VOLTAR</Text>

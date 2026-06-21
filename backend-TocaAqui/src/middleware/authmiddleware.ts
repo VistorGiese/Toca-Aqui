@@ -7,8 +7,8 @@ export interface AuthRequest extends Request {
   user?: {
     id: number;
     email?: string;
-    role?: UserRole;     // mantido para compat com código existente
-    roles?: string[];    // novo: array de roles
+    role?: UserRole;    
+    roles?: string[];    
   };
   token?: string;
 }

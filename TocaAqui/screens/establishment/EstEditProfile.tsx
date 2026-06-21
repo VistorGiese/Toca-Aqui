@@ -14,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
+import FieldError from "@/components/ui/FieldError";
 
 type NavProp = NativeStackNavigationProp<EstStackParamList>;
 
@@ -35,6 +36,7 @@ export default function EstEditProfile() {
   const [tipo, setTipo] = useState("");
   const [telefone, setTelefone] = useState("");
   const [cnpj, setCnpj] = useState("");
+  const [nomeError, setNomeError] = useState("");
 
   useEffect(() => {
     establishmentService.getMyEstablishmentProfile()
@@ -53,9 +55,10 @@ export default function EstEditProfile() {
   const handleSalvar = async () => {
     if (!profileId) return;
     if (!nome.trim()) {
-      Alert.alert("Atenção", "Informe o nome do estabelecimento.");
+      setNomeError("Nome do estabelecimento é obrigatório");
       return;
     }
+    setNomeError("");
     setSaving(true);
     try {
       await establishmentService.updateMyEstablishmentProfile(profileId, {
@@ -101,12 +104,16 @@ export default function EstEditProfile() {
         {/* Nome */}
         <Text style={s.label}>NOME DO ESTABELECIMENTO</Text>
         <TextInput
-          style={s.input}
+          style={[s.input, nomeError ? s.inputError : null]}
           value={nome}
-          onChangeText={setNome}
+          onChangeText={(v) => {
+            setNomeError("");
+            setNome(v);
+          }}
           placeholder="Nome do seu espaço"
           placeholderTextColor="#555577"
         />
+        <FieldError message={nomeError} />
 
         {/* Descrição */}
         <Text style={s.label}>DESCRIÇÃO</Text>
@@ -212,6 +219,9 @@ const s = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: "Montserrat-Regular",
     fontSize: 14,
+  },
+  inputError: {
+    borderColor: "#EF4444",
   },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   chip: {

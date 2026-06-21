@@ -3,7 +3,6 @@ process.env.DB_USER = 'root';
 process.env.DB_PASSWORD = '';
 process.env.JWT_SECRET = 'super-secret-key-for-tests-only-32chars';
 
-// Mock de todos os models usados no modelRegistry
 jest.mock('../models/AddressModel', () => ({ findByPk: jest.fn() }));
 jest.mock('../models/BandModel', () => ({ findByPk: jest.fn() }));
 jest.mock('../models/BookingModel', () => ({ findByPk: jest.fn() }));

@@ -16,6 +16,7 @@ import { bandApplicationService } from "@/http/bandApplicationService";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 import { artistaPublicoService } from "@/http/artistaPublicoService";
+import FieldError from "@/components/ui/FieldError";
 
 const DS = {
   bg: "#09090F",
@@ -47,6 +48,7 @@ export default function ApplyConfirmation() {
   const [loading, setLoading] = useState(false);
   const [mediaArtista, setMediaArtista] = useState<number>(0);
   const [cidadeArtista, setCidadeArtista] = useState<string>("");
+  const [errors, setErrors] = useState<{ mensagem?: string; valorProposto?: string }>({});
 
   useEffect(() => {
     if (user?.perfilArtistaId) {
@@ -62,16 +64,19 @@ export default function ApplyConfirmation() {
   }, [user?.perfilArtistaId]);
 
   const handleEnviar = async () => {
+    const nextErrors: typeof errors = {};
     if (!mensagem.trim()) {
-      Alert.alert("Atenção", "Escreva uma mensagem de apresentação.");
-      return;
+      nextErrors.mensagem = "Mensagem de apresentação é obrigatória";
     }
-
     const valorNum = parseFloat(valorProposto);
     if (!valorProposto.trim() || isNaN(valorNum) || valorNum <= 0) {
-      Alert.alert("Atencao", "Informe um valor proposto valido.");
+      nextErrors.valorProposto = "Valor proposto é obrigatório";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
+    setErrors({});
 
     setLoading(true);
     try {
@@ -147,27 +152,35 @@ export default function ApplyConfirmation() {
         {/* Mensagem de Apresentação */}
         <Text style={styles.cardSectionTitle}>SUA MENSAGEM DE APRESENTAÇÃO</Text>
         <TextInput
-          style={styles.messageInput}
+          style={[styles.messageInput, errors.mensagem && styles.inputError]}
           placeholder={`Olá! Sou ${getFirstName()} e gostaria de me candidatar para este show...`}
           placeholderTextColor={DS.textDis}
           multiline
           numberOfLines={6}
           value={mensagem}
-          onChangeText={setMensagem}
+          onChangeText={(v) => {
+            setErrors((e) => ({ ...e, mensagem: undefined }));
+            setMensagem(v);
+          }}
           textAlignVertical="top"
         />
+        <FieldError message={errors.mensagem} />
 
         {/* Valor Proposto */}
         <Text style={styles.cardSectionTitle}>VALOR PROPOSTO</Text>
         <Text style={styles.inputLabel}>Valor proposto (R$)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, errors.valorProposto && styles.inputError]}
           placeholder="Ex: 350"
           placeholderTextColor={DS.textDis}
           keyboardType="numeric"
           value={valorProposto}
-          onChangeText={setValorProposto}
+          onChangeText={(v) => {
+            setErrors((e) => ({ ...e, valorProposto: undefined }));
+            setValorProposto(v);
+          }}
         />
+        <FieldError message={errors.valorProposto} />
 
         {/* Preview do Perfil */}
         <Text style={styles.cardSectionTitle}>COMO O CONTRATANTE VERÁ SEU PERFIL</Text>
@@ -315,6 +328,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
     borderColor: DS.bgSurface,
+  },
+  inputError: {
+    borderColor: DS.danger,
   },
   profilePreviewCard: {
     backgroundColor: DS.bgCard,

@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, Image } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors } from "@/utils/colors";
 import Input from "@/components/ui/Input";
+import FieldError from "@/components/ui/FieldError";
 import OnboardingEstShell from "./components/OnboardingEstShell";
 import EstTypeSelector from "./components/EstTypeSelector";
 import { onboardingStyles as s } from "./styles";
@@ -45,6 +46,7 @@ export default function OnboardingEstIdentidadeScreen() {
         placeholder="Ex: The Sonic Lounge"
         value={vm.nome}
         onChangeText={vm.setNome}
+        error={vm.errors.nome}
         containerStyle={{ width: "100%", marginBottom: 4 }}
       />
 
@@ -54,6 +56,7 @@ export default function OnboardingEstIdentidadeScreen() {
         value={vm.telefone}
         onChangeText={vm.setTelefone}
         keyboardType="phone-pad"
+        error={vm.errors.telefone}
         containerStyle={{ width: "100%", marginBottom: 4 }}
       />
 
@@ -63,6 +66,7 @@ export default function OnboardingEstIdentidadeScreen() {
         value={vm.cnpj}
         onChangeText={vm.setCnpj}
         keyboardType="number-pad"
+        error={vm.errors.cnpj}
         containerStyle={{ width: "100%", marginBottom: 4 }}
       />
 
@@ -71,6 +75,7 @@ export default function OnboardingEstIdentidadeScreen() {
         value={vm.tipo}
         onChange={(tipo) => vm.setTipo(tipo as EstablishmentTipo)}
       />
+      <FieldError message={vm.errors.tipo} />
     </OnboardingEstShell>
   );
 }

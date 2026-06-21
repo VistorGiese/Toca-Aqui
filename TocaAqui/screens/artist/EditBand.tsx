@@ -19,6 +19,7 @@ import { RootStackParamList } from "../../navigation/Navigate";
 import { colors, genreColors, getGenreColor } from "@/utils/colors";
 import { bandService } from "@/http/bandService";
 import { artistService } from "@/http/artistService";
+import FieldError from "@/components/ui/FieldError";
 import { showApiError } from "@/utils/errorHandler";
 import { useAuth } from "@/contexts/AuthContext";
 import Input from "@/components/ui/Input";
@@ -62,6 +63,7 @@ export default function EditBand() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [generosError, setGenerosError] = useState("");
 
   const { control, handleSubmit, setValue } = useForm<EditBandForm>({
     mode: "onTouched",
@@ -86,13 +88,18 @@ export default function EditBand() {
   }
 
   const toggleGenre = (genre: string) => {
+    setGenerosError("");
     setSelectedGenres((prev) =>
       prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
     );
   };
 
   async function onSubmit(data: EditBandForm) {
-    if (selectedGenres.length === 0) return;
+    if (selectedGenres.length === 0) {
+      setGenerosError("Selecione pelo menos um gênero");
+      return;
+    }
+    setGenerosError("");
 
     setIsSubmitting(true);
     try {
@@ -228,10 +235,8 @@ export default function EditBand() {
           {/* Genre label */}
           <View style={styles.genreLabelRow}>
             <Text style={styles.genreLabel}>Gêneros musicais</Text>
-            {selectedGenres.length === 0 && (
-              <Text style={styles.genreRequired}>*Selecione ao menos um</Text>
-            )}
           </View>
+          <FieldError message={generosError} />
 
           <View style={styles.genreContainer}>
             {AVAILABLE_GENRES.map((genre) => {

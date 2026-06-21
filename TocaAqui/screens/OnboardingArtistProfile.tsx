@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/Navigate";
 import * as ImagePicker from "expo-image-picker";
+import FieldError from "@/components/ui/FieldError";
 
 const { width } = Dimensions.get("window");
 
@@ -71,8 +72,23 @@ export default function OnboardingArtistProfile() {
   const [cacheMax, setCacheMax] = useState("");
   const [temEstrutura, setTemEstrutura] = useState(false);
   const [estrutura, setEstrutura] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{
+    nomeArtistico?: string;
+    tipo?: string;
+    generos?: string;
+  }>({});
+
+  const clearError = (field: keyof typeof errors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
   const toggleGenero = (label: string) => {
+    clearError("generos");
     setGenerosSelecionados((prev) =>
       prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]
     );
@@ -102,18 +118,21 @@ export default function OnboardingArtistProfile() {
   };
 
   const handleContinuar = () => {
+    const nextErrors: typeof errors = {};
     if (!nomeArtistico.trim()) {
-      Alert.alert("Atenção", "Informe seu nome artístico para continuar.");
-      return;
+      nextErrors.nomeArtistico = "Nome artístico é obrigatório";
     }
     if (!tipoSelecionado) {
-      Alert.alert("Atenção", "Selecione o tipo de atuação.");
-      return;
+      nextErrors.tipo = "Tipo de atuação é obrigatório";
     }
     if (generosSelecionados.length === 0) {
-      Alert.alert("Atenção", "Selecione pelo menos um gênero musical.");
+      nextErrors.generos = "Selecione pelo menos um gênero";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
+    setErrors({});
 
     navigation.navigate("OnboardingArtistBio", {
       nome: nomeArtistico,
@@ -164,12 +183,16 @@ export default function OnboardingArtistProfile() {
         {/* Nome Artístico */}
         <Text style={styles.fieldLabel}>NOME ARTÍSTICO</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, errors.nomeArtistico && styles.inputError]}
           placeholder="Ex: Lunar Echoes"
           placeholderTextColor={DS.textDis}
           value={nomeArtistico}
-          onChangeText={setNomeArtistico}
+          onChangeText={(v) => {
+            clearError("nomeArtistico");
+            setNomeArtistico(v);
+          }}
         />
+        <FieldError message={errors.nomeArtistico} />
 
         {/* Tipo de Atuação */}
         <Text style={styles.fieldLabel}>TIPO DE ATUAÇÃO</Text>
@@ -180,7 +203,10 @@ export default function OnboardingArtistProfile() {
               <TouchableOpacity
                 key={tipo}
                 style={[styles.pill, active && styles.pillActive]}
-                onPress={() => setTipoSelecionado(tipo)}
+                onPress={() => {
+                  clearError("tipo");
+                  setTipoSelecionado(tipo);
+                }}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.pillText, active && styles.pillTextActive]}>
@@ -190,6 +216,7 @@ export default function OnboardingArtistProfile() {
             );
           })}
         </View>
+        <FieldError message={errors.tipo} />
 
         <View style={styles.separator} />
 
@@ -219,6 +246,7 @@ export default function OnboardingArtistProfile() {
             );
           })}
         </View>
+        <FieldError message={errors.generos} />
 
         {/* Cachê */}
         <View style={styles.cacheRow}>
@@ -402,6 +430,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
     borderColor: DS.bgSurface,
+  },
+  inputError: {
+    borderColor: DS.danger,
   },
   pillRow: {
     flexDirection: "row",

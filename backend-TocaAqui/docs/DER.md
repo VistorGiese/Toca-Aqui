@@ -11,8 +11,11 @@ erDiagram
         int id PK
         string nome_completo
         string email UK
-        string senha_hash
-        text roles "TEXT[] — array de roles (common_user, artist, establishment_owner, admin)"
+        string senha
+        enum role "common_user | artist | establishment_owner | admin"
+        json roles "array de roles"
+        boolean email_verificado
+        string foto_perfil
         datetime created_at
         datetime updated_at
     }
@@ -21,34 +24,55 @@ erDiagram
         int id PK
         int usuario_id FK
         string nome_artistico
-        text bio
-        json generos_musicais
+        text biografia
+        json generos
+        json instrumentos
+        int anos_experiencia
+        string url_portfolio
+        string foto_perfil
+        boolean esta_disponivel
+        string tipo_atuacao
         decimal cache_minimo
         decimal cache_maximo
-        int shows_realizados
-        decimal nota_media
-        string foto_perfil
+        boolean tem_estrutura_som
+        json estrutura_som
         string cidade
         string estado
+        json links_sociais
+        json press_kit
+        json datas_indisponiveis
+        int shows_realizados
+        decimal nota_media
+        datetime created_at
+        datetime updated_at
     }
 
     PERFIS_ESTABELECIMENTOS {
         int id PK
         int usuario_id FK
         int endereco_id FK
-        string nome
-        string tipo
-        string telefone
-        string descricao
+        string nome_estabelecimento
+        enum tipo_estabelecimento "bar | casa_show | restaurante | club | outro"
+        text descricao
+        string generos_musicais
+        string horario_abertura
+        string horario_fechamento
+        string telefone_contato
+        string cnpj
+        string fotos
         decimal latitude
         decimal longitude
+        boolean esta_ativo
+        int shows_realizados
+        decimal nota_media
+        datetime created_at
+        datetime updated_at
     }
 
     ENDERECOS {
         int id PK
-        string logradouro
+        string rua
         string numero
-        string complemento
         string bairro
         string cidade
         string estado
@@ -57,18 +81,39 @@ erDiagram
 
     BANDAS {
         int id PK
-        string nome
-        string genero_musical
-        string bio
-        string foto
+        string nome_banda
+        text descricao
+        string imagem
+        json generos_musicais
+        date data_criacao
+        boolean esta_ativo
+        decimal cache_minimo
+        decimal cache_maximo
+        string cidade
+        string estado
+        string telefone_contato
+        json links_sociais
+        json press_kit
+        boolean tem_estrutura_som
+        json estrutura_som
+        decimal nota_media
+        int shows_realizados
+        boolean esta_disponivel
+        json datas_indisponiveis
+        datetime created_at
+        datetime updated_at
     }
 
-    MEMBROS_BANDAS {
+    MEMBROS_BANDA {
         int id PK
         int banda_id FK
         int perfil_artista_id FK
-        string papel
-        boolean is_lider
+        string funcao
+        boolean e_lider
+        enum status "pending | approved | rejected"
+        datetime data_entrada
+        datetime created_at
+        datetime updated_at
     }
 
     AGENDAMENTOS {
@@ -76,16 +121,23 @@ erDiagram
         int perfil_estabelecimento_id FK
         string titulo_evento
         text descricao_evento
-        datetime data_show
+        date data_show
         string horario_inicio
         string horario_fim
-        string status "pendente | aceito | rejeitado | cancelado | realizado"
+        enum status "pendente | aceito | rejeitado | cancelado | realizado"
+        decimal cache_minimo
+        decimal cache_maximo
         decimal preco_ingresso_inteira
         decimal preco_ingresso_meia
         int capacidade_maxima
         int ingressos_vendidos
-        string genero_musical
+        string classificacao_etaria
+        string imagem_capa
+        enum modo_venda_ingresso "antecipada | na_porta"
         boolean esta_publico
+        string genero_musical
+        datetime created_at
+        datetime updated_at
     }
 
     APLICACOES_BANDA_EVENTO {
@@ -95,7 +147,7 @@ erDiagram
         int banda_id FK
         decimal valor_proposto
         text mensagem
-        string status "pendente | aceito | rejeitado | cancelado"
+        enum status "pendente | aceito | rejeitado | cancelado"
         datetime data_aplicacao
     }
 
@@ -106,47 +158,84 @@ erDiagram
         int artista_id FK
         int banda_id FK
         int perfil_estabelecimento_id FK
-        string status "rascunho | aguardando_aceite | aceito | cancelado | concluido"
-        decimal cache_total
-        string metodo_pagamento
-        decimal percentual_sinal
-        decimal valor_sinal
-        datetime data_evento
+        enum status "rascunho | aguardando_aceite | aceito | cancelado | concluido"
+        string nome_contratante
+        string documento_contratante
+        string endereco_contratante
+        string telefone_contratante
+        string nome_contratado
+        string documento_contratado
+        string telefone_contratado
+        date data_evento
         string horario_inicio
         string horario_fim
+        int duracao_minutos
+        string intervalos
+        string genero_musical
+        string local_evento
+        decimal cache_total
+        enum metodo_pagamento "pix | transferencia | cartao | dinheiro | stripe"
+        decimal percentual_sinal
+        decimal valor_sinal
+        date data_pagamento_sinal
+        date data_pagamento_restante
+        text obrigacoes_contratante
+        text obrigacoes_contratado
+        decimal penalidade_cancelamento_72h
+        decimal penalidade_cancelamento_24_72h
+        decimal penalidade_cancelamento_24h
+        boolean direitos_imagem
+        string infraestrutura_som
+        string infraestrutura_backline
+        text observacoes
         boolean aceite_contratante
         boolean aceite_contratado
+        datetime data_aceite_contratante
+        datetime data_aceite_contratado
+        enum ultima_edicao_por "contratante | contratado"
         int versao
-        string status_pagamento "pendente | pago | falhou"
+        enum status_pagamento "pendente | pago | falhou"
+        datetime created_at
+        datetime updated_at
     }
 
     HISTORICO_CONTRATOS {
         int id PK
         int contrato_id FK
         int usuario_id FK
-        string status_anterior
-        string status_novo
-        text observacao
+        string campo_alterado
+        text valor_anterior
+        text valor_novo
+        enum alterado_por "contratante | contratado"
         datetime created_at
     }
 
     PAGAMENTOS {
         int id PK
         int contrato_id FK
+        enum tipo "sinal | restante | total"
         decimal valor
-        string metodo
-        string status
-        string stripe_payment_intent_id
+        enum status "pendente | processando | pago | falhou | reembolsado | cancelado"
+        string stripe_payment_intent_id UK
+        string stripe_charge_id
+        string metodo_pagamento
+        datetime data_pagamento
+        date data_vencimento
+        int tentativas
+        text erro_mensagem
+        json metadata
         datetime created_at
+        datetime updated_at
     }
 
     NOTIFICACOES {
         int id PK
         int usuario_id FK
-        string tipo
+        enum tipo "aplicacao_recebida | aplicacao_aceita | aplicacao_rejeitada | convite_banda | sistema | contrato_gerado | contrato_atualizado | contrato_aceito | contrato_cancelado | pagamento_pendente | pagamento_recebido | pagamento_falhou"
         text mensagem
-        json dados
         boolean lida
+        string referencia_tipo
+        int referencia_id
         datetime created_at
     }
 
@@ -154,9 +243,9 @@ erDiagram
         int id PK
         int usuario_id FK
         int agendamento_id FK
-        string tipo "inteira | meia_entrada | vip"
+        enum tipo "inteira | meia_entrada | vip"
         decimal preco
-        string status "pendente | confirmado | cancelado | utilizado"
+        enum status "pendente | confirmado | cancelado | utilizado"
         string codigo_qr
         string stripe_payment_intent_id
     }
@@ -177,31 +266,36 @@ erDiagram
         int id PK
         int usuario_id FK
         int agendamento_id FK
-        int parent_id FK "auto-referência para respostas"
-        text conteudo
+        text texto
+        int curtidas_count
+        int parent_id FK
         datetime created_at
+        datetime updated_at
     }
 
     CURTIDAS_COMENTARIOS {
         int id PK
-        int comentario_id FK
         int usuario_id FK
+        int comentario_id FK
         datetime created_at
+        datetime updated_at
     }
 
     SEGUIDORES_ARTISTAS {
         int id PK
-        int perfil_artista_id FK
         int usuario_id FK
+        int perfil_artista_id FK
         datetime created_at
+        datetime updated_at
     }
 
     FAVORITOS {
         int id PK
         int usuario_id FK
-        string tipo_entidade "banda | estabelecimento | agendamento"
-        int entidade_id
+        enum favoritavel_tipo "perfil_estabelecimento | perfil_artista | banda | agendamento"
+        int favoritavel_id
         datetime created_at
+        datetime updated_at
     }
 
     PREFERENCIAS_USUARIO {
@@ -209,61 +303,57 @@ erDiagram
         int usuario_id FK "UK"
         json generos_favoritos
         string cidade
-        int raio_km
+        int raio_busca_km
         json tipos_local
+        boolean notif_novos_shows
+        boolean notif_lembretes
+        datetime created_at
+        datetime updated_at
     }
 
-    MEMBROS_ESTABELECIMENTO {
+    ESTABELECIMENTO_MEMBROS {
         int id PK
         int estabelecimento_id FK
         int usuario_id FK
-        string papel "owner | admin | member"
+        enum role "admin"
         datetime created_at
+        datetime updated_at
     }
 
-    %% Relacionamentos — Usuários
-    USUARIOS ||--o{ PERFIS_ARTISTAS : "tem (1:N)"
-    USUARIOS ||--o{ PERFIS_ESTABELECIMENTOS : "tem (1:N)"
-    USUARIOS ||--o{ NOTIFICACOES : "recebe (1:N)"
-    USUARIOS ||--o{ INGRESSOS : "compra (1:N)"
-    USUARIOS ||--o{ AVALIACOES_SHOWS : "avalia (1:N)"
-    USUARIOS ||--o{ COMENTARIOS_SHOWS : "comenta (1:N)"
-    USUARIOS ||--o{ FAVORITOS : "favorita (1:N)"
-    USUARIOS ||--o{ SEGUIDORES_ARTISTAS : "segue (1:N)"
-    USUARIOS ||--o{ HISTORICO_CONTRATOS : "registra (1:N)"
-    USUARIOS ||--|| PREFERENCIAS_USUARIO : "tem (1:1)"
-    USUARIOS ||--o{ MEMBROS_ESTABELECIMENTO : "gerencia (1:N)"
-
-    %% Relacionamentos — Estabelecimentos
-    PERFIS_ESTABELECIMENTOS ||--o| ENDERECOS : "possui (N:1)"
-    PERFIS_ESTABELECIMENTOS ||--o{ AGENDAMENTOS : "cria (1:N)"
-    PERFIS_ESTABELECIMENTOS ||--o{ CONTRATOS : "assina (1:N)"
-    PERFIS_ESTABELECIMENTOS ||--o{ MEMBROS_ESTABELECIMENTO : "tem membros (1:N)"
-
-    %% Relacionamentos — Artistas e Bandas
-    PERFIS_ARTISTAS ||--o{ APLICACOES_BANDA_EVENTO : "se candidata (1:N)"
-    PERFIS_ARTISTAS ||--o{ CONTRATOS : "participa (1:N)"
-    PERFIS_ARTISTAS ||--o{ MEMBROS_BANDAS : "integra bandas (1:N)"
-    PERFIS_ARTISTAS ||--o{ SEGUIDORES_ARTISTAS : "é seguido (1:N)"
-    BANDAS ||--o{ MEMBROS_BANDAS : "tem membros (1:N)"
-    BANDAS ||--o{ APLICACOES_BANDA_EVENTO : "se candidata (1:N)"
-    BANDAS ||--o{ CONTRATOS : "participa (1:N)"
-
-    %% Relacionamentos — Eventos (Agendamentos)
-    AGENDAMENTOS ||--o{ APLICACOES_BANDA_EVENTO : "recebe candidaturas (1:N)"
-    AGENDAMENTOS ||--o| CONTRATOS : "gera contrato (1:1)"
-    AGENDAMENTOS ||--o{ INGRESSOS : "vende (1:N)"
-    AGENDAMENTOS ||--o{ AVALIACOES_SHOWS : "recebe avaliações (1:N)"
-    AGENDAMENTOS ||--o{ COMENTARIOS_SHOWS : "recebe comentários (1:N)"
-
-    %% Relacionamentos — Contratos
-    APLICACOES_BANDA_EVENTO ||--o| CONTRATOS : "origina (1:1)"
-    CONTRATOS ||--o{ PAGAMENTOS : "tem pagamentos (1:N)"
-    CONTRATOS ||--o{ HISTORICO_CONTRATOS : "tem histórico (1:N)"
-
-    %% Relacionamentos — Comentários
-    COMENTARIOS_SHOWS ||--o{ COMENTARIOS_SHOWS : "tem respostas (1:N)"
-    COMENTARIOS_SHOWS ||--o{ CURTIDAS_COMENTARIOS : "recebe curtidas (1:N)"
+    %% Relacionamentos
+    USUARIOS ||--o{ PERFIS_ESTABELECIMENTOS : "possui"
+    USUARIOS ||--o{ PERFIS_ARTISTAS : "possui"
+    ENDERECOS ||--o{ PERFIS_ESTABELECIMENTOS : "localiza"
+    PERFIS_ESTABELECIMENTOS ||--o{ AGENDAMENTOS : "cria"
+    BANDAS ||--o{ MEMBROS_BANDA : "tem"
+    PERFIS_ARTISTAS ||--o{ MEMBROS_BANDA : "integra"
+    AGENDAMENTOS ||--o{ APLICACOES_BANDA_EVENTO : "recebe"
+    BANDAS ||--o{ APLICACOES_BANDA_EVENTO : "candidata"
+    PERFIS_ARTISTAS ||--o{ APLICACOES_BANDA_EVENTO : "candidata"
+    APLICACOES_BANDA_EVENTO ||--o| CONTRATOS : "gera"
+    AGENDAMENTOS ||--o| CONTRATOS : "referencia"
+    BANDAS ||--o{ CONTRATOS : "assina"
+    PERFIS_ARTISTAS ||--o{ CONTRATOS : "assina"
+    PERFIS_ESTABELECIMENTOS ||--o{ CONTRATOS : "assina"
+    CONTRATOS ||--o{ PAGAMENTOS : "tem"
+    CONTRATOS ||--o{ HISTORICO_CONTRATOS : "registra"
+    USUARIOS ||--o{ HISTORICO_CONTRATOS : "altera"
+    USUARIOS ||--o{ NOTIFICACOES : "recebe"
+    AGENDAMENTOS ||--o{ INGRESSOS : "vende"
+    USUARIOS ||--o{ INGRESSOS : "compra"
+    AGENDAMENTOS ||--o{ AVALIACOES_SHOWS : "recebe"
+    USUARIOS ||--o{ AVALIACOES_SHOWS : "faz"
+    AGENDAMENTOS ||--o{ COMENTARIOS_SHOWS : "tem"
+    USUARIOS ||--o{ COMENTARIOS_SHOWS : "faz"
+    COMENTARIOS_SHOWS ||--o{ COMENTARIOS_SHOWS : "responde"
+    COMENTARIOS_SHOWS ||--o{ CURTIDAS_COMENTARIOS : "recebe"
+    USUARIOS ||--o{ CURTIDAS_COMENTARIOS : "da"
+    PERFIS_ARTISTAS ||--o{ SEGUIDORES_ARTISTAS : "tem"
+    USUARIOS ||--o{ SEGUIDORES_ARTISTAS : "segue"
+    USUARIOS ||--o{ FAVORITOS : "tem"
+    USUARIOS ||--o| PREFERENCIAS_USUARIO : "tem"
+    PERFIS_ESTABELECIMENTOS ||--o{ ESTABELECIMENTO_MEMBROS : "tem"
+    USUARIOS ||--o{ ESTABELECIMENTO_MEMBROS : "pertence"
 ```
 
 ## Tabelas e Nomes Reais
@@ -275,7 +365,7 @@ erDiagram
 | EstablishmentProfileModel | `perfis_estabelecimentos` |
 | AddressModel | `enderecos` |
 | BandModel | `bandas` |
-| BandMemberModel | `membros_bandas` |
+| BandMemberModel | `membros_banda` |
 | BookingModel | `agendamentos` |
 | BandApplicationModel | `aplicacoes_banda_evento` |
 | ContractModel | `contratos` |
@@ -289,17 +379,17 @@ erDiagram
 | SeguidorArtistaModel | `seguidores_artistas` |
 | FavoriteModel | `favoritos` |
 | PreferenciaUsuarioModel | `preferencias_usuario` |
-| EstablishmentMemberModel | `membros_estabelecimento` |
+| EstablishmentMemberModel | `estabelecimento_membros` |
 
 ## Fluxo Principal do Domínio
 
 ```
 USUARIO (establishment_owner)
   └─► cria AGENDAMENTO (vaga aberta)
-         └─► recebe N APLICACOES_BANDA_EVENTO (artistas se candidatam com valor_proposto)
+         └─► recebe N APLICACOES_BANDA_EVENTO (artistas/bandas se candidatam com valor_proposto)
                 └─► estabelecimento aceita 1 candidatura
-                       └─► sistema cria CONTRATO (status: aguardando_aceite)
-                              └─► artista confirma (status: aceito)
+                       └─► sistema cria CONTRATO (snapshot dos dados + status: aguardando_aceite)
+                              └─► artista/banda confirma (status: aceito)
                                      └─► show acontece → status: concluido
-                                            └─► usuários criam AVALIACOES_SHOWS
+                                            └─► usuários criam AVALIACOES_SHOWS e COMENTARIOS_SHOWS
 ```

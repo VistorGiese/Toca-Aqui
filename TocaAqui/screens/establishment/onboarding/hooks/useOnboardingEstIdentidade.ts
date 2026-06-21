@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -11,9 +11,23 @@ import { maskCnpj, sanitizeCnpj, sanitizePhone } from "../utils";
 
 type NavProp = NativeStackNavigationProp<EstablishmentOnboardingStackParamList, "OnboardingEstIdentidade">;
 
+export type OnboardingEstIdentidadeErrors = Partial<
+  Record<"nome" | "tipo" | "telefone" | "cnpj", string>
+>;
+
 export function useOnboardingEstIdentidade() {
   const navigation = useNavigation<NavProp>();
   const { draft, updateDraft } = useEstablishmentOnboarding();
+  const [errors, setErrors] = useState<OnboardingEstIdentidadeErrors>({});
+
+  const clearError = useCallback((field: keyof OnboardingEstIdentidadeErrors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem("token").then((stored) => {
@@ -49,24 +63,26 @@ export function useOnboardingEstIdentidade() {
   const goNext = useCallback(
     (skipValidation = false) => {
       if (!skipValidation) {
+        const nextErrors: OnboardingEstIdentidadeErrors = {};
         if (!draft.nome.trim()) {
-          Alert.alert("Atenção", "Informe o nome do estabelecimento.");
-          return;
+          nextErrors.nome = "Nome do estabelecimento é obrigatório";
         }
         if (!draft.tipo) {
-          Alert.alert("Atenção", "Selecione o tipo do estabelecimento.");
-          return;
+          nextErrors.tipo = "Tipo do estabelecimento é obrigatório";
         }
         const tel = sanitizePhone(draft.telefone);
         if (tel.length < 8) {
-          Alert.alert("Atenção", "Informe um telefone válido (mínimo 8 dígitos).");
-          return;
+          nextErrors.telefone = "Telefone é obrigatório (mínimo 8 dígitos)";
         }
         const cnpj = sanitizeCnpj(draft.cnpj);
         if (cnpj && cnpj.length !== 14) {
-          Alert.alert("Atenção", "Informe um CNPJ válido com 14 dígitos ou deixe em branco.");
+          nextErrors.cnpj = "CNPJ inválido (14 dígitos ou deixe em branco)";
+        }
+        if (Object.keys(nextErrors).length > 0) {
+          setErrors(nextErrors);
           return;
         }
+        setErrors({});
         updateDraft({ telefone: tel });
         navigation.navigate("OnboardingEstFuncionamento");
         return;
@@ -84,12 +100,33 @@ export function useOnboardingEstIdentidade() {
     [draft, navigation, updateDraft]
   );
 
-  const setNome = useCallback((nome: string) => updateDraft({ nome }), [updateDraft]);
-  const setTelefone = useCallback((telefone: string) => updateDraft({ telefone }), [updateDraft]);
-  const setCnpj = useCallback((cnpj: string) => updateDraft({ cnpj: maskCnpj(cnpj) }), [updateDraft]);
+  const setNome = useCallback(
+    (nome: string) => {
+      clearError("nome");
+      updateDraft({ nome });
+    },
+    [clearError, updateDraft]
+  );
+  const setTelefone = useCallback(
+    (telefone: string) => {
+      clearError("telefone");
+      updateDraft({ telefone });
+    },
+    [clearError, updateDraft]
+  );
+  const setCnpj = useCallback(
+    (cnpj: string) => {
+      clearError("cnpj");
+      updateDraft({ cnpj: maskCnpj(cnpj) });
+    },
+    [clearError, updateDraft]
+  );
   const setTipo = useCallback(
-    (tipo: EstablishmentTipo) => updateDraft({ tipo }),
-    [updateDraft]
+    (tipo: EstablishmentTipo) => {
+      clearError("tipo");
+      updateDraft({ tipo });
+    },
+    [clearError, updateDraft]
   );
 
   return {
@@ -98,6 +135,7 @@ export function useOnboardingEstIdentidade() {
     cnpj: draft.cnpj,
     tipo: draft.tipo,
     fotoUri: draft.fotoUri,
+    errors,
     setNome,
     setTelefone,
     setCnpj,

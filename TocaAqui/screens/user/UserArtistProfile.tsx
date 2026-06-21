@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -83,7 +83,7 @@ function SoundStructureSection({
   equipamentos: string[];
 }) {
   if (temEstrutura === false) {
-    return <Text style={styles.emptySection}>Não possui estrutura de som própria</Text>;
+    return <Text style={styles.emptySection}>N├úo possui estrutura de som pr├│pria</Text>;
   }
   if (equipamentos.length > 0) {
     return (
@@ -219,7 +219,7 @@ export default function UserArtistProfile({ route, navigation }: Props) {
       const next = await favoriteService.toggleArtist(artistId, isFavorite);
       setIsFavorite(next);
     } catch {
-      Alert.alert("Erro", "Não foi possível atualizar seus favoritos. Faça login e tente novamente.");
+      Alert.alert("Erro", "N├úo foi poss├¡vel atualizar seus favoritos. Fa├ºa login e tente novamente.");
     } finally {
       setFavoriteLoading(false);
     }
@@ -230,7 +230,7 @@ export default function UserArtistProfile({ route, navigation }: Props) {
       showId: show.id,
       showTitle: show.titulo_evento,
       showDate: formatShowDate(show.data_show),
-      venue: show.EstablishmentProfile?.nome_estabelecimento ?? "Local não informado",
+      venue: show.EstablishmentProfile?.nome_estabelecimento ?? "Local n├úo informado",
     });
   }
 
@@ -247,7 +247,7 @@ export default function UserArtistProfile({ route, navigation }: Props) {
     return (
       <View style={styles.errorContainer}>
         <StatusBar barStyle="light-content" backgroundColor="#09090F" />
-        <Text style={styles.errorText}>Artista não encontrado.</Text>
+        <Text style={styles.errorText}>Artista n├úo encontrado.</Text>
         <TouchableOpacity style={styles.errorBackBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.errorBackBtnText}>VOLTAR</Text>
         </TouchableOpacity>
@@ -273,7 +273,7 @@ export default function UserArtistProfile({ route, navigation }: Props) {
   const locationLabel =
     [profileSnapshot?.cidade ?? artista.cidade, profileSnapshot?.estado ?? artista.estado]
       .filter(Boolean)
-      .join(", ") || "Cidade não informada";
+      .join(", ") || "Cidade n├úo informada";
   const coverUrl = avatarUrl ?? galleryPhotos[0] ?? null;
 
   return (
@@ -379,12 +379,12 @@ export default function UserArtistProfile({ route, navigation }: Props) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Avaliações do público</Text>
-          <Text style={styles.emptySection}>Sem avaliações ainda</Text>
+          <Text style={styles.sectionTitle}>Avalia├º├Áes do p├║blico</Text>
+          <Text style={styles.emptySection}>Sem avalia├º├Áes ainda</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Próximos shows</Text>
+          <Text style={styles.sectionTitle}>Pr├│ximos shows</Text>
           {shows.length === 0 ? (
             <Text style={styles.emptySection}>Nenhum show programado</Text>
           ) : (
@@ -396,7 +396,7 @@ export default function UserArtistProfile({ route, navigation }: Props) {
                 <View style={styles.showInfo}>
                   <Text style={styles.showTitle}>{show.titulo_evento}</Text>
                   <Text style={styles.showVenue}>
-                    {show.EstablishmentProfile?.nome_estabelecimento ?? "Local não informado"}
+                    {show.EstablishmentProfile?.nome_estabelecimento ?? "Local n├úo informado"}
                   </Text>
                 </View>
                 {canBuyTickets ? (

@@ -9,9 +9,23 @@ import { LocationPickerMode } from "../components/LocationPickerModal";
 
 type NavProp = NativeStackNavigationProp<EstablishmentOnboardingStackParamList, "OnboardingEstFuncionamento">;
 
+export type OnboardingEstFuncionamentoErrors = Partial<
+  Record<"estado" | "cidade" | "endereco" | "numero", string>
+>;
+
 export function useOnboardingEstFuncionamento() {
   const navigation = useNavigation<NavProp>();
   const { draft, updateDraft, setWeekSchedule } = useEstablishmentOnboarding();
+  const [errors, setErrors] = useState<OnboardingEstFuncionamentoErrors>({});
+
+  const clearError = useCallback((field: keyof OnboardingEstFuncionamentoErrors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
 
   const [estados, setEstados] = useState<IbgeEstado[]>([]);
   const [cidades, setCidades] = useState<IbgeCidade[]>([]);
@@ -64,18 +78,21 @@ export function useOnboardingEstFuncionamento() {
 
   const selectEstado = useCallback(
     (estado: IbgeEstado) => {
+      clearError("estado");
+      clearError("cidade");
       updateDraft({ estado: estado.sigla, estadoNome: estado.nome, cidade: "" });
       setPickerMode(null);
     },
-    [updateDraft]
+    [clearError, updateDraft]
   );
 
   const selectCidade = useCallback(
     (cidade: IbgeCidade) => {
+      clearError("cidade");
       updateDraft({ cidade: cidade.nome });
       setPickerMode(null);
     },
-    [updateDraft]
+    [clearError, updateDraft]
   );
 
   const toggleDay = useCallback(
@@ -103,22 +120,24 @@ export function useOnboardingEstFuncionamento() {
   );
 
   const goNext = useCallback(() => {
+    const nextErrors: OnboardingEstFuncionamentoErrors = {};
     if (!draft.estado) {
-      Alert.alert("Atenção", "Selecione o estado.");
-      return;
+      nextErrors.estado = "Estado é obrigatório";
     }
     if (!draft.cidade) {
-      Alert.alert("Atenção", "Selecione a cidade.");
-      return;
+      nextErrors.cidade = "Cidade é obrigatória";
     }
     if (!draft.endereco.trim()) {
-      Alert.alert("Atenção", "Informe o nome da rua.");
-      return;
+      nextErrors.endereco = "Rua é obrigatória";
     }
     if (!draft.numero.trim()) {
-      Alert.alert("Atenção", "Informe o número do estabelecimento.");
+      nextErrors.numero = "Número é obrigatório";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
+    setErrors({});
     navigation.navigate("OnboardingEstPerfil");
   }, [draft, navigation]);
 
@@ -141,7 +160,14 @@ export function useOnboardingEstFuncionamento() {
     goBack: () => navigation.goBack(),
     loadingEstados,
     loadingCidades,
-    setEndereco: (endereco: string) => updateDraft({ endereco }),
-    setNumero: (numero: string) => updateDraft({ numero }),
+    errors,
+    setEndereco: (endereco: string) => {
+      clearError("endereco");
+      updateDraft({ endereco });
+    },
+    setNumero: (numero: string) => {
+      clearError("numero");
+      updateDraft({ numero });
+    },
   };
 }

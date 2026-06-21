@@ -10,16 +10,6 @@ import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import BandMemberModel from '../models/BandMemberModel';
 import ArtistProfileModel from '../models/ArtistProfileModel';
 
-/**
- * @dev APENAS PARA DESENVOLVIMENTO E TCC
- *
- * Simula o fluxo completo do Stripe sem chamar APIs externas.
- * Em produção, substituir por:
- *   - POST /pagamentos/contrato/:id/sinal   → createSignalPayment (StripeService)
- *   - POST /webhooks/stripe                 → handleStripeWebhook (StripeWebhookController)
- */
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function notificarAmbosLados(
   contrato: ContractModel,
@@ -53,17 +43,7 @@ async function notificarAmbosLados(
   }
 }
 
-// ─── Endpoint 1: criar pagamento do sinal ────────────────────────────────────
 
-/**
- * @dev Simula StripeService.createSignalPayment()
- *
- * POST /dev/mock-pagamento/sinal
- * Body: { contrato_id: number }
- *
- * Cria o registro de pagamento do sinal na tabela `pagamentos` com status
- * pendente e retorna um mock de client_secret (em produção seria o Stripe).
- */
 export const mockCriarSinal = asyncHandler(async (req: Request, res: Response) => {
   const { contrato_id } = req.body;
 
@@ -102,20 +82,8 @@ export const mockCriarSinal = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
-// ─── Endpoint 2: confirmar pagamento (simula webhook) ────────────────────────
 
-/**
- * @dev Simula o webhook do Stripe (payment_intent.succeeded / payment_intent.payment_failed)
- *
- * POST /dev/mock-pagamento/confirmar
- * Body: { payment_id: number, status: 'pago' | 'falhou' }
- *
- * Processa o resultado do pagamento:
- * - pago:   atualiza payment para PAGO, cria pagamento do restante se era sinal,
- *           notifica ambas as partes, atualiza status_pagamento do contrato
- * - falhou: atualiza payment para FALHOU, notifica ambas as partes,
- *           atualiza status_pagamento do contrato para 'falhou'
- */
+
 export const mockConfirmarPagamento = asyncHandler(async (req: Request, res: Response) => {
   const { payment_id, status } = req.body;
 
@@ -138,7 +106,7 @@ export const mockConfirmarPagamento = asyncHandler(async (req: Request, res: Res
   const contrato = await ContractModel.findByPk(payment.contrato_id);
   if (!contrato) throw new AppError('Contrato não encontrado', 404);
 
-  // ── Pagamento aprovado ───────────────────────────────────────────────────
+  // ── Pagamento aprovado 
   if (status === 'pago') {
     await paymentService.updateStatus(payment.id!, PaymentStatus.PAGO, {
       charge_id: `mock_ch_${payment.id}_${Date.now()}`,
@@ -189,7 +157,7 @@ export const mockConfirmarPagamento = asyncHandler(async (req: Request, res: Res
     });
   }
 
-  // ── Pagamento reprovado ──────────────────────────────────────────────────
+  // ── Pagamento reprovado 
   await paymentService.updateStatus(payment.id!, PaymentStatus.FALHOU, {
     error: 'Pagamento recusado (simulado por mock)',
   });

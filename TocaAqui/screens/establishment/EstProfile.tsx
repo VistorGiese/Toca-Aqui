@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   ScrollView,
@@ -17,6 +18,7 @@ import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
 import { resolveImageUrl } from "@/utils/adapters";
 import { getGenreColor } from "@/utils/colors";
+import { useAuth } from "@/contexts/AuthContext";
 
 const { width } = Dimensions.get("window");
 const COVER_HEIGHT = 240;
@@ -47,6 +49,7 @@ type NavProp = NativeStackNavigationProp<EstStackParamList>;
 
 export default function EstProfile() {
   const navigation = useNavigation<NavProp>();
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [gigs, setGigs] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
@@ -77,6 +80,13 @@ export default function EstProfile() {
     // Sobe dois níveis: EstTabs → EstStack → Root
     const rootNav = (navigation as any).getParent()?.getParent();
     rootNav?.navigate("UserNavigator");
+  }
+
+  function handleSignOut() {
+    Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Sair", style: "destructive", onPress: async () => { await signOut(); } },
+    ]);
   }
 
   if (loading) {
@@ -257,6 +267,11 @@ export default function EstProfile() {
             <Text style={s.switchProfileText}>Voltar para Perfil Comum</Text>
             <Ionicons name="chevron-forward" size={16} color={DS.cyan} />
           </TouchableOpacity>
+
+          <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut} activeOpacity={0.85}>
+            <FontAwesome5 name="sign-out-alt" size={16} color="#FF6B6B" style={{ marginRight: 10 }} />
+            <Text style={s.signOutText}>SAIR DA CONTA</Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
@@ -391,5 +406,23 @@ const s = StyleSheet.create({
     fontFamily: "Montserrat-SemiBold",
     fontSize: 14,
     color: DS.cyan,
+  },
+  signOutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,107,107,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,107,0.3)",
+    borderRadius: 12,
+    paddingVertical: 15,
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  signOutText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 14,
+    color: "#FF6B6B",
+    letterSpacing: 1.5,
   },
 });

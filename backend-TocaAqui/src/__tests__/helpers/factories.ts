@@ -1,7 +1,4 @@
-/**
- * Factories para testes — retornam objetos com valores padrão válidos.
- * Use spread para sobrescrever campos específicos em cada teste.
- */
+
 
 export function makeUserData(overrides: Record<string, unknown> = {}) {
   return {
@@ -80,6 +77,19 @@ export function makeContractData(
     versao: 1,
     status_pagamento: 'pendente',
     ...overrides,
+  };
+}
+
+export function makeBandApplicationData(
+  evento_id: number,
+  overrides: Record<string, unknown> = {}
+) {
+  return {
+    evento_id,
+    mensagem: 'Proposta de aplicação',
+    valor_proposto: 1500,
+    status: 'pendente',
+    ...overrides, // usar para setar artista_id e/ou banda_id
   };
 }
 

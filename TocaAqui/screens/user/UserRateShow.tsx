@@ -14,6 +14,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { avaliacaoService } from "@/http/avaliacaoService";
+import FieldError from "@/components/ui/FieldError";
 
 type Props = NativeStackScreenProps<UserStackParamList, "UserRateShow">;
 
@@ -35,14 +36,23 @@ const VENUE_CHIPS = [
 function StarPicker({
   value,
   onChange,
+  onClearError,
 }: {
   value: number;
   onChange: (v: number) => void;
+  onClearError?: () => void;
 }) {
   return (
     <View style={{ flexDirection: "row", gap: 8 }}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <TouchableOpacity key={i} onPress={() => onChange(i)} activeOpacity={0.7}>
+        <TouchableOpacity
+          key={i}
+          onPress={() => {
+            onClearError?.();
+            onChange(i);
+          }}
+          activeOpacity={0.7}
+        >
           <FontAwesome5
             name="star"
             size={28}
@@ -63,6 +73,7 @@ export default function UserRateShow({ route, navigation }: Props) {
   const [venueChips, setVenueChips] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
+  const [artistRatingError, setArtistRatingError] = useState("");
 
   const MAX_COMMENT = 280;
 
@@ -78,9 +89,10 @@ export default function UserRateShow({ route, navigation }: Props) {
 
   async function handlePublish() {
     if (artistRating === 0) {
-      Alert.alert("Atenção", "Por favor avalie o artista");
+      setArtistRatingError("Avaliação do artista é obrigatória");
       return;
     }
+    setArtistRatingError("");
     try {
       setLoading(true);
       await avaliacaoService.criarAvaliacao({
@@ -137,7 +149,12 @@ export default function UserRateShow({ route, navigation }: Props) {
             <FontAwesome5 name="microphone" size={16} color="#A78BFA" />
             <Text style={styles.ratingTitle}>Avaliação do artista</Text>
           </View>
-          <StarPicker value={artistRating} onChange={setArtistRating} />
+          <StarPicker
+            value={artistRating}
+            onChange={setArtistRating}
+            onClearError={() => setArtistRatingError("")}
+          />
+          <FieldError message={artistRatingError} />
 
           <View style={styles.chipsRow}>
             {ARTIST_CHIPS.map((chip) => {

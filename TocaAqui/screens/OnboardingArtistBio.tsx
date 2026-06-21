@@ -20,6 +20,7 @@ import { RootStackParamList } from "@/navigation/Navigate";
 import api from "@/http/api";
 import * as ImagePicker from "expo-image-picker";
 import { buildImageFormFile } from "@/utils/adapters";
+import FieldError from "@/components/ui/FieldError";
 
 const DS = {
   bg: "#09090F",
@@ -71,6 +72,16 @@ export default function OnboardingArtistBio() {
   const [pressKit, setPressKit] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ estado?: string; cidade?: string }>({});
+
+  const clearError = (field: keyof typeof errors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
   useEffect(() => {
     setLoadingEstados(true);
@@ -138,14 +149,18 @@ export default function OnboardingArtistBio() {
   };
 
   const handleConcluir = async () => {
+    const nextErrors: typeof errors = {};
     if (!estado) {
-      Alert.alert("Atenção", "Selecione o estado.");
-      return;
+      nextErrors.estado = "Estado é obrigatório";
     }
     if (!cidade) {
-      Alert.alert("Atenção", "Selecione a cidade.");
+      nextErrors.cidade = "Cidade é obrigatória";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
+    setErrors({});
 
     setLoading(true);
     try {
@@ -237,7 +252,7 @@ export default function OnboardingArtistBio() {
         {/* Estado */}
         <Text style={styles.fieldLabel}>ESTADO</Text>
         <TouchableOpacity
-          style={[styles.selector, !estado && styles.selectorEmpty]}
+          style={[styles.selector, !estado && styles.selectorEmpty, errors.estado && styles.selectorError]}
           onPress={() => openPicker("estado")}
           activeOpacity={0.75}
         >
@@ -250,6 +265,7 @@ export default function OnboardingArtistBio() {
             <FontAwesome5 name="chevron-down" size={12} color={DS.textSec} />
           )}
         </TouchableOpacity>
+        <FieldError message={errors.estado} />
 
         {/* Cidade */}
         <Text style={[styles.fieldLabel, { marginTop: 12 }]}>CIDADE</Text>
@@ -258,6 +274,7 @@ export default function OnboardingArtistBio() {
             styles.selector,
             (!estado || !cidade) && styles.selectorEmpty,
             !estado && styles.selectorDisabled,
+            errors.cidade && styles.selectorError,
           ]}
           onPress={() => estado && openPicker("cidade")}
           activeOpacity={estado ? 0.75 : 1}
@@ -275,6 +292,7 @@ export default function OnboardingArtistBio() {
             <FontAwesome5 name="chevron-down" size={12} color={DS.textSec} />
           )}
         </TouchableOpacity>
+        <FieldError message={errors.cidade} />
 
         {/* Card Mapa visual */}
         <View style={styles.mapCard}>
@@ -445,7 +463,7 @@ export default function OnboardingArtistBio() {
                       styles.pickerItem,
                       estado?.sigla === item.sigla && styles.pickerItemActive,
                     ]}
-                    onPress={() => { setEstado(item); setPickerMode(null); }}
+                    onPress={() => { clearError("estado"); setEstado(item); setPickerMode(null); }}
                     activeOpacity={0.7}
                   >
                     <Text style={styles.pickerItemSigla}>{item.sigla}</Text>
@@ -471,7 +489,7 @@ export default function OnboardingArtistBio() {
                       styles.pickerItem,
                       cidade?.id === item.id && styles.pickerItemActive,
                     ]}
-                    onPress={() => { setCidade(item); setPickerMode(null); }}
+                    onPress={() => { clearError("cidade"); setCidade(item); setPickerMode(null); }}
                     activeOpacity={0.7}
                   >
                     <Text
@@ -574,6 +592,9 @@ const styles = StyleSheet.create({
   },
   selectorEmpty: {
     borderColor: DS.bgSurface,
+  },
+  selectorError: {
+    borderColor: DS.danger,
   },
   selectorDisabled: {
     opacity: 0.5,

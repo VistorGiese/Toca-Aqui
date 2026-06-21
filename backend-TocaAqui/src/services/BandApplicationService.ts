@@ -12,6 +12,7 @@ import { AppError } from '../errors/AppError';
 import { contractService } from './ContractService';
 import redisService from '../config/redis';
 import { CACHE_KEYS } from '../config/cache';
+import { lockService } from './LockService';
 
 export class BandApplicationService {
   async apply(banda_id: number | undefined, evento_id: number, requestingUserId?: number, artista_id?: number, mensagem?: string, valor_proposto?: number) {
@@ -95,6 +96,20 @@ export class BandApplicationService {
     const aplicacao = await BandApplicationModel.findByPk(applicationId);
     if (!aplicacao) throw new AppError('Candidatura não encontrada', 404);
 
+    const lockKey = `lock:band-application:accept:evento:${aplicacao.evento_id}`;
+    const lock = await lockService.acquire(lockKey, 5000);
+    if (!lock.acquired) {
+      throw new AppError('Outra candidatura está sendo processada para este evento. Tente novamente em alguns segundos.', 409);
+    }
+
+    try {
+      return await this.acceptAfterLock(aplicacao);
+    } finally {
+      await lockService.release(lockKey, lock.token);
+    }
+  }
+
+  private async acceptAfterLock(aplicacao: BandApplicationModel) {
     let banda = null;
     if (aplicacao.banda_id) {
       banda = await BandModel.findByPk(aplicacao.banda_id);

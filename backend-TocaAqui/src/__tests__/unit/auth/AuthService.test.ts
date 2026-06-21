@@ -35,11 +35,6 @@ jest.mock('../../../config/redis', () => ({
   },
 }));
 
-jest.mock('../../../services/EmailService', () => ({
-  sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
-  sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
-}));
-
 jest.mock('../../../models/AddressModel', () => ({
   __esModule: true,
   default: { findByPk: jest.fn().mockResolvedValue(null), create: jest.fn() },
@@ -51,6 +46,7 @@ jest.mock('../../../services/GeocodingService', () => ({
 }));
 
 import { AuthService } from '../../../services/AuthService';
+import { IEmailProvider } from '../../../services/EmailService';
 import { AppError } from '../../../errors/AppError';
 import UserModel from '../../../models/UserModel';
 import EstablishmentProfileModel from '../../../models/EstablishmentProfileModel';
@@ -60,7 +56,13 @@ import redisService from '../../../config/redis';
 import bcrypt from 'bcryptjs';
 import sequelizeDb from '../../../config/database';
 
-const service = new AuthService();
+// Fake injetado via construtor (DIP) — sem necessidade de jest.mock no módulo EmailService
+const fakeEmailProvider: IEmailProvider = {
+  sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+  sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+};
+
+const service = new AuthService(fakeEmailProvider);
 
 // Helper para criar um usuário fake com método update
 const makeUser = (overrides = {}) => ({
@@ -233,7 +235,6 @@ describe('AuthService', () => {
   describe('forgotPassword', () => {
     it('gera token de reset e envia email quando usuário existe', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(makeUser());
-      const { sendPasswordResetEmail } = require('../../../services/EmailService');
 
       await service.forgotPassword('teste@email.com');
 
@@ -242,15 +243,14 @@ describe('AuthService', () => {
         3600,
         expect.any(String)
       );
-      expect(sendPasswordResetEmail).toHaveBeenCalledWith('teste@email.com', expect.any(String));
+      expect(fakeEmailProvider.sendPasswordResetEmail).toHaveBeenCalledWith('teste@email.com', expect.any(String));
     });
 
     it('retorna silenciosamente quando email não existe (sem revelar existência)', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(null);
-      const { sendPasswordResetEmail } = require('../../../services/EmailService');
 
       await expect(service.forgotPassword('nao@existe.com')).resolves.toBeUndefined();
-      expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+      expect(fakeEmailProvider.sendPasswordResetEmail).not.toHaveBeenCalled();
     });
   });
 
@@ -323,23 +323,20 @@ describe('AuthService', () => {
   describe('resendVerificationEmail', () => {
     it('retorna silenciosamente quando email não existe', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(null);
-      const { sendVerificationEmail } = require('../../../services/EmailService');
 
       await expect(service.resendVerificationEmail('nao@existe.com')).resolves.toBeUndefined();
-      expect(sendVerificationEmail).not.toHaveBeenCalled();
+      expect(fakeEmailProvider.sendVerificationEmail).not.toHaveBeenCalled();
     });
 
     it('retorna silenciosamente quando email já foi verificado', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(makeUser({ email_verificado: true }));
-      const { sendVerificationEmail } = require('../../../services/EmailService');
 
       await expect(service.resendVerificationEmail('teste@email.com')).resolves.toBeUndefined();
-      expect(sendVerificationEmail).not.toHaveBeenCalled();
+      expect(fakeEmailProvider.sendVerificationEmail).not.toHaveBeenCalled();
     });
 
     it('envia novo email de verificação quando usuário existe e não verificou', async () => {
       (UserModel.findOne as jest.Mock).mockResolvedValue(makeUser({ email_verificado: false }));
-      const { sendVerificationEmail } = require('../../../services/EmailService');
 
       await service.resendVerificationEmail('teste@email.com');
 
@@ -348,7 +345,7 @@ describe('AuthService', () => {
         60 * 60 * 24,
         expect.any(String)
       );
-      expect(sendVerificationEmail).toHaveBeenCalledWith('teste@email.com', expect.any(String));
+      expect(fakeEmailProvider.sendVerificationEmail).toHaveBeenCalledWith('teste@email.com', expect.any(String));
     });
   });
 

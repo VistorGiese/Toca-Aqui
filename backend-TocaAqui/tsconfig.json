@@ -22,6 +22,7 @@
       "**/*.spec.ts"
     ],
     "ts-node": {
+      "files": true,
       "compilerOptions": {
         "module": "CommonJS"
       }

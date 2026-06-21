@@ -17,6 +17,7 @@ import {
 import api from "@/http/api";
 import { userService } from "@/http/userService";
 import { colors } from "@/utils/colors";
+import FieldError from "@/components/ui/FieldError";
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,6 +62,7 @@ export default function ArtistProfile() {
 
     const [currentCommentText, setCurrentCommentText] = useState("");
     const [currentRatingStars, setCurrentRatingStars] = useState(0);
+    const [reviewErrors, setReviewErrors] = useState<{ rating?: string; comment?: string }>({});
     const [artistReviewsList, setArtistReviewsList] = useState<UserReview[]>([]);
 
     useEffect(() => {
@@ -123,7 +125,10 @@ export default function ArtistProfile() {
         const interactiveStars = [];
         for (let i = 1; i <= 5; i++) {
             interactiveStars.push(
-                <TouchableOpacity key={i} onPress={() => setCurrentRatingStars(i)} activeOpacity={0.7}>
+                <TouchableOpacity key={i} onPress={() => {
+                    setReviewErrors((e) => ({ ...e, rating: undefined }));
+                    setCurrentRatingStars(i);
+                }} activeOpacity={0.7}>
                     <FontAwesome5
                         name="star"
                         solid={i <= currentRatingStars}
@@ -138,10 +143,14 @@ export default function ArtistProfile() {
     };
 
     const handleSubmitReview = () => {
-        if (currentCommentText.trim() === "" || currentRatingStars === 0) {
-            Alert.alert("Atenção", "Por favor, escreva um comentário e selecione uma nota de 1 a 5 estrelas.");
+        const nextErrors: typeof reviewErrors = {};
+        if (currentRatingStars === 0) nextErrors.rating = "Nota é obrigatória";
+        if (currentCommentText.trim() === "") nextErrors.comment = "Comentário é obrigatório";
+        if (Object.keys(nextErrors).length > 0) {
+            setReviewErrors(nextErrors);
             return;
         }
+        setReviewErrors({});
         const newReview: UserReview = {
             id: Date.now().toString(),
             userName: "Você",
@@ -250,16 +259,21 @@ export default function ArtistProfile() {
                         <View style={styles.userInteractiveStarsContainer}>
                             {renderInteractiveStars()}
                         </View>
+                        <FieldError message={reviewErrors.rating} />
                         <Text style={styles.inputFieldLabel}>Seu comentário:</Text>
                         <TextInput
-                            style={styles.commentInputField}
+                            style={[styles.commentInputField, reviewErrors.comment && styles.commentInputError]}
                             placeholder="Escreva aqui sua experiência..."
                             placeholderTextColor="#888"
                             multiline
                             numberOfLines={4}
                             value={currentCommentText}
-                            onChangeText={setCurrentCommentText}
+                            onChangeText={(t) => {
+                                setReviewErrors((e) => ({ ...e, comment: undefined }));
+                                setCurrentCommentText(t);
+                            }}
                         />
+                        <FieldError message={reviewErrors.comment} />
                         <TouchableOpacity style={styles.submitCommentButton} onPress={handleSubmitReview}>
                             <Text style={styles.submitCommentButtonText}>Enviar Comentário</Text>
                         </TouchableOpacity>
@@ -435,6 +449,11 @@ const styles = StyleSheet.create({
         fontFamily: "Montserrat-Regular",
         textAlignVertical: "top",
         minHeight: height * 0.1,
+        borderWidth: 1,
+        borderColor: "transparent",
+    },
+    commentInputError: {
+        borderColor: "#EF4444",
     },
     submitCommentButton: {
         backgroundColor: "transparent",

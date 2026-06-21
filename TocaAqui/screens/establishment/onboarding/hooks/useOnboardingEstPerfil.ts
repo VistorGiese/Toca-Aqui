@@ -1,5 +1,4 @@
-import { useCallback } from "react";
-import { Alert } from "react-native";
+import { useCallback, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstablishmentOnboardingStackParamList } from "../EstablishmentOnboardingNavigator";
@@ -10,9 +9,11 @@ type NavProp = NativeStackNavigationProp<EstablishmentOnboardingStackParamList, 
 export function useOnboardingEstPerfil() {
   const navigation = useNavigation<NavProp>();
   const { draft, updateDraft } = useEstablishmentOnboarding();
+  const [generosError, setGenerosError] = useState("");
 
   const toggleGenero = useCallback(
     (label: string) => {
+      setGenerosError("");
       const next = draft.generos.includes(label)
         ? draft.generos.filter((g) => g !== label)
         : [...draft.generos, label];
@@ -33,14 +34,16 @@ export function useOnboardingEstPerfil() {
 
   const goNext = useCallback(() => {
     if (draft.generos.length === 0) {
-      Alert.alert("Atenção", "Selecione pelo menos um gênero.");
+      setGenerosError("Selecione pelo menos um gênero");
       return;
     }
+    setGenerosError("");
     navigation.navigate("OnboardingEstApresentacao");
   }, [draft.generos.length, navigation]);
 
   return {
     generos: draft.generos,
+    generosError,
     temEstrutura: draft.temEstrutura,
     estrutura: draft.estrutura,
     capacidade: draft.capacidade,

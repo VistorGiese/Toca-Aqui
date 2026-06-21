@@ -14,13 +14,12 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { FontAwesome5 } from "@expo/vector-icons";
 import {
   establishmentService,
   EstablishmentMember,
   EstablishmentMembersResponse,
 } from "@/http/establishmentService";
-import { useAuth } from "@/contexts/AuthContext";
+import FieldError from "@/components/ui/FieldError";
 
 const ACCENT = "#A78BFA";
 const BG = "#09090F";
@@ -30,12 +29,12 @@ const TEXT = "#E2E8F0";
 const MUTED = "#6B7280";
 
 export default function EstSettings() {
-  const { signOut } = useAuth();
   const [estabelecimentoId, setEstabelecimentoId] = useState<number | null>(null);
   const [data, setData] = useState<EstablishmentMembersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -62,7 +61,12 @@ export default function EstSettings() {
   }, [fetchMembers]);
 
   const handleAdd = async () => {
-    if (!email.trim() || !estabelecimentoId) return;
+    if (!email.trim()) {
+      setEmailError("E-mail é obrigatório");
+      return;
+    }
+    if (!estabelecimentoId) return;
+    setEmailError("");
     try {
       setAdding(true);
       await establishmentService.addMember(estabelecimentoId, email.trim());
@@ -101,13 +105,6 @@ export default function EstSettings() {
       ]
     );
   };
-
-  function handleSignOut() {
-    Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Sair", style: "destructive", onPress: async () => { await signOut(); } },
-    ]);
-  }
 
   const renderMember = ({ item }: { item: EstablishmentMember }) => {
     const isOwner = item.role === "owner";
@@ -172,16 +169,6 @@ export default function EstSettings() {
         />
       )}
 
-      {/* Logout */}
-      <TouchableOpacity
-        style={s.signOutBtn}
-        onPress={handleSignOut}
-        activeOpacity={0.85}
-      >
-        <FontAwesome5 name="sign-out-alt" size={16} color="#FF6B6B" style={{ marginRight: 10 }} />
-        <Text style={s.signOutText}>SAIR DA CONTA</Text>
-      </TouchableOpacity>
-
       {/* Modal de adicionar */}
       <Modal
         visible={modalVisible}
@@ -199,15 +186,19 @@ export default function EstSettings() {
               O usuário precisa ter uma conta no Toca Aqui.
             </Text>
             <TextInput
-              style={s.input}
+              style={[s.input, emailError && s.inputError]}
               placeholder="Email do usuário"
               placeholderTextColor={MUTED}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => {
+                setEmailError("");
+                setEmail(v);
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
+            <FieldError message={emailError} />
             <View style={s.modalActions}>
               <TouchableOpacity
                 style={s.cancelBtn}
@@ -262,13 +253,12 @@ const s = StyleSheet.create({
   modalBox: { backgroundColor: CARD, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalTitle: { color: TEXT, fontFamily: "Montserrat-Bold", fontSize: 18, marginBottom: 6 },
   modalSub: { color: MUTED, fontFamily: "Montserrat-Regular", fontSize: 13, marginBottom: 20 },
-  input: { backgroundColor: BG, borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, color: TEXT, fontFamily: "Montserrat-Regular", fontSize: 14, marginBottom: 20 },
+  input: { backgroundColor: BG, borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, color: TEXT, fontFamily: "Montserrat-Regular", fontSize: 14, marginBottom: 4 },
+  inputError: { borderColor: "#EF4444" },
   modalActions: { flexDirection: "row", gap: 12 },
   cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: BORDER, alignItems: "center" },
   cancelText: { color: MUTED, fontFamily: "Montserrat-SemiBold" },
   confirmBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: ACCENT, alignItems: "center" },
   confirmText: { color: "#fff", fontFamily: "Montserrat-SemiBold" },
   disabled: { opacity: 0.5 },
-  signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,107,107,0.08)", borderWidth: 1, borderColor: "rgba(255,107,107,0.3)", borderRadius: 12, paddingVertical: 15, marginTop: 24, marginBottom: 32 },
-  signOutText: { fontFamily: "Montserrat-Bold", fontSize: 14, color: "#FF6B6B", letterSpacing: 1.5 },
 });

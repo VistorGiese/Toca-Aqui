@@ -1,7 +1,3 @@
-/**
- * Script de demo: popula métricas fazendo chamadas reais à API local.
- * Uso: npm run seed:metrics (requer servidor rodando em localhost:3000)
- */
 
 const BASE_URL = process.env.API_URL ?? 'http://localhost:3000';
 

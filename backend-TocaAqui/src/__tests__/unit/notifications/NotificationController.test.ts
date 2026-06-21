@@ -46,7 +46,6 @@ describe('NotificationController', () => {
     mockNext = jest.fn();
   });
 
-  // ─── getNotifications ─────────────────────────────────────────────────────
   describe('getNotifications', () => {
     it('retorna notificações paginadas', async () => {
       const req = makeReq({ user: { id: 1 }, query: {} });
@@ -100,7 +99,6 @@ describe('NotificationController', () => {
     });
   });
 
-  // ─── markAsRead ───────────────────────────────────────────────────────────
   describe('markAsRead', () => {
     it('marca notificação como lida', async () => {
       const notification = { id: 1, update: jest.fn().mockResolvedValue(undefined) };
@@ -143,7 +141,6 @@ describe('NotificationController', () => {
     });
   });
 
-  // ─── markAllAsRead ────────────────────────────────────────────────────────
   describe('markAllAsRead', () => {
     it('marca todas como lidas e retorna contagem', async () => {
       const req = makeReq({ user: { id: 1 } });

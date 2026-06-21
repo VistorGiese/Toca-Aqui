@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -38,9 +38,9 @@ const DS = {
 };
 
 const GENEROS_OPCOES = [
-  "Rock", "Pop", "Samba", "Forró", "Pagode", "MPB", "Jazz",
-  "Blues", "Funk", "Eletrônico", "Reggae", "Hip Hop", "Gospel",
-  "Clássico", "Sertanejo", "Metal", "Indie",
+  "Rock", "Pop", "Samba", "Forr├│", "Pagode", "MPB", "Jazz",
+  "Blues", "Funk", "Eletr├┤nico", "Reggae", "Hip Hop", "Gospel",
+  "Cl├íssico", "Sertanejo", "Metal", "Indie",
 ];
 
 export default function ArtistProfileEdit() {
@@ -86,7 +86,7 @@ export default function ArtistProfileEdit() {
     const perfilId = (user as any)?.perfilArtistaId;
     if (!perfilId) return;
     if (!nomeArtistico.trim()) {
-      Alert.alert("Atenção", "Nome artístico é obrigatório.");
+      Alert.alert("Aten├º├úo", "Nome art├¡stico ├® obrigat├│rio.");
       return;
     }
     setSaving(true);
@@ -112,7 +112,7 @@ export default function ArtistProfileEdit() {
     if (!perfilId) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permissão necessária", "Permita acesso à galeria para alterar a foto.");
+      Alert.alert("Permiss├úo necess├íria", "Permita acesso ├á galeria para alterar a foto.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -175,13 +175,13 @@ export default function ArtistProfileEdit() {
             </TouchableOpacity>
           </View>
 
-          {/* Nome artístico */}
-          <Text style={s.label}>Nome Artístico *</Text>
+          {/* Nome art├¡stico */}
+          <Text style={s.label}>Nome Art├¡stico *</Text>
           <TextInput
             style={s.input}
             value={nomeArtistico}
             onChangeText={setNomeArtistico}
-            placeholder="Seu nome artístico ou da banda"
+            placeholder="Seu nome art├¡stico ou da banda"
             placeholderTextColor={DS.textMuted}
             maxLength={80}
           />
@@ -192,7 +192,7 @@ export default function ArtistProfileEdit() {
             style={[s.input, s.textArea]}
             value={bio}
             onChangeText={setBio}
-            placeholder="Conte um pouco sobre você e sua música..."
+            placeholder="Conte um pouco sobre voc├¬ e sua m├║sica..."
             placeholderTextColor={DS.textMuted}
             multiline
             numberOfLines={4}
@@ -200,8 +200,8 @@ export default function ArtistProfileEdit() {
             textAlignVertical="top"
           />
 
-          {/* Gêneros */}
-          <Text style={s.label}>Gêneros Musicais</Text>
+          {/* G├¬neros */}
+          <Text style={s.label}>G├¬neros Musicais</Text>
           <View style={s.chipsWrap}>
             {GENEROS_OPCOES.map((g) => {
               const sel = generosSelecionados.includes(g);
@@ -218,8 +218,8 @@ export default function ArtistProfileEdit() {
             })}
           </View>
 
-          {/* Cachê mínimo */}
-          <Text style={s.label}>Cachê Mínimo (R$)</Text>
+          {/* Cach├¬ m├¡nimo */}
+          <Text style={s.label}>Cach├¬ M├¡nimo (R$)</Text>
           <TextInput
             style={s.input}
             value={cacheMin}
@@ -229,7 +229,7 @@ export default function ArtistProfileEdit() {
             keyboardType="numeric"
           />
 
-          {/* Botão salvar */}
+          {/* Bot├úo salvar */}
           <TouchableOpacity
             style={[s.saveBtn, saving && { opacity: 0.6 }]}
             onPress={handleSalvar}
@@ -239,7 +239,7 @@ export default function ArtistProfileEdit() {
             {saving ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={s.saveBtnText}>Salvar Alterações</Text>
+              <Text style={s.saveBtnText}>Salvar Altera├º├Áes</Text>
             )}
           </TouchableOpacity>
 

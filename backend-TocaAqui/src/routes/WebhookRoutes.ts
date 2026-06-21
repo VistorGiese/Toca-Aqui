@@ -4,7 +4,6 @@ import { Router } from 'express';
 
 const router = Router();
 
-// // Stripe webhook — recebe body raw (não JSON-parsed)
-// router.post('/stripe', handleStripeWebhook);
+
 
 export default router;
