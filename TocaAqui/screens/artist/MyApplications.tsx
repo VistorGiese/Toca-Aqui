@@ -231,7 +231,7 @@ function ApplicationCard({ application, onViewContract }: { application: BandApp
                 activeOpacity={0.85}
               >
                 <Text style={{ fontFamily: "Montserrat-Bold", fontSize: 12, color: DS.white, letterSpacing: 1 }}>
-                  VER CONTRATO
+                  VER SHOW CONTRATADO
                 </Text>
               </TouchableOpacity>
             )}

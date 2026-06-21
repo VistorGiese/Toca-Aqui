@@ -23,21 +23,32 @@ export default function EstGigApplications() {
   const { gigId, gigTitle } = route.params;
 
   const [tab, setTab] = useState<TabType>("todas");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [candidates, setCandidates] = useState<Candidatura[]>([]);
   const [eventClosed, setEventClosed] = useState(false);
   const [closedMessage, setClosedMessage] = useState<string | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [contractId, setContractId] = useState<number | null>(null);
+  const [openingContract, setOpeningContract] = useState(false);
 
   const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const result = await establishmentService.getGigApplications(gigId);
-      setCandidates(Array.isArray(result?.candidaturas) ? result.candidaturas : []);
+      const list = Array.isArray(result?.candidaturas) ? result.candidaturas : [];
+      setCandidates(list);
       setEventClosed(result.closed);
       setClosedMessage(result.message);
+
+      const hasAccepted = list.some((c) => c.status === "aceito") || result.closed;
+      if (hasAccepted) {
+        const contrato = await establishmentService.getContractByEventId(gigId);
+        setContractId(contrato?.id ?? null);
+      } else {
+        setContractId(null);
+      }
     } catch { Alert.alert("Erro", "Não foi possível carregar as candidaturas."); }
-    finally { setLoading(false); setRefreshing(false); }
+    finally { setIsLoading(false); setIsRefreshing(false); }
   }, [gigId]);
 
   useFocusEffect(
@@ -61,6 +72,7 @@ export default function EstGigApplications() {
   const navigateToReview = (item: Candidatura, artistName: string) => {
     navigation.navigate("EstAcceptContract", {
       applicationId: item.id,
+      gigId,
       status: item.status,
       artistaId: item.artista_id,
       bandaId: item.banda_id,
@@ -85,6 +97,28 @@ export default function EstGigApplications() {
       return;
     }
     Alert.alert("Erro", "Perfil indisponível para esta candidatura.");
+  };
+
+  const openContract = async () => {
+    setOpeningContract(true);
+    try {
+      let id = contractId;
+      if (!id) {
+        const contrato = await establishmentService.getContractByEventId(gigId);
+        id = contrato?.id ?? null;
+        if (id) setContractId(id);
+      }
+      if (!id) {
+        Alert.alert(
+          "Contrato não encontrado",
+          "Não foi possível localizar o contrato deste evento. Tente novamente em instantes."
+        );
+        return;
+      }
+      navigation.navigate("EstShowDetail", { contractId: id });
+    } finally {
+      setOpeningContract(false);
+    }
   };
 
   const renderItem = ({ item }: { item: Candidatura }) => {
@@ -154,10 +188,21 @@ export default function EstGigApplications() {
           </TouchableOpacity>
         )}
         {item.status === "aceito" && (
-          <View style={s.acceptedPill}>
-            <FontAwesome5 name="check" size={11} color={DS.success} />
-            <Text style={s.acceptedPillText}>CONTRATADO</Text>
-          </View>
+          <TouchableOpacity
+            style={s.contractBtn}
+            onPress={openContract}
+            disabled={openingContract}
+            activeOpacity={0.8}
+          >
+            {openingContract ? (
+              <ActivityIndicator size="small" color={DS.success} />
+            ) : (
+              <>
+                <FontAwesome5 name="file-contract" size={11} color={DS.success} />
+                <Text style={s.contractBtnText}>VISUALIZAR CONTRATO</Text>
+              </>
+            )}
+          </TouchableOpacity>
         )}
       </View>
       </View>
@@ -193,14 +238,14 @@ export default function EstGigApplications() {
         ))}
       </View>
 
-      {loading
+      {isLoading
         ? <View style={{flex:1,justifyContent:"center",alignItems:"center"}}><ActivityIndicator size="large" color="#A78BFA" /></View>
         : <FlatList
             data={filtered}
             keyExtractor={i => String(i.id)}
             renderItem={renderItem}
             contentContainerStyle={s.list}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor={DS.accent} />}
+            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => { setIsRefreshing(true); load(true); }} tintColor={DS.accent} />}
             ListEmptyComponent={<Text style={s.empty}>Nenhuma candidatura encontrada.</Text>}
           />
       }
@@ -255,10 +300,10 @@ const s = StyleSheet.create({
   reacceptBtnText:{
     fontFamily:"Montserrat-Bold",fontSize:9,color:DS.textPrimary,textAlign:"center",letterSpacing:0.3,lineHeight:14,
   },
-  acceptedPill:{
+  contractBtn:{
     flex:1,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:6,
     borderWidth:1,borderColor:DS.success,borderRadius:10,paddingVertical:10,backgroundColor:"rgba(0,200,83,0.1)",
   },
-  acceptedPillText:{fontFamily:"Montserrat-Bold",fontSize:11,color:DS.success},
+  contractBtnText:{fontFamily:"Montserrat-Bold",fontSize:11,color:DS.success},
   empty:{fontFamily:"Montserrat-Regular",fontSize:14,color:DS.textSecondary,textAlign:"center",paddingTop:40},
 });

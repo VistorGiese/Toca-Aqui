@@ -167,7 +167,12 @@ export const updateBooking = asyncHandler(async (req: AuthRequest, res: Response
 
   const candidaturas = await BandApplicationModel.count({ where: { evento_id: booking.id } });
   if (candidaturas > 0) {
-    throw new AppError("Não é possível editar: já existem candidaturas para este evento.", 400);
+    const allowedWithApplications = new Set(['esta_publico']);
+    const fields = Object.keys(req.body);
+    const hasBlockedField = fields.some((field) => !allowedWithApplications.has(field));
+    if (hasBlockedField) {
+      throw new AppError("Não é possível editar: já existem candidaturas para este evento.", 400);
+    }
   }
 
   await booking.update(req.body);

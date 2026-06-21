@@ -141,7 +141,7 @@ export default function EstNewGig() {
         modo_venda_ingresso: modoVendaIngresso,
         capacidade_maxima: capacidade ? Number(capacidade) : undefined,
         genero_musical: generos.join(", ") || undefined,
-        esta_publico: true,
+        esta_publico: false,
       };
       let savedGigId = gigId;
       if (gigId) {

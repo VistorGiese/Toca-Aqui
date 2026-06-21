@@ -39,6 +39,13 @@ export const errorHandler = (
     return;
   }
 
+  if (err.name === 'PayloadTooLargeError' || (err as { type?: string }).type === 'entity.too.large') {
+    res.status(413).json({
+      error: 'Arquivo muito grande para enviar. Use um PDF mais compacto ou divida o envio.',
+    });
+    return;
+  }
+
   console.error('[Unhandled Error]', err);
   res.status(500).json({ error: 'Erro interno do servidor' });
 };

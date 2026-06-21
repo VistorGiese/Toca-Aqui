@@ -261,7 +261,7 @@ const createGig = async (data: {
     ...data,
     perfil_estabelecimento_id,
     genero_musical,
-    esta_publico: data.esta_publico ?? true,
+    esta_publico: data.esta_publico ?? false,
   });
   return r.data;
 };
@@ -310,7 +310,17 @@ const getGigApplications = async (eventoId: number): Promise<GigApplicationsResu
 
 const acceptApplication = async (applicationId: number): Promise<any> => {
   const r = await api.put(`/eventos/${applicationId}/aceitar`);
-  return r.data;
+  return r.data?.data ?? r.data;
+};
+
+/** Busca contrato do evento após aceite (fallback se resposta não trouxer contrato). */
+const getContractByEventId = async (eventoId: number): Promise<any | null> => {
+  try {
+    const r = await api.get(`/contratos/evento/${eventoId}`);
+    return r.data?.data ?? r.data ?? null;
+  } catch {
+    return null;
+  }
 };
 
 const rejectApplication = async (applicationId: number): Promise<any> => {
@@ -735,7 +745,7 @@ export const establishmentService = {
   uploadGigCover,
   getGigApplications, acceptApplication, rejectApplication,
   searchArtists, searchEstablishments, getEstablishmentById, findArtistById, getBandById,
-  getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getContractById,
+  getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getContractById, getContractByEventId,
   getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,
   listMembers, addMember, removeMember,

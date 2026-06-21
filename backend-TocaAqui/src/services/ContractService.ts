@@ -24,6 +24,19 @@ const EDITABLE_FIELDS = [
 
 type EditableField = typeof EDITABLE_FIELDS[number];
 
+const PDF_STORAGE_PREFIXES = ['__B64__', '__WF__', '__PDF_'];
+
+function summarizeHistoryValue(value: unknown): string {
+  const str = String(value ?? '');
+  if (PDF_STORAGE_PREFIXES.some((p) => str.startsWith(p))) {
+    return `[conteudo_anexo, ${str.length} caracteres]`;
+  }
+  if (str.length > 2000) {
+    return `${str.slice(0, 2000)}… [truncado, ${str.length} caracteres]`;
+  }
+  return str;
+}
+
 export class ContractService {
   /**
    * Gera contrato automaticamente a partir de uma candidatura aceita.
@@ -203,7 +216,7 @@ export class ContractService {
         { association: 'EstablishmentProfile' },
         { association: 'ArtistProfile' },
       ],
-      order: [['created_at', 'DESC']],
+      order: [[ContractModel, 'created_at', 'DESC']],
     });
   }
 
@@ -227,11 +240,14 @@ export class ContractService {
     // Filtrar apenas campos editáveis
     const validChanges: Record<string, unknown> = {};
     const historyEntries: Omit<ContractHistoryModel, keyof import('sequelize').Model>[] = [];
+    let hasProvidedField = false;
 
     for (const field of EDITABLE_FIELDS) {
-      if (changes[field] !== undefined && changes[field] !== (contrato as any)[field]) {
-        const valorAnterior = String((contrato as any)[field] ?? '');
-        const valorNovo = String(changes[field] ?? '');
+      if (changes[field] === undefined) continue;
+      hasProvidedField = true;
+      if (changes[field] !== (contrato as any)[field]) {
+        const valorAnterior = summarizeHistoryValue((contrato as any)[field]);
+        const valorNovo = summarizeHistoryValue(changes[field]);
 
         validChanges[field] = changes[field];
         historyEntries.push({
@@ -245,8 +261,13 @@ export class ContractService {
       }
     }
 
-    if (Object.keys(validChanges).length === 0) {
+    if (!hasProvidedField) {
       throw new AppError('Nenhuma alteração válida fornecida', 400);
+    }
+
+    // Reenvio do mesmo PDF / workflow — idempotente, sem erro 400
+    if (Object.keys(validChanges).length === 0) {
+      return contrato;
     }
 
     // Recalcular valor_sinal se cache_total ou percentual_sinal mudou
@@ -404,7 +425,7 @@ export class ContractService {
     return ContractHistoryModel.findAll({
       where: { contrato_id: contractId },
       include: [{ association: 'User', attributes: ['id', 'nome_completo', 'email'] }],
-      order: [['created_at', 'DESC']],
+      order: [[ContractModel, 'created_at', 'DESC']],
     });
   }
 

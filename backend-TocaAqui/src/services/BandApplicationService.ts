@@ -133,8 +133,9 @@ export class BandApplicationService {
     if (jaAprovada) throw new AppError('Já existe banda aceita para este evento', 400);
 
     await aplicacao.update({ status: 'aceito' });
+    // Show permanece privado até aprovação final do contrato PDF (venda de ingressos)
     await BookingModel.update(
-      { status: 'aceito', esta_publico: true },
+      { status: 'aceito', esta_publico: false },
       { where: { id: aplicacao.evento_id } },
     );
     await redisService.invalidate(CACHE_KEYS.agendamento(aplicacao.evento_id));
