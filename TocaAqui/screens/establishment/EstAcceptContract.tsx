@@ -51,7 +51,10 @@ export default function EstAcceptContract() {
 
   const openProfile = () => {
     if (artistaId) {
-      navigation.navigate("EstArtistProfile", { artistId: artistaId });
+      navigation.navigate("EstArtistProfile", {
+        artistId: artistaId,
+        profile: { id: artistaId, nome_artistico: artistName },
+      });
       return;
     }
     if (bandaId) {

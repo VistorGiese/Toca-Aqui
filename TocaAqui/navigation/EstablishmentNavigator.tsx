@@ -20,6 +20,8 @@ import EstSettings from "@/screens/establishment/EstSettings";
 import EstEditProfile from "@/screens/establishment/EstEditProfile";
 import EstUpcomingShowDetail from "@/screens/establishment/EstUpcomingShowDetail";
 import EstAllConfirmedShows from "@/screens/establishment/EstAllConfirmedShows";
+import UserEstablishmentProfile from "@/screens/user/UserEstablishmentProfile";
+import { ArtistProfileSnapshot } from "@/utils/artistProfile";
 
 const DS = {
   bg: "#09090F",
@@ -40,7 +42,7 @@ export type EstStackParamList = {
   EstTabs: undefined;
   EstNewGig: { gigId?: number; artistaConvidadoId?: number };
   EstGigApplications: { gigId: number; gigTitle: string };
-  EstArtistProfile: { artistId?: number; bandaId?: number };
+  EstArtistProfile: { artistId?: number; bandaId?: number; profile?: ArtistProfileSnapshot };
   EstAcceptContract: {
     applicationId: number;
     status: "pendente" | "aceito" | "rejeitado";
@@ -66,6 +68,11 @@ export type EstStackParamList = {
   EstRateArtist: { contractId: number; artistName: string; showDate: string };
   EstSettings: undefined;
   EstEditProfile: undefined;
+  UserEstablishmentProfile: {
+    establishmentId: number;
+    canBuyTickets?: boolean;
+    viewerContext?: "establishment" | "user";
+  };
 };
 
 const Tab = createBottomTabNavigator<EstTabParamList>();
@@ -152,6 +159,7 @@ export default function EstablishmentNavigator() {
       <Stack.Screen name="EstRateArtist" component={EstRateArtist} />
       <Stack.Screen name="EstSettings" component={EstSettings} />
       <Stack.Screen name="EstEditProfile" component={EstEditProfile} />
+      <Stack.Screen name="UserEstablishmentProfile" component={UserEstablishmentProfile} />
     </Stack.Navigator>
   );
 }

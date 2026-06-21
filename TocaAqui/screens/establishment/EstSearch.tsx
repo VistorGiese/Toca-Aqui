@@ -54,7 +54,7 @@ export default function EstSearch() {
           <FontAwesome5 name="star" size={12} color="#F39C12" solid />
           <Text style={s.ratingText}>{item.nota_media?.toFixed(1) ?? "—"}</Text>
         </View>
-        <TouchableOpacity style={s.inviteBtn} onPress={() => navigation.navigate("EstArtistProfile",{artistId:item.id})} activeOpacity={0.85}>
+        <TouchableOpacity style={s.inviteBtn} onPress={() => navigation.navigate("EstArtistProfile", { artistId: item.id, profile: item })} activeOpacity={0.85}>
           <Text style={s.inviteBtnText}>CONVIDAR PARA SHOW</Text>
         </TouchableOpacity>
       </View>

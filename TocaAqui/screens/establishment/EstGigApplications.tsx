@@ -74,7 +74,10 @@ export default function EstGigApplications() {
 
   const openProfile = (item: Candidatura) => {
     if (item.artista_id) {
-      navigation.navigate("EstArtistProfile", { artistId: item.artista_id });
+      navigation.navigate("EstArtistProfile", {
+        artistId: item.artista_id,
+        profile: item.profileSnapshot,
+      });
       return;
     }
     if (item.banda_id) {

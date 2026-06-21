@@ -43,6 +43,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 14,
     paddingBottom: 4,
+    marginBottom: 24,
   },
   listSpacing: {
     height: 20,

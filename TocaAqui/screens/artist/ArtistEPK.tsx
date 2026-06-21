@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,14 +9,15 @@ import {
   Image,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/contexts/AuthContext";
 import { contractService, Contract } from "@/http/contractService";
 import { avaliacaoService, Avaliacao } from "@/http/avaliacaoService";
 import { artistaPublicoService } from "@/http/artistaPublicoService";
+import { artistProfileService } from "@/http/artistProfileService";
 import { userService } from "@/http/userService";
-import { RootStackParamList } from "@/navigation/Navigate";
+import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 import { resolveImageUrl, parsePressKit } from "@/utils/adapters";
 
 const DS = {
@@ -37,7 +38,7 @@ const DS = {
 
 const GENRE_COLORS = ["#A67C7C", "#27AE60", "#A29BFE", "#F59E0B", "#4ECDC4", "#E53E3E"];
 
-type NavProp = NativeStackNavigationProp<RootStackParamList>;
+type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 
 export default function ArtistEPK() {
   const navigation = useNavigation<NavProp>();
@@ -50,19 +51,46 @@ export default function ArtistEPK() {
   const [artistProfile, setArtistProfile] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
       const contractsData = await contractService.getMyContracts();
       setContracts(contractsData);
 
       if (user?.perfilArtistaId) {
-        const perfil = await artistaPublicoService.getPerfilPublico(user.perfilArtistaId);
-        setArtistProfile(perfil);
-        const g = Array.isArray(perfil.generos)
-          ? perfil.generos
-          : typeof perfil.generos === "string"
-            ? (() => { try { return JSON.parse(perfil.generos); } catch { return []; } })()
-            : [];
-        setGeneros(g);
+        const ownProfile = await artistProfileService.getMyProfile();
+        if (ownProfile) {
+          setArtistProfile(ownProfile);
+          setGeneros(ownProfile.generos ?? []);
+        } else {
+          try {
+            const perfil = await artistaPublicoService.getPerfilPublico(user.perfilArtistaId);
+            setArtistProfile(perfil);
+            const g = Array.isArray(perfil.generos)
+              ? perfil.generos
+              : typeof perfil.generos === "string"
+                ? (() => {
+                    try {
+                      return JSON.parse(perfil.generos);
+                    } catch {
+                      return [];
+                    }
+                  })()
+                : [];
+            setGeneros(g);
+          } catch {
+            const res = await userService.getProfile();
+            const raw = res.user.artist_profiles?.[0];
+            if (raw) {
+              setArtistProfile(raw);
+              const g = Array.isArray(raw.generos)
+                ? raw.generos
+                : typeof raw.generos === "string"
+                  ? JSON.parse(raw.generos)
+                  : [];
+              setGeneros(g);
+            }
+          }
+        }
       } else {
         const res = await userService.getProfile();
         const raw = res.user.artist_profiles?.[0];
@@ -77,9 +105,7 @@ export default function ArtistEPK() {
         }
       }
 
-      const concluidos = contractsData
-        .filter((c) => c.status === "concluido")
-        .slice(0, 3);
+      const concluidos = contractsData.filter((c) => c.status === "concluido").slice(0, 3);
 
       if (concluidos.length > 0) {
         const reviewResults = await Promise.allSettled(
@@ -105,16 +131,22 @@ export default function ArtistEPK() {
     }
   }, [user?.perfilArtistaId]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   async function handleSignOut() {
     await signOut();
   }
 
+  function goToEditProfile() {
+    navigation.getParent()?.navigate("ArtistProfileManage");
+  }
+
   function goToUserProfile() {
-    const rootNav = (navigation as any).getParent()?.getParent();
+    const rootNav = navigation.getParent()?.getParent();
     rootNav?.navigate("UserNavigator");
   }
 
@@ -137,7 +169,6 @@ export default function ArtistEPK() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <FontAwesome5 name="bars" size={18} color={DS.white} />
@@ -152,13 +183,11 @@ export default function ArtistEPK() {
           )}
         </View>
 
-        {/* Editar Perfil */}
-        <TouchableOpacity style={styles.editBtn} activeOpacity={0.8} onPress={() => (navigation as any).navigate("ArtistProfileEdit")}>
+        <TouchableOpacity style={styles.editBtn} activeOpacity={0.8} onPress={goToEditProfile}>
           <FontAwesome5 name="edit" size={12} color={DS.accentLight} />
           <Text style={styles.editBtnText}>EDITAR PERFIL</Text>
         </TouchableOpacity>
 
-        {/* Cover + Avatar */}
         <View style={styles.coverArea}>
           <View style={styles.coverGradient} />
           <FontAwesome5 name="music" size={40} color={DS.textDis} />
@@ -174,15 +203,18 @@ export default function ArtistEPK() {
           )}
         </View>
 
-        <Text style={styles.artistName}>{artistProfile?.nome_artistico || user?.nome_completo || "Artista"}</Text>
+        <Text style={styles.artistName}>
+          {artistProfile?.nome_artistico || user?.nome_completo || "Artista"}
+        </Text>
         {(artistProfile?.cidade || artistProfile?.estado) && (
           <View style={styles.locationRow}>
             <FontAwesome5 name="map-marker-alt" size={12} color={DS.textDis} />
-            <Text style={styles.locationText}>{[artistProfile.cidade, artistProfile.estado].filter(Boolean).join(", ")}</Text>
+            <Text style={styles.locationText}>
+              {[artistProfile.cidade, artistProfile.estado].filter(Boolean).join(", ")}
+            </Text>
           </View>
         )}
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{totalShows}</Text>
@@ -200,7 +232,6 @@ export default function ArtistEPK() {
           </View>
         </View>
 
-        {/* Genre Styles */}
         {generos.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>ESTILOS MUSICAIS</Text>
@@ -217,7 +248,45 @@ export default function ArtistEPK() {
           </>
         )}
 
-        {/* Faixa de Cachê */}
+        {(artistProfile?.instrumentos?.length ?? 0) > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>INSTRUMENTOS</Text>
+            <View style={styles.genreRow}>
+              {artistProfile.instrumentos.map((item: string, i: number) => {
+                const color = GENRE_COLORS[(i + 2) % GENRE_COLORS.length];
+                return (
+                  <View key={item} style={[styles.genrePill, { borderColor: color }]}>
+                    <Text style={[styles.genrePillText, { color }]}>{item.toUpperCase()}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {(artistProfile?.tem_estrutura_som ||
+          (artistProfile?.estrutura_som?.length ?? 0) > 0) && (
+          <>
+            <Text style={styles.sectionTitle}>ESTRUTURA DE SOM</Text>
+            {artistProfile?.tem_estrutura_som === false ? (
+              <Text style={styles.bioText}>Não possui estrutura de som própria</Text>
+            ) : (artistProfile?.estrutura_som?.length ?? 0) > 0 ? (
+              <View style={styles.genreRow}>
+                {artistProfile.estrutura_som.map((item: string, i: number) => {
+                  const color = GENRE_COLORS[(i + 4) % GENRE_COLORS.length];
+                  return (
+                    <View key={item} style={[styles.genrePill, { borderColor: color }]}>
+                      <Text style={[styles.genrePillText, { color }]}>{item.toUpperCase()}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={styles.bioText}>Possui estrutura de som (equipamentos não listados)</Text>
+            )}
+          </>
+        )}
+
         <Text style={styles.sectionTitle}>FAIXA DE CACHÊ</Text>
         <View style={styles.rangeRow}>
           <View style={styles.rangeCard}>
@@ -239,7 +308,6 @@ export default function ArtistEPK() {
           </View>
         </View>
 
-        {/* Bio */}
         {artistProfile?.biografia ? (
           <>
             <Text style={styles.sectionTitle}>SOBRE</Text>
@@ -250,7 +318,11 @@ export default function ArtistEPK() {
         {pressKitPhotos.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>PRESS KIT</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pressKitRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pressKitRow}
+            >
               {pressKitPhotos.map((uri) => (
                 <Image key={uri} source={{ uri }} style={styles.pressKitImage} />
               ))}
@@ -258,7 +330,6 @@ export default function ArtistEPK() {
           </>
         )}
 
-        {/* Venue Testimonials */}
         {reviews.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>AVALIAÇÕES</Text>
@@ -271,7 +342,10 @@ export default function ArtistEPK() {
                   <View style={styles.reviewMeta}>
                     <Text style={styles.reviewVenue}>{r.Usuario?.nome_completo || "Usuário"}</Text>
                     <Text style={styles.reviewDate}>
-                      {new Date(r.createdAt).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+                      {new Date(r.createdAt).toLocaleDateString("pt-BR", {
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Text>
                   </View>
                   <View style={styles.starsRow}>
@@ -293,49 +367,17 @@ export default function ArtistEPK() {
         )}
 
         <TouchableOpacity
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "rgba(78,205,196,0.08)",
-            borderWidth: 1,
-            borderColor: "rgba(78,205,196,0.3)",
-            borderRadius: 12,
-            paddingVertical: 15,
-            marginTop: 24,
-            marginHorizontal: 20,
-          }}
+          style={styles.actionBtnCyan}
           onPress={goToUserProfile}
           activeOpacity={0.85}
         >
           <FontAwesome5 name="user" size={16} color={DS.cyan} style={{ marginRight: 10 }} />
-          <Text style={{ fontFamily: "Montserrat-Bold", fontSize: 14, color: DS.cyan, letterSpacing: 1.5 }}>
-            VOLTAR PARA PERFIL COMUM
-          </Text>
+          <Text style={styles.actionBtnCyanText}>VOLTAR PARA PERFIL COMUM</Text>
         </TouchableOpacity>
 
-        {/* Logout */}
-        <TouchableOpacity
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "rgba(255,107,107,0.08)",
-            borderWidth: 1,
-            borderColor: "rgba(255,107,107,0.3)",
-            borderRadius: 12,
-            paddingVertical: 15,
-            marginTop: 14,
-            marginHorizontal: 20,
-            marginBottom: 32,
-          }}
-          onPress={handleSignOut}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={styles.actionBtnDanger} onPress={handleSignOut} activeOpacity={0.85}>
           <FontAwesome5 name="sign-out-alt" size={16} color="#FF6B6B" style={{ marginRight: 10 }} />
-          <Text style={{ fontFamily: "Montserrat-Bold", fontSize: 14, color: "#FF6B6B", letterSpacing: 1.5 }}>
-            SAIR DA CONTA
-          </Text>
+          <Text style={styles.actionBtnDangerText}>SAIR DA CONTA</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -552,25 +594,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 20,
   },
-  reelScroll: {
-    paddingLeft: 20,
-    marginBottom: 20,
-  },
-  reelCard: {
-    width: 130,
-    height: 90,
-    backgroundColor: DS.bgCard,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-    gap: 6,
-  },
-  reelLabel: {
-    fontFamily: "Montserrat-Regular",
-    fontSize: 11,
-    color: DS.textDis,
-  },
   reviewCard: {
     backgroundColor: DS.bgCard,
     borderRadius: 12,
@@ -614,5 +637,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: DS.textSec,
     lineHeight: 19,
+  },
+  actionBtnCyan: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(78,205,196,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(78,205,196,0.3)",
+    borderRadius: 12,
+    paddingVertical: 15,
+    marginTop: 24,
+    marginHorizontal: 20,
+  },
+  actionBtnCyanText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 14,
+    color: DS.cyan,
+    letterSpacing: 1.5,
+  },
+  actionBtnDanger: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,107,107,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,107,0.3)",
+    borderRadius: 12,
+    paddingVertical: 15,
+    marginTop: 14,
+    marginHorizontal: 20,
+    marginBottom: 32,
+  },
+  actionBtnDangerText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 14,
+    color: "#FF6B6B",
+    letterSpacing: 1.5,
   },
 });

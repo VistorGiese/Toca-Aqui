@@ -5,11 +5,16 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
-import { establishmentService, Gig, isGigAberta, ArtistPublicProfile } from "@/http/establishmentService";
+import { establishmentService, Gig, isGigAberta } from "@/http/establishmentService";
 import { showService, Show, showToDetailParams } from "@/http/showService";
 import { getGenreColor } from "@/utils/colors";
 import { parseGenres } from "@/utils/genres";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRecommendedHome } from "@/hooks/useRecommendedHome";
+import {
+  RecommendedArtistsSection,
+  RecommendedEstablishmentsSection,
+} from "@/components/home";
 
 const DS = { bg:"#09090F", surface:"#161028", card:"#1E1635", border:"#2D2545", accent:"#7B61FF", cyan:"#00CEC9", textPrimary:"#FFFFFF", textSecondary:"#8888AA", error:"#E74C3C", success:"#00C853" };
 
@@ -27,18 +32,17 @@ export default function EstHome() {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [upcomingShows, setUpcomingShows] = useState<Show[]>([]);
   const [confirmedShowsCount, setConfirmedShowsCount] = useState(0);
-  const [artists, setArtists] = useState<ArtistPublicProfile[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const { artists, establishments, loading: loadingRecommended } = useRecommendedHome();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const storedId = await AsyncStorage.getItem("estabelecimentoId");
       const estId = storedId ? Number(storedId) : undefined;
-      const [g, upcoming, a, p] = await Promise.allSettled([
+      const [g, upcoming, p] = await Promise.allSettled([
         establishmentService.getMyGigs(estId),
         showService.getConfirmedShows({ limit: 3 }),
-        establishmentService.searchArtists(),
         establishmentService.getMyEstablishmentProfile(),
       ]);
       if (g.status === "fulfilled") {
@@ -46,7 +50,6 @@ export default function EstHome() {
         setConfirmedShowsCount(g.value.filter((item) => item.status === "aceito").length);
       }
       if (upcoming.status === "fulfilled") setUpcomingShows(upcoming.value.shows);
-      if (a.status === "fulfilled") setArtists(a.value.slice(0,5));
       if (p.status === "fulfilled") setProfile(p.value);
     } catch (e) {
       Alert.alert("Erro", "Não foi possível carregar os dados.");
@@ -166,22 +169,25 @@ export default function EstHome() {
             })
         }
 
-        {/* Artistas recomendados */}
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Artistas Recomendados</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:12,paddingBottom:8}}>
-          {artists.map(a => (
-            <TouchableOpacity key={a.id} style={s.artistCard} onPress={() => navigation.navigate("EstArtistProfile", { artistId: a.id })} activeOpacity={0.8}>
-              <View style={s.artistAvatar}><FontAwesome5 name="user" size={22} color={DS.accent} /></View>
-              {a.generos && a.generos[0] && <View style={s.genreTag}><Text style={s.genreTagText}>{a.generos[0].toUpperCase()}</Text></View>}
-              <Text style={s.artistName}>{a.nome_artistico ?? a.nome ?? "Artista"}</Text>
-              <Text style={s.artistRating}>★ {a.nota_media?.toFixed(1) ?? "—"}</Text>
-              <View style={s.artistBtn}><Text style={s.artistBtnText}>VER PERFIL</Text></View>
-            </TouchableOpacity>
-          ))}
-          {artists.length === 0 && <Text style={[s.emptyText,{paddingLeft:4}]}>Nenhum artista encontrado.</Text>}
-        </ScrollView>
+        <RecommendedArtistsSection
+          artists={artists}
+          loading={loadingRecommended}
+          onPressArtist={(artist) =>
+            navigation.navigate("EstArtistProfile", { artistId: artist.id, profile: artist })
+          }
+        />
+
+        <RecommendedEstablishmentsSection
+          establishments={establishments.filter((item) => item.id !== profile?.id)}
+          loading={loadingRecommended}
+          onPressEstablishment={(establishment) =>
+            navigation.navigate("UserEstablishmentProfile", {
+              establishmentId: establishment.id,
+              canBuyTickets: false,
+              viewerContext: "establishment",
+            })
+          }
+        />
       </ScrollView>
     </View>
   );
@@ -248,12 +254,4 @@ const s = StyleSheet.create({
   genreBadge: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   genreBadgeText: { fontFamily: "Montserrat-Bold", fontSize: 9, letterSpacing: 0.5 },
   emptyText: { fontFamily:"Montserrat-Regular", fontSize:13, color:DS.textSecondary, marginBottom:16 },
-  artistCard: { width:150, backgroundColor:DS.card, borderRadius:14, borderWidth:1, borderColor:DS.border, padding:12, alignItems:"center" },
-  artistAvatar: { width:64, height:64, borderRadius:32, backgroundColor:DS.surface, justifyContent:"center", alignItems:"center", marginBottom:8 },
-  genreTag: { backgroundColor:"rgba(123,97,255,0.2)", paddingHorizontal:8, paddingVertical:3, borderRadius:8, marginBottom:6 },
-  genreTagText: { fontFamily:"Montserrat-Bold", fontSize:9, color:DS.accent, letterSpacing:1 },
-  artistName: { fontFamily:"Montserrat-Bold", fontSize:13, color:DS.textPrimary, textAlign:"center", marginBottom:4 },
-  artistRating: { fontFamily:"Montserrat-SemiBold", fontSize:12, color:"#F39C12", marginBottom:8 },
-  artistBtn: { backgroundColor:DS.accent, borderRadius:8, paddingHorizontal:12, paddingVertical:6 },
-  artistBtnText: { fontFamily:"Montserrat-Bold", fontSize:10, color:DS.textPrimary, letterSpacing:1 },
 });

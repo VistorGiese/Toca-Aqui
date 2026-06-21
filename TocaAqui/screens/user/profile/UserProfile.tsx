@@ -5,6 +5,7 @@ import { colors } from "@/utils/colors";
 import SectionHeader from "@/components/ui/SectionHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import FollowedArtistChip from "@/components/profile/FollowedArtistChip";
+import FavoriteVenueChip from "@/components/profile/FavoriteVenueChip";
 import ProfileActionButton from "@/components/profile/ProfileActionButton";
 import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import ProfileScreenHeader from "@/components/profile/ProfileScreenHeader";
@@ -77,20 +78,45 @@ export default function UserProfile() {
               </ScrollView>
             )}
 
-            <SectionHeader title="Artistas seguidos" />
-            {vm.artistasSeguidos.length === 0 ? (
-              <EmptyState message="Você ainda não segue nenhum artista" />
+            <SectionHeader title="Artistas favoritados" />
+            {vm.artistasFavoritados.length === 0 ? (
+              <EmptyState message="Nenhum artista favoritado ainda" />
             ) : (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.artistsRow}
               >
-                {vm.artistasSeguidos.map((artista) => (
+                {vm.artistasFavoritados.map((artista) => (
                   <FollowedArtistChip
                     key={artista.id}
-                    artist={artista}
+                    artist={{
+                      id: artista.id,
+                      nome_artistico: artista.nome_artistico,
+                      generos: artista.generos,
+                      total_seguidores: 0,
+                      seguindo: false,
+                    }}
                     onPress={() => vm.goToArtist(artista.id)}
+                  />
+                ))}
+              </ScrollView>
+            )}
+
+            <SectionHeader title="Estabelecimentos favoritados" />
+            {vm.estabelecimentosFavoritados.length === 0 ? (
+              <EmptyState message="Nenhum estabelecimento favoritado ainda" />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.artistsRow}
+              >
+                {vm.estabelecimentosFavoritados.map((local) => (
+                  <FavoriteVenueChip
+                    key={local.id}
+                    venue={local}
+                    onPress={() => vm.goToEstablishment(local.id)}
                   />
                 ))}
               </ScrollView>

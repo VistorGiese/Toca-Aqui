@@ -8,6 +8,7 @@ import BrowseEvents from "@/screens/artist/BrowseEvents";
 import ArtistSchedule from "@/screens/artist/ArtistSchedule";
 import MyApplications from "@/screens/artist/MyApplications";
 import ArtistEPK from "@/screens/artist/ArtistEPK";
+import ArtistProfileManage from "@/screens/artist/ArtistProfileManage";
 
 // Detail screens
 import EventDetailArtist from "@/screens/artist/EventDetailArtist";
@@ -19,6 +20,8 @@ import RateEstablishment from "@/screens/artist/RateEstablishment";
 import Subscription from "@/screens/artist/Subscription";
 import ArtistUpcomingShowDetail from "@/screens/artist/ArtistUpcomingShowDetail";
 import ArtistAllConfirmedShows from "@/screens/artist/ArtistAllConfirmedShows";
+import UserArtistProfile from "@/screens/user/UserArtistProfile";
+import UserEstablishmentProfile from "@/screens/user/UserEstablishmentProfile";
 
 const DS = {
   bg: "#09090F",
@@ -61,6 +64,13 @@ export type ArtistStackParamList = {
   MyContracts: undefined;
   RateEstablishment: { contractId: number; venueName: string };
   Subscription: undefined;
+  ArtistProfileManage: undefined;
+  UserArtistProfile: { artistId: number; profile?: import("@/utils/artistProfile").ArtistProfileSnapshot; canBuyTickets?: boolean };
+  UserEstablishmentProfile: {
+    establishmentId: number;
+    canBuyTickets?: boolean;
+    viewerContext?: "establishment" | "user";
+  };
 };
 
 const Tab = createBottomTabNavigator<ArtistTabParamList>();
@@ -155,6 +165,9 @@ export default function ArtistNavigator() {
       <Stack.Screen name="MyContracts" component={MyContracts} />
       <Stack.Screen name="RateEstablishment" component={RateEstablishment} />
       <Stack.Screen name="Subscription" component={Subscription} />
+      <Stack.Screen name="ArtistProfileManage" component={ArtistProfileManage} />
+      <Stack.Screen name="UserArtistProfile" component={UserArtistProfile} />
+      <Stack.Screen name="UserEstablishmentProfile" component={UserEstablishmentProfile} />
     </Stack.Navigator>
   );
 }

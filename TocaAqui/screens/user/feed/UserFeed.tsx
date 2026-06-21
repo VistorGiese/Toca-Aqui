@@ -8,6 +8,10 @@ import {
   FeedSearchBar,
   FeedShowCard,
 } from "@/components/feed";
+import {
+  RecommendedArtistsSection,
+  RecommendedEstablishmentsSection,
+} from "@/components/home";
 import { FEED_FILTERS } from "./types";
 import { useUserFeed } from "./useUserFeed";
 import { styles } from "./styles";
@@ -63,6 +67,20 @@ export default function UserFeed() {
             />
           ))
         )}
+
+        <View style={styles.recommendedSection}>
+          <RecommendedArtistsSection
+            artists={vm.recommendedArtists}
+            loading={vm.loadingRecommended}
+            onPressArtist={vm.goToArtistProfile}
+          />
+
+          <RecommendedEstablishmentsSection
+            establishments={vm.recommendedEstablishments}
+            loading={vm.loadingRecommended}
+            onPressEstablishment={vm.goToEstablishmentProfile}
+          />
+        </View>
 
         <View style={styles.listEndSpacing} />
       </ScrollView>

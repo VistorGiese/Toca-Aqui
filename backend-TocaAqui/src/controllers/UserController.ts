@@ -282,15 +282,30 @@ export const atualizarPerfilArtista = asyncHandler(async (req: AuthRequest, res:
   if (!profile) throw new AppError('Perfil de artista não encontrado', 404);
   if (profile.usuario_id !== usuario_id) throw new AppError('Sem permissão', 403);
 
-  const { nome_artistico, biografia, generos, cache_minimo, cache_maximo, anos_experiencia, tem_estrutura_som, links_sociais, press_kit, url_portfolio } = req.body;
+  const {
+    nome_artistico,
+    biografia,
+    generos,
+    instrumentos,
+    cache_minimo,
+    cache_maximo,
+    anos_experiencia,
+    tem_estrutura_som,
+    estrutura_som,
+    links_sociais,
+    press_kit,
+    url_portfolio,
+  } = req.body;
   const updates: Partial<ArtistProfileModel> = {};
   if (nome_artistico !== undefined) (updates as any).nome_artistico = nome_artistico;
   if (biografia !== undefined) (updates as any).biografia = biografia;
   if (generos !== undefined) (updates as any).generos = generos;
+  if (instrumentos !== undefined) (updates as any).instrumentos = instrumentos;
   if (cache_minimo !== undefined) (updates as any).cache_minimo = cache_minimo;
   if (cache_maximo !== undefined) (updates as any).cache_maximo = cache_maximo;
   if (anos_experiencia !== undefined) (updates as any).anos_experiencia = anos_experiencia;
   if (tem_estrutura_som !== undefined) (updates as any).tem_estrutura_som = tem_estrutura_som;
+  if (estrutura_som !== undefined) (updates as any).estrutura_som = estrutura_som;
   if (links_sociais !== undefined) (updates as any).links_sociais = links_sociais;
   if (press_kit !== undefined) (updates as any).press_kit = press_kit;
   if (url_portfolio !== undefined) (updates as any).url_portfolio = url_portfolio;

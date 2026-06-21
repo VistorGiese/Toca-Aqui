@@ -1,18 +1,370 @@
-import React from "react";
+﻿import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  TextInput,
+  StatusBar,
+  Image,
+} from "react-native";
+import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import DevelopmentPlaceholder from "@/components/ui/DevelopmentPlaceholder";
 import { RootStackParamList } from "../../navigation/Navigate";
+import { useAuth } from "@/contexts/AuthContext";
+import { artistProfileService } from "@/http/artistProfileService";
+import * as ImagePicker from "expo-image-picker";
+import { resolveImageUrl } from "@/utils/adapters";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "ArtistProfileEdit">;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const DS = {
+  bg: "#09090F",
+  card: "#16163A",
+  surface: "#1E1250",
+  accent: "#7B61FF",
+  border: "#2A2560",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#8888AA",
+  textMuted: "#555577",
+  danger: "#EF4444",
+  success: "#22C55E",
+};
+
+const GENEROS_OPCOES = [
+  "Rock", "Pop", "Samba", "Forr├│", "Pagode", "MPB", "Jazz",
+  "Blues", "Funk", "Eletr├┤nico", "Reggae", "Hip Hop", "Gospel",
+  "Cl├íssico", "Sertanejo", "Metal", "Indie",
+];
 
 export default function ArtistProfileEdit() {
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [nomeArtistico, setNomeArtistico] = useState("");
+  const [bio, setBio] = useState("");
+  const [generosSelecionados, setGenerosSelecionados] = useState<string[]>([]);
+  const [cacheMin, setCacheMin] = useState("");
+  const [fotoPerfil, setFotoPerfil] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const perfilId = (user as any)?.perfilArtistaId;
+    if (!perfilId) {
+      setLoading(false);
+      return;
+    }
+    artistProfileService
+      .getMyProfile()
+      .then((p) => {
+        if (!p) return;
+        setNomeArtistico(p.nome_artistico ?? "");
+        setBio(p.biografia ?? "");
+        setGenerosSelecionados(p.generos ?? []);
+        setCacheMin(p.cache_minimo ? String(Math.round(p.cache_minimo)) : "");
+        setFotoPerfil(p.foto_perfil ?? undefined);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [(user as any)?.perfilArtistaId]);
+
+  function toggleGenero(g: string) {
+    setGenerosSelecionados((prev) =>
+      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
+    );
+  }
+
+  async function handleSalvar() {
+    const perfilId = (user as any)?.perfilArtistaId;
+    if (!perfilId) return;
+    if (!nomeArtistico.trim()) {
+      Alert.alert("Aten├º├úo", "Nome art├¡stico ├® obrigat├│rio.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await artistProfileService.updateProfile(perfilId, {
+        nome_artistico: nomeArtistico.trim(),
+        biografia: bio.trim() || undefined,
+        generos: generosSelecionados.length > 0 ? generosSelecionados : undefined,
+        cache_minimo: cacheMin ? Number(cacheMin) : undefined,
+      });
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
+    } catch {
+      // silenciado temporariamente
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleEscolherFoto() {
+    const perfilId = (user as any)?.perfilArtistaId;
+    if (!perfilId) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permiss├úo necess├íria", "Permita acesso ├á galeria para alterar a foto.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const uri = result.assets[0].uri;
+    try {
+      const path = await artistProfileService.uploadPhoto(perfilId, uri);
+      setFotoPerfil(path);
+    } catch {
+      // silenciado temporariamente
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={[s.root, { justifyContent: "center", alignItems: "center" }]}>
+        <StatusBar barStyle="light-content" backgroundColor={DS.bg} />
+        <ActivityIndicator size="large" color={DS.accent} />
+      </View>
+    );
+  }
 
   return (
-    <DevelopmentPlaceholder
-      title="Editar Perfil"
-      onBack={() => navigation.goBack()}
-    />
+    <View style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor={DS.bg} />
+
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+          <FontAwesome5 name="arrow-left" size={16} color={DS.textPrimary} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>Editar Perfil</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={s.photoWrap}>
+            {fotoPerfil ? (
+              <Image source={{ uri: resolveImageUrl(fotoPerfil) }} style={s.photo} />
+            ) : (
+              <View style={s.photoPlaceholder}>
+                <FontAwesome5 name="user" size={26} color={DS.accent} />
+              </View>
+            )}
+            <TouchableOpacity style={s.photoBtn} onPress={handleEscolherFoto} activeOpacity={0.85}>
+              <Text style={s.photoBtnText}>ALTERAR FOTO</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Nome art├¡stico */}
+          <Text style={s.label}>Nome Art├¡stico *</Text>
+          <TextInput
+            style={s.input}
+            value={nomeArtistico}
+            onChangeText={setNomeArtistico}
+            placeholder="Seu nome art├¡stico ou da banda"
+            placeholderTextColor={DS.textMuted}
+            maxLength={80}
+          />
+
+          {/* Bio */}
+          <Text style={s.label}>Biografia</Text>
+          <TextInput
+            style={[s.input, s.textArea]}
+            value={bio}
+            onChangeText={setBio}
+            placeholder="Conte um pouco sobre voc├¬ e sua m├║sica..."
+            placeholderTextColor={DS.textMuted}
+            multiline
+            numberOfLines={4}
+            maxLength={500}
+            textAlignVertical="top"
+          />
+
+          {/* G├¬neros */}
+          <Text style={s.label}>G├¬neros Musicais</Text>
+          <View style={s.chipsWrap}>
+            {GENEROS_OPCOES.map((g) => {
+              const sel = generosSelecionados.includes(g);
+              return (
+                <TouchableOpacity
+                  key={g}
+                  style={[s.chip, sel && s.chipOn]}
+                  onPress={() => toggleGenero(g)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.chipText, sel && s.chipTextOn]}>{g}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Cach├¬ m├¡nimo */}
+          <Text style={s.label}>Cach├¬ M├¡nimo (R$)</Text>
+          <TextInput
+            style={s.input}
+            value={cacheMin}
+            onChangeText={(v) => setCacheMin(v.replace(/[^0-9]/g, ""))}
+            placeholder="Ex: 500"
+            placeholderTextColor={DS.textMuted}
+            keyboardType="numeric"
+          />
+
+          {/* Bot├úo salvar */}
+          <TouchableOpacity
+            style={[s.saveBtn, saving && { opacity: 0.6 }]}
+            onPress={handleSalvar}
+            disabled={saving}
+            activeOpacity={0.8}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={s.saveBtnText}>Salvar Altera├º├Áes</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const s = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: DS.bg,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 52,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: DS.border,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: DS.card,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 18,
+    color: DS.textPrimary,
+  },
+  scroll: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 40,
+  },
+  photoWrap: { alignItems: "center", marginBottom: 10 },
+  photo: { width: 92, height: 92, borderRadius: 46, marginBottom: 10 },
+  photoPlaceholder: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    marginBottom: 10,
+    backgroundColor: DS.surface,
+    borderWidth: 1,
+    borderColor: DS.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoBtn: {
+    backgroundColor: "rgba(123,97,255,0.2)",
+    borderWidth: 1,
+    borderColor: DS.accent,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  photoBtnText: { color: DS.accent, fontFamily: "Montserrat-Bold", fontSize: 11, letterSpacing: 1 },
+  label: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 13,
+    color: DS.textSecondary,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  input: {
+    backgroundColor: DS.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: DS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontFamily: "Montserrat-Regular",
+    fontSize: 15,
+    color: DS.textPrimary,
+    marginBottom: 20,
+  },
+  textArea: {
+    minHeight: 100,
+    paddingTop: 14,
+  },
+  chipsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 20,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: DS.border,
+    backgroundColor: DS.card,
+  },
+  chipOn: {
+    backgroundColor: DS.accent,
+    borderColor: DS.accent,
+  },
+  chipText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: 13,
+    color: DS.textSecondary,
+  },
+  chipTextOn: {
+    color: "#FFFFFF",
+  },
+  saveBtn: {
+    backgroundColor: DS.accent,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  saveBtnText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+});
