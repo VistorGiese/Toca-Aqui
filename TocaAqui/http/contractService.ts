@@ -103,17 +103,28 @@ const getMyContracts = async (): Promise<Contract[]> => {
   return list.map((item: Record<string, unknown>) => normalizeContract(item));
 };
 
-const getContractById = async (id: number): Promise<Contract> => {
-  const response = await api.get(`/contratos/${id}`);
+const getContractById = async (id: number, options?: { lite?: boolean }): Promise<Contract> => {
+  const params = options?.lite ? { lite: "1" } : undefined;
+  const response = await api.get(`/contratos/${id}`, { params });
   return normalizeContract(response.data as Record<string, unknown>);
 };
 
 const editContract = async (
   id: number,
   payload: Record<string, unknown>
-): Promise<Contract> => {
-  const response = await api.put(`/contratos/${id}/editar`, payload);
-  return normalizeContract(response.data as Record<string, unknown>);
+): Promise<Partial<Contract>> => {
+  const response = await api.put(`/contratos/${id}/editar`, payload, {
+    timeout: 120000,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+  });
+  const data = response.data as Record<string, unknown>;
+  return {
+    id: Number(data.id ?? id),
+    evento_id: data.evento_id != null ? Number(data.evento_id) : undefined,
+    status: data.status as Contract["status"] | undefined,
+    observacoes: data.observacoes as string | undefined,
+  };
 };
 
 const getContractHistory = async (id: number): Promise<ContractHistoryEntry[]> => {
@@ -125,6 +136,13 @@ const getContractHistory = async (id: number): Promise<ContractHistoryEntry[]> =
 const acceptContract = async (id: number): Promise<Contract> => {
   const response = await api.put<Contract>(`/contratos/${id}/aceitar`);
   return normalizeContract(response.data as Record<string, unknown>);
+};
+
+const finalizePdfApproval = async (id: number): Promise<Contract> => {
+  const response = await api.put(`/contratos/${id}/aprovar-pdf`);
+  const body = response.data as Record<string, unknown>;
+  const raw = (body.contrato ?? body) as Record<string, unknown>;
+  return normalizeContract(raw);
 };
 
 const cancelContract = async (id: number, motivo: string): Promise<Contract> => {
@@ -150,6 +168,7 @@ export const contractService = {
   editContract,
   getContractHistory,
   acceptContract,
+  finalizePdfApproval,
   cancelContract,
   completeContract,
   avaliarEstabelecimento,

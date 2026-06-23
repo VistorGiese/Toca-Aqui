@@ -11,15 +11,18 @@ import {
   sendToEstablishment,
   saveWorkflow,
   publishShowAfterContractApproval,
+  rejectArtistSignedContract,
   workflowStatusLabel,
   canEstAttachSigned,
   canEstSendToArtist,
   canEstApprove,
+  canEstReviewArtistContract,
   canEstDownloadTemplate,
   canArtistViewSigned,
   canArtistAttachSigned,
   canArtistSend,
   fetchWorkflow,
+  resolveWorkflow,
 } from "@/services/contractPdfWorkflowService";
 import { mapApiContractToTemplateData } from "@/http/contractService";
 import { downloadContractPdf } from "@/utils/generate-contract-pdf";
@@ -51,6 +54,7 @@ export default function ContractPdfWorkflowPanel({
   onApproved,
 }: Props) {
   const [busy, setBusy] = useState(false);
+  const resolvedWorkflow = resolveWorkflow(workflow, contractData);
 
   const run = async (fn: () => Promise<void>, successMsg?: string) => {
     setBusy(true);
@@ -113,6 +117,31 @@ export default function ContractPdfWorkflowPanel({
   const handleSendToEst = () =>
     run(() => sendToEstablishment(contractId), "Contrato enviado ao estabelecimento para aprovação.");
 
+  const handleViewArtistContract = () =>
+    run(async () => {
+      const path = await downloadAttachedPdf(contractId, "artist");
+      if (!path) throw new Error("Contrato assinado pelo artista não encontrado.");
+    });
+
+  const handleRejectArtistContract = () => {
+    Alert.alert(
+      "Cancelar contrato",
+      "O artista será notificado e poderá anexar e enviar um novo contrato assinado. Confirmar?",
+      [
+        { text: "Voltar", style: "cancel" },
+        {
+          text: "Cancelar contrato",
+          style: "destructive",
+          onPress: () =>
+            run(
+              () => rejectArtistSignedContract(contractId),
+              "Contrato recusado. O artista pode enviar uma nova versão assinada."
+            ),
+        },
+      ]
+    );
+  };
+
   const handleApprove = () => {
     Alert.alert(
       "Aprovar contrato",
@@ -136,7 +165,7 @@ export default function ContractPdfWorkflowPanel({
     );
   };
 
-  const status = workflow?.s;
+  const status = resolvedWorkflow?.s;
 
   return (
     <View style={s.wrap}>
@@ -148,7 +177,7 @@ export default function ContractPdfWorkflowPanel({
 
       {role === "est" && (
         <>
-          {canEstDownloadTemplate(workflow) && contractData && (
+          {canEstDownloadTemplate(resolvedWorkflow) && contractData && (
             <ActionBtn
               icon="file-download"
               label="BAIXAR MODELO DO CONTRATO"
@@ -157,7 +186,7 @@ export default function ContractPdfWorkflowPanel({
               color={DS.cyan}
             />
           )}
-          {canEstAttachSigned(workflow) && (
+          {canEstAttachSigned(resolvedWorkflow, contractData) && (
             <ActionBtn
               icon="paperclip"
               label="ANEXAR CONTRATO ASSINADO"
@@ -166,7 +195,7 @@ export default function ContractPdfWorkflowPanel({
               color={DS.accent}
             />
           )}
-          {canEstSendToArtist(workflow) && (
+          {canEstSendToArtist(resolvedWorkflow) && (
             <ActionBtn
               icon="paper-plane"
               label="ENVIAR PARA O ARTISTA"
@@ -175,13 +204,31 @@ export default function ContractPdfWorkflowPanel({
               color={DS.cyan}
             />
           )}
-          {canEstApprove(workflow) && (
+          {canEstReviewArtistContract(resolvedWorkflow) && (
+            <ActionBtn
+              icon="file-pdf"
+              label="VER CONTRATO DO ARTISTA"
+              onPress={handleViewArtistContract}
+              busy={busy}
+              color={DS.cyan}
+            />
+          )}
+          {canEstApprove(resolvedWorkflow) && (
             <ActionBtn
               icon="check-circle"
-              label="APROVAR CONTRATO"
+              label="APROVAR CONTRATO E ABRIR PARA ANÚNCIO"
               onPress={handleApprove}
               busy={busy}
               color={DS.success}
+            />
+          )}
+          {canEstApprove(resolvedWorkflow) && (
+            <ActionBtn
+              icon="times-circle"
+              label="CANCELAR CONTRATO"
+              onPress={handleRejectArtistContract}
+              busy={busy}
+              color={DS.danger}
             />
           )}
         </>
@@ -189,7 +236,7 @@ export default function ContractPdfWorkflowPanel({
 
       {role === "artist" && (
         <>
-          {canArtistViewSigned(workflow) && (
+          {canArtistViewSigned(resolvedWorkflow, contractData) && (
             <ActionBtn
               icon="download"
               label="BAIXAR CONTRATO DO ESTABELECIMENTO"
@@ -198,7 +245,7 @@ export default function ContractPdfWorkflowPanel({
               color={DS.cyan}
             />
           )}
-          {canArtistAttachSigned(workflow) && (
+          {canArtistAttachSigned(resolvedWorkflow, contractData) && (
             <ActionBtn
               icon="paperclip"
               label="ANEXAR CONTRATO ASSINADO"
@@ -207,7 +254,7 @@ export default function ContractPdfWorkflowPanel({
               color={DS.accent}
             />
           )}
-          {canArtistSend(workflow) && (
+          {canArtistSend(resolvedWorkflow, contractData) && (
             <ActionBtn
               icon="paper-plane"
               label="ENVIAR CONTRATO"

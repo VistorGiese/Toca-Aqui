@@ -26,6 +26,19 @@ type EditableField = typeof EDITABLE_FIELDS[number];
 
 const PDF_STORAGE_PREFIXES = ['__B64__', '__WF__', '__PDF_'];
 
+/** Campos TEXT com blobs PDF em base64 — omitidos em consultas lite. */
+export const PDF_BLOB_FIELDS = [
+  'obrigacoes_contratante', 'obrigacoes_contratado',
+  'infraestrutura_som', 'infraestrutura_backline',
+  'intervalos', 'genero_musical',
+] as const;
+
+/** Campos editáveis no fluxo PDF (inclui workflow em observacoes). */
+export const PDF_ATTACHMENT_FIELDS = [
+  ...PDF_BLOB_FIELDS,
+  'observacoes',
+] as const;
+
 function summarizeHistoryValue(value: unknown): string {
   const str = String(value ?? '');
   if (PDF_STORAGE_PREFIXES.some((p) => str.startsWith(p))) {
@@ -149,27 +162,34 @@ export class ContractService {
     return contrato;
   }
 
-  async getById(contractId: number): Promise<ContractModel> {
+  async getById(contractId: number, options?: { lite?: boolean }): Promise<ContractModel> {
     const contrato = await ContractModel.findByPk(contractId, {
+      attributes: options?.lite
+        ? { exclude: [...PDF_BLOB_FIELDS] }
+        : undefined,
       include: [
-        { association: 'Event' },
-        { association: 'Band' },
-        { association: 'EstablishmentProfile' },
-        { association: 'Payments' },
+        {
+          association: 'Event',
+          attributes: ['id', 'titulo_evento', 'data_show', 'horario_inicio', 'horario_fim'],
+        },
       ],
     });
     if (!contrato) throw new AppError('Contrato não encontrado', 404);
     return contrato;
   }
 
+  /** Retorna apenas o workflow armazenado em observacoes (sem carregar PDFs). */
+  async getWorkflowObservacoes(contractId: number): Promise<string | null> {
+    const row = await ContractModel.findByPk(contractId, {
+      attributes: ['observacoes'],
+    });
+    if (!row) throw new AppError('Contrato não encontrado', 404);
+    return row.observacoes ?? null;
+  }
+
   async getByEvent(eventoId: number): Promise<ContractModel | null> {
     return ContractModel.findOne({
       where: { evento_id: eventoId },
-      include: [
-        { association: 'Band' },
-        { association: 'EstablishmentProfile' },
-        { association: 'Payments' },
-      ],
     });
   }
 
@@ -210,13 +230,17 @@ export class ContractService {
 
     return ContractModel.findAll({
       where: { [Op.or]: orConditions },
+      attributes: { exclude: [...PDF_BLOB_FIELDS] },
       include: [
         { association: 'Event' },
-        { association: 'Band' },
+        {
+          association: 'Band',
+          attributes: ['id', 'nome_banda', 'imagem', 'generos_musicais'],
+        },
         { association: 'EstablishmentProfile' },
         { association: 'ArtistProfile' },
       ],
-      order: [[ContractModel, 'created_at', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
   }
 
@@ -233,8 +257,15 @@ export class ContractService {
     const contrato = await ContractModel.findByPk(contractId);
     if (!contrato) throw new AppError('Contrato não encontrado', 404);
 
+    const changeKeys = Object.keys(changes);
+    const onlyPdfAttachmentChanges = changeKeys.length > 0
+      && changeKeys.every((k) => (PDF_ATTACHMENT_FIELDS as readonly string[]).includes(k));
+
     if (![ContractStatus.RASCUNHO, ContractStatus.AGUARDANDO_ACEITE].includes(contrato.status)) {
-      throw new AppError('Contrato não pode ser editado neste status', 400);
+      const canResubmitPdf = contrato.status === ContractStatus.ACEITO && onlyPdfAttachmentChanges;
+      if (!canResubmitPdf) {
+        throw new AppError('Contrato não pode ser editado neste status', 400);
+      }
     }
 
     // Filtrar apenas campos editáveis
@@ -334,6 +365,42 @@ export class ContractService {
     }
 
     await contrato.update(updateData as any);
+    return contrato.reload();
+  }
+
+  /**
+   * Aprovação final do fluxo PDF offline — ambas as partes assinaram fora da plataforma.
+   * Marca o contrato como aceito pelo contratante após revisão do PDF do artista.
+   */
+  async finalizePdfApproval(
+    contractId: number,
+    userId: number,
+  ): Promise<ContractModel> {
+    const contrato = await ContractModel.findByPk(contractId);
+    if (!contrato) throw new AppError('Contrato não encontrado', 404);
+
+    const role = await this.getUserRole(contractId, userId);
+    if (role !== 'contratante') {
+      throw new AppError('Apenas o estabelecimento pode aprovar o contrato assinado', 403);
+    }
+
+    if ([ContractStatus.CANCELADO, ContractStatus.CONCLUIDO].includes(contrato.status)) {
+      throw new AppError('Contrato já foi finalizado', 400);
+    }
+
+    if (contrato.status === ContractStatus.ACEITO) {
+      return contrato.reload();
+    }
+
+    const now = new Date();
+    await contrato.update({
+      aceite_contratante: true,
+      aceite_contratado: true,
+      data_aceite_contratante: now as any,
+      data_aceite_contratado: now as any,
+      status: ContractStatus.ACEITO,
+    } as any);
+
     return contrato.reload();
   }
 

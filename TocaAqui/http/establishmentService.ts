@@ -24,6 +24,7 @@ export interface Gig {
   imagem_capa?: string;
   modo_venda_ingresso?: "antecipada" | "na_porta";
   status: "aberta" | "encerrada" | "rascunho" | "pendente" | "aceito" | "rejeitado" | "cancelado" | "realizado";
+  esta_publico?: boolean;
   candidaturas_count?: number;
   estabelecimento_id?: number;
   perfil_estabelecimento_id?: number;
@@ -69,6 +70,7 @@ export interface Candidatura {
   shows_realizados?: number;
   favorited?: boolean;
   valor_proposto?: number;
+  contrato_id?: number | null;
   profileSnapshot?: ArtistProfileSnapshot;
 }
 
@@ -146,6 +148,7 @@ function normalizeCandidatura(raw: any): Candidatura {
     shows_realizados: raw?.shows_realizados ?? profileSnapshot?.shows_realizados,
     favorited: raw?.favorited,
     valor_proposto: raw?.valor_proposto,
+    contrato_id: raw?.contrato_id ?? null,
     profileSnapshot,
   };
 }
@@ -271,7 +274,7 @@ const getGigById = async (id: number): Promise<Gig> => {
   return r.data;
 };
 
-const updateGig = async (id: number, data: Partial<Gig>): Promise<Gig> => {
+const updateGig = async (id: number, data: Partial<Gig> & { esta_publico?: boolean }): Promise<Gig> => {
   const r = await api.put<Gig>(`/agendamentos/${id}`, data);
   return r.data;
 };
@@ -639,6 +642,64 @@ async function enrichGigWithAcceptedArtist(gig: Gig): Promise<ConfirmedGig> {
  * Próximos shows confirmados — mesma fonte da aba Minhas Vagas > Encerradas
  * (agendamentos com status "aceito"), filtrados por data futura.
  */
+const getUpcomingPublishedGigs = async (
+  estabelecimentoId?: number,
+  limit = 3
+): Promise<ConfirmedGig[]> => {
+  const gigs = await getMyGigs(estabelecimentoId);
+  const upcoming = gigs
+    .filter(
+      (g) =>
+        isGigConfirmada(g.status) &&
+        isGigFutura(g.data_show) &&
+        g.esta_publico === true
+    )
+    .sort((a, b) => new Date(a.data_show).getTime() - new Date(b.data_show).getTime())
+    .slice(0, limit);
+
+  return Promise.all(upcoming.map(enrichGigWithAcceptedArtist));
+};
+
+/** Converte vaga publicada do estabelecimento para o formato Show da UI. */
+export function confirmedGigToShow(
+  gig: ConfirmedGig,
+  establishment?: EstablishmentProfile | null
+): import("./showService").Show {
+  return {
+    id: gig.id,
+    titulo_evento: gig.titulo_evento,
+    descricao_evento: gig.descricao_evento,
+    data_show: gig.data_show,
+    horario_inicio: gig.horario_inicio,
+    horario_fim: gig.horario_fim,
+    genero_musical: gig.genero_musical ?? gig.generos_musicais,
+    imagem_capa: gig.imagem_capa,
+    preco_ingresso_inteira: gig.preco_ingresso_inteira,
+    capacidade_maxima: gig.capacidade_maxima,
+    modo_venda_ingresso: gig.modo_venda_ingresso,
+    esta_publico: Boolean(gig.esta_publico),
+    nome_artista: gig.nome_artista ?? null,
+    foto_artista: gig.foto_artista ?? null,
+    EstablishmentProfile: establishment
+      ? {
+          id: establishment.id,
+          nome_estabelecimento: establishment.nome_estabelecimento,
+          tipo_estabelecimento: establishment.tipo_estabelecimento ?? "",
+          telefone_contato: establishment.telefone_contato,
+          Address: establishment.cidade
+            ? {
+                cidade: establishment.cidade,
+                estado: establishment.estado ?? "",
+                rua: "",
+                numero: "",
+                bairro: "",
+              }
+            : undefined,
+        }
+      : undefined,
+  };
+}
+
 const getUpcomingConfirmedGigs = async (
   estabelecimentoId?: number,
   limit = 3
@@ -745,7 +806,7 @@ export const establishmentService = {
   uploadGigCover,
   getGigApplications, acceptApplication, rejectApplication,
   searchArtists, searchEstablishments, getEstablishmentById, findArtistById, getBandById,
-  getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getContractById, getContractByEventId,
+  getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getUpcomingPublishedGigs, getContractById, getContractByEventId,
   getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
   rateArtist, getNotifications, markNotificationsRead,
   listMembers, addMember, removeMember,

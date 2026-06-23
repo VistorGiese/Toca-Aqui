@@ -42,8 +42,13 @@ export default function EstGigApplications() {
 
       const hasAccepted = list.some((c) => c.status === "aceito") || result.closed;
       if (hasAccepted) {
-        const contrato = await establishmentService.getContractByEventId(gigId);
-        setContractId(contrato?.id ?? null);
+        const fromList = list.find((c) => c.status === "aceito")?.contrato_id ?? null;
+        if (fromList) {
+          setContractId(fromList);
+        } else {
+          const contrato = await establishmentService.getContractByEventId(gigId);
+          setContractId(contrato?.id ?? null);
+        }
       } else {
         setContractId(null);
       }
@@ -99,15 +104,18 @@ export default function EstGigApplications() {
     Alert.alert("Erro", "Perfil indisponível para esta candidatura.");
   };
 
-  const openContract = async () => {
+  const openContract = async (item: Candidatura, artistName: string) => {
     setOpeningContract(true);
     try {
-      let id = contractId;
+      let id = item.contrato_id ?? contractId;
+      let contrato: Record<string, unknown> | null = null;
+
       if (!id) {
-        const contrato = await establishmentService.getContractByEventId(gigId);
+        contrato = await establishmentService.getContractByEventId(gigId);
         id = contrato?.id ?? null;
         if (id) setContractId(id);
       }
+
       if (!id) {
         Alert.alert(
           "Contrato não encontrado",
@@ -115,7 +123,14 @@ export default function EstGigApplications() {
         );
         return;
       }
-      navigation.navigate("EstShowDetail", { contractId: id });
+
+      navigation.navigate("EstContractPreview", {
+        contractId: id,
+        artistName,
+        gigTitle,
+        eventoId: gigId,
+        initialContract: contrato ?? undefined,
+      });
     } finally {
       setOpeningContract(false);
     }
@@ -190,7 +205,7 @@ export default function EstGigApplications() {
         {item.status === "aceito" && (
           <TouchableOpacity
             style={s.contractBtn}
-            onPress={openContract}
+            onPress={() => openContract(item, artistName)}
             disabled={openingContract}
             activeOpacity={0.8}
           >
@@ -199,7 +214,7 @@ export default function EstGigApplications() {
             ) : (
               <>
                 <FontAwesome5 name="file-contract" size={11} color={DS.success} />
-                <Text style={s.contractBtnText}>VISUALIZAR CONTRATO</Text>
+                <Text style={s.contractBtnText}>VER CONTRATO</Text>
               </>
             )}
           </TouchableOpacity>

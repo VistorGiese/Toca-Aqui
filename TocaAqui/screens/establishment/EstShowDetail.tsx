@@ -1,17 +1,17 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert, StatusBar,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
 import { contractService } from "@/http/contractService";
 import api from "@/http/api";
 import ContractPdfWorkflowPanel, { useContractPdfWorkflow } from "@/components/contract/ContractPdfWorkflowPanel";
-import { isShowPublic, fetchWorkflow, syncShowPublicationIfApproved } from "@/services/contractPdfWorkflowService";
+import { isShowPublic, fetchWorkflow, syncShowPublicationIfApproved, resolveWorkflow } from "@/services/contractPdfWorkflowService";
 
 const DS = {
   bg: "#09090F", card: "#13101F", surface: "#0F0B1E",
@@ -49,7 +49,7 @@ export default function EstShowDetail() {
       const wf = await fetchWorkflow(contractId);
       await refreshWorkflow();
       if (data.evento_id) {
-        await syncShowPublicationIfApproved(Number(data.evento_id), wf);
+        await syncShowPublicationIfApproved(Number(data.evento_id), wf, contractId);
       }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar o show.", [
@@ -60,7 +60,11 @@ export default function EstShowDetail() {
     }
   }, [contractId, navigation, refreshWorkflow]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const handleCancel = () => {
     Alert.alert(
@@ -148,7 +152,7 @@ export default function EstShowDetail() {
 
   const cache = Number(contract.cache_total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
   const refNumber = `TA-${String(contractId).padStart(4, "0")}`;
-  const showIsPublic = isShowPublic(workflow);
+  const showIsPublic = isShowPublic(resolveWorkflow(workflow, contract as Record<string, unknown>));
 
   const handleContractApproved = async () => {
     await load();

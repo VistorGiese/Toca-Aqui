@@ -266,7 +266,13 @@ describe('ContractController', () => {
 
       expect(contractService.proposeEdit).toHaveBeenCalledWith(1, 1, 'contratante', { cache_total: 5000 });
       expect(redisService.invalidatePattern).toHaveBeenCalledWith('contratos:*');
-      expect(res.json).toHaveBeenCalledWith(contrato);
+      expect(res.json).toHaveBeenCalledWith({
+        id: contrato.id,
+        evento_id: contrato.evento_id,
+        status: contrato.status,
+        versao: contrato.versao,
+        observacoes: contrato.observacoes,
+      });
     });
 
     it('passa AppError 403 quando usuário sem acesso', async () => {

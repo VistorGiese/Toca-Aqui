@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,12 @@ import {
   Alert,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { contractService, mapApiContractToTemplateData } from "@/http/contractService";
 import { ArtistStackParamList } from "@/navigation/ArtistNavigator";
 import ContractPdfWorkflowPanel, { useContractPdfWorkflow } from "@/components/contract/ContractPdfWorkflowPanel";
-import { canArtistViewSigned, workflowStatusLabel } from "@/services/contractPdfWorkflowService";
+import { canArtistViewSigned, workflowStatusLabel, resolveWorkflow } from "@/services/contractPdfWorkflowService";
 
 const DS = {
   bg: "#09090F",
@@ -52,9 +52,11 @@ export default function ContractDetail() {
     }
   }, [contractId, navigation, refreshWorkflow]);
 
-  useEffect(() => {
-    fetchContract();
-  }, [fetchContract]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchContract();
+    }, [fetchContract])
+  );
 
   if (loading) {
     return (
@@ -68,7 +70,9 @@ export default function ContractDetail() {
 
   const preview = mapApiContractToTemplateData(contract as unknown as Record<string, unknown>);
   const refNumber = `SE-2026-${String(contract.id).padStart(4, "0")}-GIG`;
-  const artistCanSeeContract = canArtistViewSigned(workflow);
+  const resolvedWorkflow = resolveWorkflow(workflow, contract as unknown as Record<string, unknown>);
+  const artistCanSeeContract = canArtistViewSigned(resolvedWorkflow, contract as unknown as Record<string, unknown>);
+  const artistMustResubmit = Boolean(resolvedWorkflow?.artistRejectedAt) && resolvedWorkflow?.s === "sent_to_artist";
 
   const formattedDate = contract.data_evento
     ? new Date(contract.data_evento).toLocaleDateString("pt-BR", {
@@ -103,7 +107,16 @@ export default function ContractDetail() {
           <Text style={styles.statusBadgeText}>VOCÊ FOI CONTRATADO(A)</Text>
         </View>
 
-        {!artistCanSeeContract && (
+        {artistMustResubmit && (
+          <View style={styles.rejectBanner}>
+            <FontAwesome5 name="exclamation-circle" size={14} color={DS.danger} />
+            <Text style={styles.rejectBannerText}>
+              O estabelecimento não aceitou o contrato enviado. Anexe e envie uma nova versão assinada.
+            </Text>
+          </View>
+        )}
+
+        {!artistCanSeeContract && !artistMustResubmit && (
           <View style={styles.waitBanner}>
             <FontAwesome5 name="clock" size={14} color={DS.amber} />
             <Text style={styles.waitBannerText}>
@@ -154,10 +167,11 @@ export default function ContractDetail() {
           <>
             <Text style={styles.sectionTitle}>Contrato Assinado</Text>
             <Text style={styles.workflowHint}>
-              Status: {workflowStatusLabel(workflow?.s)}
+              Status: {workflowStatusLabel(resolvedWorkflow?.s)}
             </Text>
             <ContractPdfWorkflowPanel
               contractId={contractId}
+              contractData={contract as unknown as Record<string, unknown>}
               role="artist"
               workflow={workflow}
               onRefresh={async () => { await refreshWorkflow(); await fetchContract(); }}
@@ -213,6 +227,14 @@ const styles = StyleSheet.create({
     padding: 14, marginBottom: 16,
   },
   waitBannerText: {
+    flex: 1, fontFamily: "Montserrat-Regular", fontSize: 12, color: DS.textSec, lineHeight: 18,
+  },
+  rejectBanner: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    backgroundColor: "#EF444418", borderRadius: 12, borderWidth: 1, borderColor: "#EF444444",
+    padding: 14, marginBottom: 16,
+  },
+  rejectBannerText: {
     flex: 1, fontFamily: "Montserrat-Regular", fontSize: 12, color: DS.textSec, lineHeight: 18,
   },
   infoCard: {

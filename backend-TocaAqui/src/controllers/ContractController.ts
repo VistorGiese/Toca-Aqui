@@ -27,7 +27,9 @@ export const getContract = asyncHandler(async (req: AuthRequest, res: Response) 
     throw new AppError('Você não tem acesso a este contrato', 403);
   }
 
-  const contrato = await contractService.getById(contractId);
+  const contrato = await contractService.getById(contractId, {
+    lite: req.query.lite === '1',
+  });
   res.json(contrato);
 });
 
@@ -76,7 +78,14 @@ export const editContract = asyncHandler(async (req: AuthRequest, res: Response)
   }
 
   await redisService.invalidatePattern('contratos:*');
-  res.json(contrato);
+  // Resposta enxuta — evita devolver centenas de KB de PDFs em cada PUT (causa Network Error no app).
+  res.json({
+    id: contrato.id,
+    evento_id: contrato.evento_id,
+    status: contrato.status,
+    versao: contrato.versao,
+    observacoes: contrato.observacoes,
+  });
 });
 
 export const acceptContract = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -117,6 +126,27 @@ export const acceptContract = asyncHandler(async (req: AuthRequest, res: Respons
 
   await redisService.invalidatePattern('contratos:*');
   res.json(contrato);
+});
+
+export const approvePdfContract = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user?.id) throw new AppError('Usuário não identificado', 401);
+
+  const contractId = parseInt(req.params.id as string);
+  const contrato = await contractService.finalizePdfApproval(contractId, req.user.id);
+
+  const artistUserId = await getOtherPartyUserId(contrato, 'contratado');
+  if (artistUserId) {
+    await createNotification(
+      artistUserId,
+      NotificationType.CONTRATO_ACEITO,
+      'O estabelecimento aprovou o contrato assinado. O show será divulgado para venda de ingressos.',
+      'contrato',
+      contrato.id,
+    );
+  }
+
+  await redisService.invalidatePattern('contratos:*');
+  res.json({ message: 'Contrato aprovado com sucesso', contrato });
 });
 
 export const cancelContract = asyncHandler(async (req: AuthRequest, res: Response) => {

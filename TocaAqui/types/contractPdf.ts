@@ -13,6 +13,8 @@ export interface ContractPdfWorkflowMeta {
   estPdf?: { storage: "fields" | "history"; parts: number };
   artPdf?: { storage: "fields" | "history"; parts: number };
   sentAt?: string;
+  sentToEstAt?: string;
+  artistRejectedAt?: string;
   approvedAt?: string;
   updatedAt?: string;
 }
