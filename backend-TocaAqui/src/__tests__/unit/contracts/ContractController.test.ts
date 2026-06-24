@@ -102,8 +102,12 @@ const makeReq = (overrides: Partial<AuthRequest> = {}): AuthRequest =>
 
 const makeContrato = (overrides = {}) => ({
   id: 1,
+  evento_id: 10,
   perfil_estabelecimento_id: 10,
   banda_id: 5,
+  status: 'pendente',
+  versao: 1,
+  observacoes: null as string | null,
   aceite_contratante: false,
   aceite_contratado: false,
   ...overrides,
