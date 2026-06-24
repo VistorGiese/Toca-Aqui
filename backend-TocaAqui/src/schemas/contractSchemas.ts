@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { PDF_TEXT_FIELD_MAX } from '../constants/contractPdfConstants';
 
-/** Campos TEXT do contrato — usados também para armazenar PDF em base64 no fluxo offline. */
-const contractTextField = z.string().max(65000).optional();
+/** Campos TEXT/MEDIUMTEXT do contrato — usados também para armazenar PDF em base64 no fluxo offline. */
+const contractTextField = z.string().max(PDF_TEXT_FIELD_MAX).optional();
 
 export const editContractSchema = z.object({
   cache_total: z.number().positive('Cachê deve ser positivo').optional(),

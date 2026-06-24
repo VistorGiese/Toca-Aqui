@@ -1,3 +1,9 @@
+/**
+ * Limite por campo no armazenamento de PDF (base64) — alinhado ao backend.
+ * 3 chunks × este valor ≈ tamanho máximo do arquivo (~10 MB em base64).
+ */
+export const PDF_TEXT_FIELD_LIMIT = 4_500_000;
+
 /** Estados do fluxo de contrato PDF (offline + assinatura manual). */
 export type ContractPdfWorkflowStatus =
   | "generated"

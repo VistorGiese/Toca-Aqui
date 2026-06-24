@@ -7,14 +7,15 @@ import type {
   ContractPdfWorkflowMeta,
   ContractPdfWorkflowStatus,
 } from "@/types/contractPdf";
+import { PDF_TEXT_FIELD_LIMIT } from "@/types/contractPdf";
 import { readFileAsBase64 } from "@/utils/generate-contract-pdf";
 import { getApiErrorMessage } from "@/utils/errorHandler";
 
 const WORKFLOW_PREFIX = "__WF__";
 const PDF_PREFIX = "__B64__";
 
-/** Limite alinhado ao schema do backend (TEXT ~64KB por campo). */
-const TEXT_FIELD_LIMIT = 65000;
+/** Limite alinhado ao schema do backend (MEDIUMTEXT por campo). */
+const TEXT_FIELD_LIMIT = PDF_TEXT_FIELD_LIMIT;
 
 /** Campos do estabelecimento — não compartilhar com o artista. */
 const EST_PDF_FIELDS = ["obrigacoes_contratante", "infraestrutura_som", "infraestrutura_backline"] as const;

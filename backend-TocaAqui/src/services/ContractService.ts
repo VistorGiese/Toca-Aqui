@@ -10,6 +10,7 @@ import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import AddressModel from '../models/AddressModel';
 import PaymentModel from '../models/PaymentModel';
 import { AppError } from '../errors/AppError';
+import { PDF_STORAGE_PREFIXES } from '../constants/contractPdfConstants';
 
 // Campos que podem ser editados por ambas as partes
 const EDITABLE_FIELDS = [
@@ -23,8 +24,6 @@ const EDITABLE_FIELDS = [
 ] as const;
 
 type EditableField = typeof EDITABLE_FIELDS[number];
-
-const PDF_STORAGE_PREFIXES = ['__B64__', '__WF__', '__PDF_'];
 
 /** Campos TEXT com blobs PDF em base64 — omitidos em consultas lite. */
 export const PDF_BLOB_FIELDS = [
