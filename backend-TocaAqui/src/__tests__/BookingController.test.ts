@@ -351,9 +351,13 @@ describe('BookingController', () => {
       expect(res.json).toHaveBeenCalledWith(booking);
     });
 
-    it('passa AppError 400 ao next quando existem candidaturas', async () => {
+    it('passa AppError 400 ao next quando existem candidaturas e campos bloqueados', async () => {
       const booking = makeBooking();
-      const req = makeReq({ user: { id: 1 }, params: { id: '1' }, body: {} });
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { titulo_evento: 'Novo Nome' },
+      });
       const res = mockRes();
 
       (BookingModel.findByPk as jest.Mock).mockResolvedValue(booking);
@@ -365,6 +369,25 @@ describe('BookingController', () => {
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({ statusCode: 400 })
       );
+    });
+
+    it('permite atualizar esta_publico quando existem candidaturas', async () => {
+      const booking = makeBooking();
+      const req = makeReq({
+        user: { id: 1 },
+        params: { id: '1' },
+        body: { esta_publico: true },
+      });
+      const res = mockRes();
+
+      (BookingModel.findByPk as jest.Mock).mockResolvedValue(booking);
+      (BandApplicationModel.count as jest.Mock).mockResolvedValue(3);
+
+      updateBooking(req, res, mockNext as unknown as NextFunction);
+      await flushPromises();
+
+      expect(booking.update).toHaveBeenCalledWith({ esta_publico: true });
+      expect(res.json).toHaveBeenCalledWith(booking);
     });
 
     it('passa AppError 404 ao next quando booking não existe', async () => {

@@ -13,6 +13,7 @@ import EstNewGig from "@/screens/establishment/EstNewGig";
 import EstGigApplications from "@/screens/establishment/EstGigApplications";
 import EstArtistProfile from "@/screens/establishment/EstArtistProfile";
 import EstAcceptContract from "@/screens/establishment/EstAcceptContract";
+import EstContractPreview from "@/screens/establishment/EstContractPreview";
 import EstShowDetail from "@/screens/establishment/EstShowDetail";
 import EstNotifications from "@/screens/establishment/EstNotifications";
 import EstRateArtist from "@/screens/establishment/EstRateArtist";
@@ -45,6 +46,7 @@ export type EstStackParamList = {
   EstArtistProfile: { artistId?: number; bandaId?: number; profile?: ArtistProfileSnapshot };
   EstAcceptContract: {
     applicationId: number;
+    gigId: number;
     status: "pendente" | "aceito" | "rejeitado";
     artistaId?: number;
     bandaId?: number;
@@ -53,6 +55,13 @@ export type EstStackParamList = {
     valorProposto?: number;
     mensagem?: string;
     eventClosed?: boolean;
+  };
+  EstContractPreview: {
+    contractId: number;
+    artistName: string;
+    gigTitle: string;
+    eventoId: number;
+    initialContract?: Record<string, unknown>;
   };
   EstShowDetail: { contractId: number };
   EstUpcomingShowDetail: {
@@ -152,6 +161,7 @@ export default function EstablishmentNavigator() {
       <Stack.Screen name="EstGigApplications" component={EstGigApplications} />
       <Stack.Screen name="EstArtistProfile" component={EstArtistProfile} />
       <Stack.Screen name="EstAcceptContract" component={EstAcceptContract} />
+      <Stack.Screen name="EstContractPreview" component={EstContractPreview} />
       <Stack.Screen name="EstShowDetail" component={EstShowDetail} />
       <Stack.Screen name="EstUpcomingShowDetail" component={EstUpcomingShowDetail} />
       <Stack.Screen name="EstAllConfirmedShows" component={EstAllConfirmedShows} />

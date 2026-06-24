@@ -176,8 +176,8 @@ ContractModel.init(
     horario_inicio: { type: DataTypes.TIME, allowNull: false },
     horario_fim: { type: DataTypes.TIME, allowNull: false },
     duracao_minutos: { type: DataTypes.INTEGER, allowNull: true },
-    intervalos: { type: DataTypes.TEXT, allowNull: true },
-    genero_musical: { type: DataTypes.STRING(255), allowNull: true },
+    intervalos: { type: DataTypes.TEXT('medium'), allowNull: true },
+    genero_musical: { type: DataTypes.TEXT('medium'), allowNull: true },
     local_evento: { type: DataTypes.TEXT, allowNull: true },
     // Cachê
     cache_total: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
@@ -191,16 +191,16 @@ ContractModel.init(
     data_pagamento_sinal: { type: DataTypes.DATEONLY, allowNull: true },
     data_pagamento_restante: { type: DataTypes.DATEONLY, allowNull: true },
     // Obrigações
-    obrigacoes_contratante: { type: DataTypes.TEXT, allowNull: true },
-    obrigacoes_contratado: { type: DataTypes.TEXT, allowNull: true },
+    obrigacoes_contratante: { type: DataTypes.TEXT('medium'), allowNull: true },
+    obrigacoes_contratado: { type: DataTypes.TEXT('medium'), allowNull: true },
     // Penalidades de cancelamento
     penalidade_cancelamento_72h: { type: DataTypes.DECIMAL(5, 2), allowNull: false, defaultValue: 0.00 },
     penalidade_cancelamento_24_72h: { type: DataTypes.DECIMAL(5, 2), allowNull: false, defaultValue: 50.00 },
     penalidade_cancelamento_24h: { type: DataTypes.DECIMAL(5, 2), allowNull: false, defaultValue: 100.00 },
     // Direitos e infraestrutura
     direitos_imagem: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
-    infraestrutura_som: { type: DataTypes.TEXT, allowNull: true },
-    infraestrutura_backline: { type: DataTypes.TEXT, allowNull: true },
+    infraestrutura_som: { type: DataTypes.TEXT('medium'), allowNull: true },
+    infraestrutura_backline: { type: DataTypes.TEXT('medium'), allowNull: true },
     observacoes: { type: DataTypes.TEXT, allowNull: true },
     // Aceite digital
     aceite_contratante: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },

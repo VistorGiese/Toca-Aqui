@@ -3,6 +3,7 @@ import BookingModel, { BookingStatus } from '../models/BookingModel';
 import EstablishmentProfileModel from '../models/EstablishmentProfileModel';
 import AddressModel from '../models/AddressModel';
 import ContractModel from '../models/ContractModel';
+import { PDF_BLOB_FIELDS } from './ContractService';
 import BandModel from '../models/BandModel';
 import BandApplicationModel from '../models/BandApplicationModel';
 import ArtistProfileModel from '../models/ArtistProfileModel';
@@ -66,6 +67,18 @@ class ShowService {
     };
   }
 
+  /** Contrato em listagens — sem blobs PDF (evita "Out of sort memory" no MySQL). */
+  private contractListInclude(options?: { required?: boolean; where?: Record<string, unknown> }) {
+    return {
+      model: ContractModel,
+      as: 'Contract',
+      required: options?.required ?? false,
+      ...(options?.where ? { where: options.where } : {}),
+      attributes: { exclude: [...PDF_BLOB_FIELDS] },
+      include: [this.bandInclude()],
+    };
+  }
+
   private buildEstablishmentInclude(cidade?: string) {
     const includeEstabelecimento: any = {
       model: EstablishmentProfileModel,
@@ -100,12 +113,7 @@ class ShowService {
           },
         ],
       },
-      {
-        model: ContractModel,
-        as: 'Contract',
-        required: false,
-        include: [this.bandInclude()],
-      },
+      this.contractListInclude(),
     ];
   }
 
@@ -148,13 +156,7 @@ class ShowService {
       where: whereClause,
       include: [
         this.buildEstablishmentInclude(params.cidade),
-        {
-          model: ContractModel,
-          as: 'Contract',
-          required: false,
-          where: { status: 'aceito' },
-          include: [this.bandInclude()],
-        },
+        this.contractListInclude({ where: { status: 'aceito' } }),
       ],
       order: [['data_show', 'ASC']],
       limit,
@@ -228,13 +230,7 @@ class ShowService {
             },
           ],
         },
-        {
-          model: ContractModel,
-          as: 'Contract',
-          required: false,
-          where: { status: 'aceito' },
-          include: [this.bandInclude()],
-        },
+        this.contractListInclude({ where: { status: 'aceito' } }),
       ],
     });
 
@@ -305,13 +301,7 @@ class ShowService {
           as: 'EstablishmentProfile',
           include: [{ model: AddressModel, as: 'Address' }],
         },
-        {
-          model: ContractModel,
-          as: 'Contract',
-          required: false,
-          where: { status: 'aceito' },
-          include: [this.bandInclude()],
-        },
+        this.contractListInclude({ where: { status: 'aceito' } }),
       ],
       order: [['data_show', 'ASC']],
       limit: 20,

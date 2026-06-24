@@ -11,7 +11,9 @@ import {
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { showService, Show, showToDetailParams, ShowDetailParams } from "@/http/showService";
+import { establishmentService, confirmedGigToShow } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
 import { parseGenres } from "@/utils/genres";
 
@@ -72,15 +74,25 @@ export default function AllConfirmedShows({ theme: themeKey, detailScreen }: Pro
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await showService.getConfirmedShows({ limit: 50 });
-      setShows(response.shows);
+      if (themeKey === "establishment") {
+        const storedId = await AsyncStorage.getItem("estabelecimentoId");
+        const estId = storedId ? Number(storedId) : undefined;
+        const [gigs, profile] = await Promise.all([
+          establishmentService.getUpcomingPublishedGigs(estId, 50),
+          establishmentService.getMyEstablishmentProfile().catch(() => null),
+        ]);
+        setShows(gigs.map((gig) => confirmedGigToShow(gig, profile)));
+      } else {
+        const response = await showService.getConfirmedShows({ limit: 50 });
+        setShows(response.shows);
+      }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar os shows confirmados.");
       setShows([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [themeKey]);
 
   useFocusEffect(
     useCallback(() => {

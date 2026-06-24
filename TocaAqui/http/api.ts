@@ -23,15 +23,35 @@ function getExpoDevHost(): string | null {
  * 2. Em dev, host detectado pelo Expo + porta 3000 — sem precisar mexer no .env todo dia
  * 3. Fallback "http://localhost:3000" — emulador iOS / caso nenhum host seja detectado
  */
+let devBaseUrlMismatchWarned = false;
+
 export function getApiBaseUrl(): string {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (fromEnv) return fromEnv;
 
   if (__DEV__) {
     const expoHost = getExpoDevHost();
-    if (expoHost) return `http://${expoHost}:3000`;
-    return "http://localhost:3000";
+    const autoUrl = expoHost ? `http://${expoHost}:3000` : "http://localhost:3000";
+
+    if (fromEnv) {
+      try {
+        const envHost = new URL(fromEnv).hostname;
+        if (expoHost && envHost !== expoHost && !devBaseUrlMismatchWarned) {
+          devBaseUrlMismatchWarned = true;
+          console.warn(
+            `[API] EXPO_PUBLIC_API_URL (${fromEnv}) difere do host do Expo (${expoHost}). ` +
+              "Se o login falhar com erro de rede, comente EXPO_PUBLIC_API_URL em .env.development.local."
+          );
+        }
+      } catch {
+        // URL inválida em .env — segue com o valor informado
+      }
+      return fromEnv;
+    }
+
+    return autoUrl;
   }
+
+  if (fromEnv) return fromEnv;
 
   // Produção: EXPO_PUBLIC_API_URL é obrigatória
   throw new Error("EXPO_PUBLIC_API_URL não definida para produção.");
@@ -53,8 +73,8 @@ export function setOnUnauthorized(callback: () => void) {
 api.interceptors.request.use(async (config) => {
   config.baseURL = getApiBaseUrl();
 
-  if (__DEV__ && config.url?.includes("/usuarios/registro")) {
-    console.log("[API] POST registro →", `${config.baseURL}${config.url}`);
+  if (__DEV__ && (config.url?.includes("/usuarios/registro") || config.url?.includes("/usuarios/login"))) {
+    console.log(`[API] ${config.method?.toUpperCase() ?? "REQ"} ${config.url} →`, `${config.baseURL}${config.url}`);
   }
 
   const token = await AsyncStorage.getItem("token");

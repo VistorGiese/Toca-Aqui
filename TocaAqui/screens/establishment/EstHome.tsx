@@ -5,8 +5,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
-import { establishmentService, Gig, isGigAberta } from "@/http/establishmentService";
-import { showService, Show, showToDetailParams } from "@/http/showService";
+import { establishmentService, Gig, isGigAberta, confirmedGigToShow } from "@/http/establishmentService";
+import { Show, showToDetailParams } from "@/http/showService";
 import { getGenreColor } from "@/utils/colors";
 import { parseGenres } from "@/utils/genres";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,14 +42,18 @@ export default function EstHome() {
       const estId = storedId ? Number(storedId) : undefined;
       const [g, upcoming, p] = await Promise.allSettled([
         establishmentService.getMyGigs(estId),
-        showService.getConfirmedShows({ limit: 3 }),
+        establishmentService.getUpcomingPublishedGigs(estId, 3),
         establishmentService.getMyEstablishmentProfile(),
       ]);
       if (g.status === "fulfilled") {
         setGigs(g.value);
         setConfirmedShowsCount(g.value.filter((item) => item.status === "aceito").length);
       }
-      if (upcoming.status === "fulfilled") setUpcomingShows(upcoming.value.shows);
+      if (upcoming.status === "fulfilled" && p.status === "fulfilled") {
+        setUpcomingShows(upcoming.value.map((gig) => confirmedGigToShow(gig, p.value)));
+      } else if (upcoming.status === "fulfilled") {
+        setUpcomingShows(upcoming.value.map((gig) => confirmedGigToShow(gig, null)));
+      }
       if (p.status === "fulfilled") setProfile(p.value);
     } catch (e) {
       Alert.alert("Erro", "Não foi possível carregar os dados.");

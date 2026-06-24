@@ -30,6 +30,7 @@ export default function EstAcceptContract() {
   const route = useRoute<RouteType>();
   const {
     applicationId,
+    gigId,
     status,
     artistaId,
     bandaId,
@@ -88,20 +89,47 @@ export default function EstAcceptContract() {
             setLoading(true);
             try {
               const response = await establishmentService.acceptApplication(applicationId);
-              const contractId = response?.contrato?.id;
+              let contrato =
+                response?.contrato ??
+                response?.data?.contrato ??
+                null;
+              let contractId = contrato?.id ?? null;
+
+              if (!contractId) {
+                const byEvent = await establishmentService.getContractByEventId(gigId);
+                contrato = byEvent;
+                contractId = byEvent?.id ?? null;
+              }
+
+              // Show fica privado até aprovação final do contrato PDF
+              try {
+                await establishmentService.updateGig(gigId, { esta_publico: false });
+              } catch {
+                // não bloqueia fluxo se falhar
+              }
+
+              if (!contractId) {
+                Alert.alert(
+                  "Candidatura aceita, mas contrato não foi gerado",
+                  "O artista foi contratado, porém houve uma falha ao registrar o contrato no servidor (provavelmente banco desatualizado). Atualize o backend com as migrations e tente novamente em um novo evento, ou contate o suporte.",
+                  [{ text: "OK", onPress: () => navigation.goBack() }]
+                );
+                return;
+              }
+
               Alert.alert(
                 "Candidatura aceita!",
-                contractId
-                  ? `${artistName} foi contratado(a). Um contrato foi gerado — revise os termos.`
-                  : `${artistName} foi contratado(a) para o show. O contrato será gerado em instantes.`,
+                `${artistName} foi contratado(a). Revise o contrato gerado e baixe o PDF para assinar.`,
                 [{
                   text: "OK",
                   onPress: () => {
-                    if (contractId) {
-                      navigation.navigate("EstShowDetail", { contractId });
-                    } else {
-                      navigation.goBack();
-                    }
+                    navigation.navigate("EstContractPreview", {
+                      contractId,
+                      artistName,
+                      gigTitle,
+                      eventoId: gigId,
+                      initialContract: contrato ?? undefined,
+                    });
                   },
                 }]
               );

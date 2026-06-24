@@ -5,6 +5,7 @@ import {
   getMyContracts,
   editContract,
   acceptContract,
+  approvePdfContract,
   cancelContract,
   getContractHistory,
   completeContractHandler,
@@ -26,6 +27,8 @@ router.get('/:id', authMiddleware, getContract);
 router.put('/:id/editar', authMiddleware, validate(editContractSchema), editContract);
 
 router.put('/:id/aceitar', authMiddleware, acceptContract);
+
+router.put('/:id/aprovar-pdf', authMiddleware, approvePdfContract);
 
 router.put('/:id/cancelar', authMiddleware, validate(cancelContractSchema), cancelContract);
 

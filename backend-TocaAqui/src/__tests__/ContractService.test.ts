@@ -373,7 +373,7 @@ describe('ContractService', () => {
       expect(ContractHistoryModel.bulkCreate).toHaveBeenCalled();
     });
 
-    it('lança erro quando nenhuma alteração válida', async () => {
+    it('lança erro quando body vazio', async () => {
       const contrato = makeContrato();
       (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
 
@@ -382,6 +382,18 @@ describe('ContractService', () => {
       ).rejects.toEqual(
         expect.objectContaining({ statusCode: 400 })
       );
+    });
+
+    it('aceita reenvio idempotente com os mesmos valores', async () => {
+      const contrato = makeContrato({ observacoes: '__WF__{"v":1,"s":"generated"}' });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+
+      const result = await service.proposeEdit(1, 1, 'contratante', {
+        observacoes: '__WF__{"v":1,"s":"generated"}',
+      } as any);
+
+      expect(result).toBe(contrato);
+      expect(contrato.update).not.toHaveBeenCalled();
     });
 
     it('lança erro quando contrato não pode ser editado', async () => {

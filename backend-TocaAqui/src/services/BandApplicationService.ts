@@ -133,8 +133,9 @@ export class BandApplicationService {
     if (jaAprovada) throw new AppError('Já existe banda aceita para este evento', 400);
 
     await aplicacao.update({ status: 'aceito' });
+    // Show permanece privado até aprovação final do contrato PDF (venda de ingressos)
     await BookingModel.update(
-      { status: 'aceito', esta_publico: true },
+      { status: 'aceito', esta_publico: false },
       { where: { id: aplicacao.evento_id } },
     );
     await redisService.invalidate(CACHE_KEYS.agendamento(aplicacao.evento_id));
@@ -309,21 +310,35 @@ export class BandApplicationService {
       ],
     });
 
-    const enriched = aplicacoes.map((a: any) => ({
-      id: a.id,
-      evento_id: a.evento_id,
-      artista_id: a.artista_id,
-      banda_id: a.banda_id,
-      mensagem: a.mensagem,
-      status: a.status,
-      data_aplicacao: a.data_aplicacao,
-      nome_artista: a.ArtistProfile?.nome_artistico ?? a.Band?.nome_banda ?? null,
-      foto_artista: a.ArtistProfile?.foto_perfil ?? null,
-      genero: Array.isArray(a.ArtistProfile?.generos) ? a.ArtistProfile.generos[0] : null,
-      cache_minimo: a.ArtistProfile?.cache_minimo ?? null,
-      cache_maximo: a.ArtistProfile?.cache_maximo ?? null,
-      valor_proposto: a.valor_proposto ?? null,
-    }));
+    const enriched = await Promise.all(
+      aplicacoes.map(async (a: any) => {
+        let contrato_id: number | null = null;
+        if (a.status === 'aceito') {
+          const contrato = await ContractModel.findOne({
+            where: { aplicacao_id: a.id },
+            attributes: ['id'],
+          });
+          contrato_id = contrato?.id ?? null;
+        }
+
+        return {
+          id: a.id,
+          evento_id: a.evento_id,
+          artista_id: a.artista_id,
+          banda_id: a.banda_id,
+          mensagem: a.mensagem,
+          status: a.status,
+          data_aplicacao: a.data_aplicacao,
+          nome_artista: a.ArtistProfile?.nome_artistico ?? a.Band?.nome_banda ?? null,
+          foto_artista: a.ArtistProfile?.foto_perfil ?? null,
+          genero: Array.isArray(a.ArtistProfile?.generos) ? a.ArtistProfile.generos[0] : null,
+          cache_minimo: a.ArtistProfile?.cache_minimo ?? null,
+          cache_maximo: a.ArtistProfile?.cache_maximo ?? null,
+          valor_proposto: a.valor_proposto ?? null,
+          contrato_id,
+        };
+      }),
+    );
 
     const closed = evento.status === 'aceito';
     return { closed, aplicacoes: enriched };

@@ -112,7 +112,7 @@ export default function MyContracts() {
         <View style={styles.cardDetails}>
           <View style={styles.detailRow}>
             <FontAwesome5 name="calendar" size={12} color={DS.textSec} />
-            <Text style={styles.detailText}>{formatDate(item.data_show)}</Text>
+            <Text style={styles.detailText}>{formatDate(item.data_evento ?? item.data_show)}</Text>
           </View>
           <View style={styles.detailRow}>
             <FontAwesome5 name="clock" size={12} color={DS.textSec} />
@@ -123,7 +123,7 @@ export default function MyContracts() {
           <View style={styles.detailRow}>
             <FontAwesome5 name="money-bill-wave" size={12} color={DS.success} />
             <Text style={[styles.detailText, styles.valueText]}>
-              R$ {Number(item.cache_acordado ?? 0).toFixed(2)}
+              R$ {Number(item.cache_total ?? item.cache_acordado ?? 0).toFixed(2)}
             </Text>
           </View>
         </View>

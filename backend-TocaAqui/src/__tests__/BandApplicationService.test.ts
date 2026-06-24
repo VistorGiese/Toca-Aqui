@@ -194,7 +194,7 @@ describe('BandApplicationService', () => {
 
       expect(aplicacao.update).toHaveBeenCalledWith({ status: 'aceito' });
       expect(BookingModel.update).toHaveBeenCalledWith(
-        { status: 'aceito', esta_publico: true },
+        { status: 'aceito', esta_publico: false },
         expect.objectContaining({ where: { id: 10 } })
       );
       expect(result).toEqual(expect.objectContaining({ aplicacao }));

@@ -1,15 +1,17 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert, StatusBar,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
 import { contractService } from "@/http/contractService";
 import api from "@/http/api";
+import ContractPdfWorkflowPanel, { useContractPdfWorkflow } from "@/components/contract/ContractPdfWorkflowPanel";
+import { isShowPublic, fetchWorkflow, syncShowPublicationIfApproved, resolveWorkflow } from "@/services/contractPdfWorkflowService";
 
 const DS = {
   bg: "#09090F", card: "#13101F", surface: "#0F0B1E",
@@ -38,11 +40,17 @@ export default function EstShowDetail() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const { workflow, refresh: refreshWorkflow } = useContractPdfWorkflow(contractId);
 
   const load = useCallback(async () => {
     try {
       const data = await establishmentService.getContractById(contractId);
       setContract(data);
+      const wf = await fetchWorkflow(contractId);
+      await refreshWorkflow();
+      if (data.evento_id) {
+        await syncShowPublicationIfApproved(Number(data.evento_id), wf, contractId);
+      }
     } catch {
       Alert.alert("Erro", "Não foi possível carregar o show.", [
         { text: "OK", onPress: () => navigation.goBack() },
@@ -50,9 +58,13 @@ export default function EstShowDetail() {
     } finally {
       setLoading(false);
     }
-  }, [contractId, navigation]);
+  }, [contractId, navigation, refreshWorkflow]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const handleCancel = () => {
     Alert.alert(
@@ -66,7 +78,9 @@ export default function EstShowDetail() {
           onPress: async () => {
             setCancelling(true);
             try {
-              await api.put(`/contratos/${contractId}/cancelar`);
+              await api.put(`/contratos/${contractId}/cancelar`, {
+                motivo: "Cancelamento solicitado pelo estabelecimento",
+              });
               Alert.alert("Show cancelado", "O artista será notificado.", [
                 { text: "OK", onPress: () => navigation.goBack() },
               ]);
@@ -138,6 +152,11 @@ export default function EstShowDetail() {
 
   const cache = Number(contract.cache_total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
   const refNumber = `TA-${String(contractId).padStart(4, "0")}`;
+  const showIsPublic = isShowPublic(resolveWorkflow(workflow, contract as Record<string, unknown>));
+
+  const handleContractApproved = async () => {
+    await load();
+  };
 
   return (
     <View style={s.root}>
@@ -233,6 +252,25 @@ export default function EstShowDetail() {
             </Text>
           </View>
         )}
+
+        {!showIsPublic && (
+          <View style={s.pendingBanner}>
+            <FontAwesome5 name="lock" size={14} color={DS.amber} />
+            <Text style={s.pendingBannerText}>
+              Show privado — aguardando aprovação do contrato assinado para liberar venda de ingressos.
+            </Text>
+          </View>
+        )}
+
+        <ContractPdfWorkflowPanel
+          contractId={contractId}
+          eventoId={contract.evento_id ? Number(contract.evento_id) : undefined}
+          contractData={contract as Record<string, unknown>}
+          role="est"
+          workflow={workflow}
+          onRefresh={async () => { await refreshWorkflow(); await load(); }}
+          onApproved={handleContractApproved}
+        />
 
         {/* Cláusula de cancelamento */}
         {isActive && (
@@ -354,6 +392,15 @@ const s = StyleSheet.create({
     alignItems: "center", marginBottom: 12,
   },
   btnCancelText: { fontFamily: "Montserrat-Bold", fontSize: 13, color: DS.danger },
+
+  pendingBanner: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    backgroundColor: DS.amber + "18", borderRadius: 10, borderWidth: 1, borderColor: DS.amber + "44",
+    padding: 12, marginBottom: 12,
+  },
+  pendingBannerText: {
+    flex: 1, fontFamily: "Montserrat-Regular", fontSize: 12, color: DS.textSecondary, lineHeight: 18,
+  },
 
   disabled: { opacity: 0.5 },
 });
