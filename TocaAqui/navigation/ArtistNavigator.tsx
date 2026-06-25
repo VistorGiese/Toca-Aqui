@@ -5,7 +5,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 
 import ArtistHome from "@/screens/artist/ArtistHome";
 import BrowseEvents from "@/screens/artist/BrowseEvents";
-import ArtistSchedule from "@/screens/artist/ArtistSchedule";
+import ArtistSchedule from "@/screens/artist/schedule";
 import MyApplications from "@/screens/artist/MyApplications";
 import ArtistEPK from "@/screens/artist/ArtistEPK";
 import ArtistProfileManage from "@/screens/artist/ArtistProfileManage";
@@ -21,7 +21,7 @@ import Subscription from "@/screens/artist/Subscription";
 import ArtistUpcomingShowDetail from "@/screens/artist/ArtistUpcomingShowDetail";
 import ArtistAllConfirmedShows from "@/screens/artist/ArtistAllConfirmedShows";
 import UserArtistProfile from "@/screens/user/UserArtistProfile";
-import UserEstablishmentProfile from "@/screens/user/UserEstablishmentProfile";
+import UserEstablishmentProfile from "@/screens/user/establishment-profile";
 
 const DS = {
   bg: "#09090F",

@@ -399,6 +399,36 @@ describe('ContractService', () => {
       expect(contrato.update).not.toHaveBeenCalled();
     });
 
+    it('preserva status aceito ao atualizar apenas workflow/PDF após aprovação', async () => {
+      const contrato = makeContrato({
+        status: 'aceito',
+        aceite_contratante: true,
+        aceite_contratado: true,
+        observacoes: '__WF__{"v":1,"s":"awaiting_approval"}',
+      });
+      (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);
+      (ContractHistoryModel.bulkCreate as jest.Mock).mockResolvedValue([]);
+
+      await service.proposeEdit(1, 1, 'contratante', {
+        observacoes: '__WF__{"v":1,"s":"approved","approvedAt":"2026-01-01T00:00:00.000Z"}',
+      } as any);
+
+      expect(contrato.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          observacoes: '__WF__{"v":1,"s":"approved","approvedAt":"2026-01-01T00:00:00.000Z"}',
+          ultima_edicao_por: 'contratante',
+          versao: 2,
+        })
+      );
+      expect(contrato.update).toHaveBeenCalledWith(
+        expect.not.objectContaining({
+          status: 'rascunho',
+          aceite_contratante: false,
+          aceite_contratado: false,
+        })
+      );
+    });
+
     it('lança erro quando contrato não pode ser editado', async () => {
       const contrato = makeContrato({ status: 'cancelado' });
       (ContractModel.findByPk as jest.Mock).mockResolvedValue(contrato);

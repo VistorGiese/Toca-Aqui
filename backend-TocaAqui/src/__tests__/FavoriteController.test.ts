@@ -10,6 +10,7 @@ jest.mock('../models/FavoriteModel', () => ({
     findOne: jest.fn(),
     findAll: jest.fn(),
     create: jest.fn(),
+    count: jest.fn(),
   },
 }));
 
@@ -341,12 +342,13 @@ describe('FavoriteController', () => {
       const res = mockRes();
 
       (FavoriteModel.findOne as jest.Mock).mockResolvedValue({ id: 1 });
+      (FavoriteModel.count as jest.Mock).mockResolvedValue(3);
 
       checkFavorite(req, res, mockNext as unknown as NextFunction);
       await flushPromises();
 
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ eh_favorito: true })
+        expect.objectContaining({ eh_favorito: true, total_favoritos: 3 })
       );
     });
 
@@ -358,12 +360,13 @@ describe('FavoriteController', () => {
       const res = mockRes();
 
       (FavoriteModel.findOne as jest.Mock).mockResolvedValue(null);
+      (FavoriteModel.count as jest.Mock).mockResolvedValue(0);
 
       checkFavorite(req, res, mockNext as unknown as NextFunction);
       await flushPromises();
 
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ eh_favorito: false })
+        expect.objectContaining({ eh_favorito: false, total_favoritos: 0 })
       );
     });
 

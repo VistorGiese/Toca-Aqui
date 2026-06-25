@@ -13,6 +13,31 @@ export function normalizeDateToISO(value?: string | null): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Interpreta data de evento no fuso local (evita D-1 em strings YYYY-MM-DD). */
+export function parseDateOnly(value: string): Date {
+  const iso = normalizeDateToISO(value);
+  if (iso) {
+    const [year, month, day] = iso.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+export function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function dateOnlyKey(value: string): string {
+  const iso = normalizeDateToISO(value);
+  if (iso) return iso;
+  return toLocalDateKey(parseDateOnly(value));
+}
+
 export function normalizeTimeToHHMM(value?: string | null): string {
   if (!value) return "";
   const trimmed = value.trim();

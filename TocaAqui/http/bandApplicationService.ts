@@ -1,4 +1,5 @@
 import api from "./api";
+import { parseDateOnly } from "@/utils/datetime";
 
 export interface BandApplication {
   id: number;
@@ -36,9 +37,7 @@ function parseApplications(data: unknown): BandApplication[] {
 function isShowDateFuture(dataShow: string): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const eventDate = new Date(dataShow);
-  eventDate.setHours(0, 0, 0, 0);
-  return eventDate >= today;
+  return parseDateOnly(dataShow) >= today;
 }
 
 const applyToEvent = async (data: { evento_id: number; artista_id?: number; mensagem: string; valor_proposto: number }): Promise<BandApplication> => {

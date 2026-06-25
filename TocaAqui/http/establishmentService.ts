@@ -1,5 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
+import { buildImageFormFile } from "@/utils/adapters";
+import { parseDateOnly } from "@/utils/datetime";
+import { avaliacaoService } from "./avaliacaoService";
 import {
   ArtistProfileSnapshot,
   mergeArtistSnapshots,
@@ -48,8 +51,7 @@ export const isGigFutura = (dataShow: string): boolean => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const eventDate = new Date(dataShow);
-    eventDate.setHours(0, 0, 0, 0);
+    const eventDate = parseDateOnly(dataShow);
     return eventDate >= today;
   } catch {
     return false;
@@ -153,6 +155,16 @@ function normalizeCandidatura(raw: any): Candidatura {
   };
 }
 
+export interface EstablishmentAddress {
+  id?: number;
+  rua?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+}
+
 export interface EstablishmentProfile {
   id: number;
   nome_estabelecimento: string;
@@ -164,10 +176,14 @@ export interface EstablishmentProfile {
   telefone_contato?: string;
   cnpj?: string;
   foto_url?: string;
+  fotos?: string | string[];
+  endereco_id?: number;
   nota_media?: number;
   cidade?: string;
   estado?: string;
   capacidade?: number;
+  esta_ativo?: boolean;
+  Address?: EstablishmentAddress;
 }
 
 export type ArtistPublicProfile = ArtistProfileSnapshot & {
@@ -231,10 +247,37 @@ function toArray<T>(data: unknown): T[] {
   return [];
 }
 
-const getMyGigs = async (estabelecimentoId?: number): Promise<Gig[]> => {
-  const params = estabelecimentoId ? { estabelecimento_id: estabelecimentoId } : undefined;
-  const r = await api.get("/agendamentos", { params });
-  return toArray<Gig>(r.data);
+export interface GetMyGigsParams {
+  estabelecimentoId?: number;
+  data_inicio?: string;
+  data_fim?: string;
+  status?: string;
+}
+
+const getMyGigs = async (params?: number | GetMyGigsParams): Promise<Gig[]> => {
+  const normalized: GetMyGigsParams =
+    typeof params === "number" ? { estabelecimentoId: params } : params ?? {};
+
+  const query: Record<string, string | number> = { limit: 100 };
+  if (normalized.estabelecimentoId) query.estabelecimento_id = normalized.estabelecimentoId;
+  if (normalized.data_inicio) query.data_inicio = normalized.data_inicio;
+  if (normalized.data_fim) query.data_fim = normalized.data_fim;
+  if (normalized.status) query.status = normalized.status;
+
+  const all: Gig[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const r = await api.get("/agendamentos", { params: { ...query, page } });
+    const body = r.data as Record<string, unknown>;
+    all.push(...toArray<Gig>(body));
+    const pagination = body.pagination as { totalPages?: number } | undefined;
+    totalPages = Math.max(1, pagination?.totalPages ?? 1);
+    page++;
+  } while (page <= totalPages);
+
+  return all;
 };
 
 async function resolveEstablishmentProfileId(): Promise<number> {
@@ -347,8 +390,50 @@ const searchEstablishments = async (params?: {
   return toArray<EstablishmentPublicProfile>(r.data);
 };
 
+function unwrapApiData<T>(data: unknown): T {
+  if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+    if (record.data != null && typeof record.data === "object") {
+      return record.data as T;
+    }
+  }
+  return data as T;
+}
+
+function normalizeAddress(raw: unknown): EstablishmentAddress | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const a = raw as Record<string, unknown>;
+  const id = a.id != null ? Number(a.id) : undefined;
+  const hasContent =
+    Boolean(a.rua) ||
+    Boolean(a.cidade) ||
+    Boolean(a.numero) ||
+    Boolean(a.bairro) ||
+    Boolean(a.cep);
+  if (!hasContent && !(id != null && Number.isFinite(id))) return undefined;
+
+  return {
+    id: id != null && Number.isFinite(id) ? id : undefined,
+    rua: a.rua != null ? String(a.rua) : "",
+    numero: a.numero != null ? String(a.numero) : "",
+    bairro: a.bairro != null ? String(a.bairro) : "",
+    cidade: a.cidade != null ? String(a.cidade) : "",
+    estado: a.estado != null ? String(a.estado) : "",
+    cep: a.cep != null ? String(a.cep) : "",
+  };
+}
+
+function resolveNestedAddress(raw: Record<string, unknown>): EstablishmentAddress | undefined {
+  return (
+    normalizeAddress(raw.Address) ??
+    normalizeAddress(raw.address) ??
+    normalizeAddress(raw.Endereco) ??
+    normalizeAddress(raw.endereco)
+  );
+}
+
 function normalizeEstablishmentProfile(raw: Record<string, unknown>): EstablishmentPublicProfile {
-  const address = raw.Address as EstablishmentPublicProfile["Address"] | undefined;
+  const address = resolveNestedAddress(raw);
   return {
     id: Number(raw.id),
     nome_estabelecimento: String(raw.nome_estabelecimento ?? ""),
@@ -375,10 +460,74 @@ function normalizeEstablishmentProfile(raw: Record<string, unknown>): Establishm
 
 const getEstablishmentById = async (id: number): Promise<EstablishmentPublicProfile> => {
   const r = await api.get(`/estabelecimentos/${id}`);
-  const body = r.data as Record<string, unknown>;
-  const raw = (body.data ?? body) as Record<string, unknown>;
+  const raw = unwrapApiData<Record<string, unknown>>(r.data);
   return normalizeEstablishmentProfile(raw);
 };
+
+const getAddressById = async (id: number): Promise<EstablishmentAddress> => {
+  const r = await api.get(`/enderecos/${id}`);
+  const raw = unwrapApiData<Record<string, unknown>>(r.data);
+  const address = normalizeAddress(raw);
+  if (!address) {
+    throw new Error(`Endereço ${id} não encontrado ou resposta inválida.`);
+  }
+  return address;
+};
+
+/** Completa perfil via GET /estabelecimentos/:id e GET /enderecos/:id (sem depender de /usuarios/perfil). */
+async function enrichEstablishmentProfile(base: EstablishmentProfile): Promise<EstablishmentProfile> {
+  const profileId = Number(base.id);
+  if (!Number.isFinite(profileId) || profileId <= 0) return base;
+
+  let enriched: EstablishmentProfile = { ...base };
+  let enderecoId = Number(base.endereco_id ?? base.Address?.id ?? 0);
+
+  try {
+    const r = await api.get(`/estabelecimentos/${profileId}`);
+    const raw = unwrapApiData<Record<string, unknown>>(r.data);
+    const fromApi = normalizeEstablishmentProfile(raw);
+    const nestedAddress = resolveNestedAddress(raw);
+
+    enderecoId =
+      Number(raw.endereco_id ?? enderecoId ?? nestedAddress?.id ?? fromApi.Address?.id ?? 0) ||
+      enderecoId;
+
+    enriched = {
+      ...enriched,
+      ...fromApi,
+      endereco_id: enderecoId > 0 ? enderecoId : enriched.endereco_id,
+      horario_abertura: fromApi.horario_abertura ?? enriched.horario_abertura,
+      horario_fechamento: fromApi.horario_fechamento ?? enriched.horario_fechamento,
+      generos_musicais: fromApi.generos_musicais ?? enriched.generos_musicais,
+      fotos: fromApi.fotos ?? enriched.fotos,
+      descricao: fromApi.descricao ?? enriched.descricao,
+      telefone_contato: fromApi.telefone_contato ?? enriched.telefone_contato,
+      cnpj: enriched.cnpj ?? (raw.cnpj != null ? String(raw.cnpj) : undefined),
+      tipo_estabelecimento: fromApi.tipo_estabelecimento ?? enriched.tipo_estabelecimento,
+      nome_estabelecimento: fromApi.nome_estabelecimento || enriched.nome_estabelecimento,
+    };
+
+    if (nestedAddress?.rua || nestedAddress?.numero) {
+      enriched.Address = nestedAddress;
+    }
+  } catch {
+    // segue para tentar /enderecos/:id
+  }
+
+  if (enderecoId > 0) {
+    try {
+      enriched.Address = await getAddressById(enderecoId);
+      enriched.endereco_id = enderecoId;
+    } catch {
+      // mantém endereço parcial, se houver
+    }
+  }
+
+  enriched.cidade = enriched.Address?.cidade ?? enriched.cidade;
+  enriched.estado = enriched.Address?.estado ?? enriched.estado;
+
+  return enriched;
+}
 
 /** Busca registro completo em endpoints que já retornam todos os campos da tabela. */
 const fetchFullArtistFromContracts = async (
@@ -720,15 +869,54 @@ const getContractById = async (id: number): Promise<any> => {
 
 const getMyEstablishmentProfile = async (): Promise<EstablishmentProfile> => {
   const r = await api.get("/usuarios/perfil");
-  const data = r.data as any;
-  const user = data?.user ?? data;
-  const profiles: any[] = user?.establishment_profiles ?? [];
-  if (profiles.length === 0) throw new Error("Perfil de estabelecimento não encontrado.");
+  const data = r.data as Record<string, unknown>;
+  const user = (data?.user ?? data) as Record<string, unknown>;
+  const profiles = (user.establishment_profiles ?? []) as Array<Record<string, unknown>>;
+  const memberships = (user.establishment_memberships ?? []) as Array<{
+    role?: string;
+    estabelecimento?: Record<string, unknown>;
+  }>;
 
   const storedId = await AsyncStorage.getItem("estabelecimentoId");
-  const p = (storedId ? profiles.find((x: any) => String(x.id) === storedId) : null) ?? profiles[0];
-  return { ...p, cidade: p?.Address?.cidade ?? p?.cidade, estado: p?.Address?.estado ?? p?.estado };
+
+  let p: Record<string, unknown> | undefined;
+  if (storedId) {
+    p = profiles.find((x) => String(x.id) === storedId);
+    if (!p) {
+      const membership = memberships.find(
+        (m) => String(m.estabelecimento?.id) === storedId
+      );
+      p = membership?.estabelecimento;
+    }
+  }
+  if (!p) p = profiles[0];
+  if (!p && memberships.length > 0) p = memberships[0].estabelecimento;
+  if (!p) throw new Error("Perfil de estabelecimento não encontrado.");
+
+  const partialAddress = resolveNestedAddress(p);
+  const base: EstablishmentProfile = {
+    ...(p as unknown as EstablishmentProfile),
+    id: Number(p.id),
+    nome_estabelecimento: String(p.nome_estabelecimento ?? ""),
+    endereco_id:
+      p.endereco_id != null
+        ? Number(p.endereco_id)
+        : partialAddress?.id,
+    Address: partialAddress ?? (p.Address as EstablishmentAddress | undefined),
+    cidade: partialAddress?.cidade ?? (p.cidade != null ? String(p.cidade) : undefined),
+    estado: partialAddress?.estado ?? (p.estado != null ? String(p.estado) : undefined),
+    horario_abertura:
+      p.horario_abertura != null ? String(p.horario_abertura) : undefined,
+    horario_fechamento:
+      p.horario_fechamento != null ? String(p.horario_fechamento) : undefined,
+  };
+
+  return enrichEstablishmentProfile(base);
 };
+
+/** Alias semântico para telas de edição — mesma fonte que getMyEstablishmentProfile. */
+const getEstablishmentProfileForEdit = (): Promise<EstablishmentProfile> =>
+  getMyEstablishmentProfile();
 
 const createEndereco = async (data: {
   rua: string; numero: string; bairro: string; cidade: string; estado: string; cep: string;
@@ -751,8 +939,42 @@ const createEstablishmentProfile = async (data: {
 };
 
 const updateMyEstablishmentProfile = async (id: number, data: Partial<EstablishmentProfile>): Promise<EstablishmentProfile> => {
-  const r = await api.put<EstablishmentProfile>(`/estabelecimentos/${id}`, data);
-  return r.data;
+  const r = await api.put(`/estabelecimentos/${id}`, data);
+  const body = r.data as Record<string, unknown>;
+  return (body.data ?? body) as EstablishmentProfile;
+};
+
+const updateAddress = async (
+  id: number,
+  data: {
+    rua: string;
+    numero: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+    cep: string;
+  }
+): Promise<void> => {
+  await api.put(`/enderecos/${id}`, data);
+};
+
+const uploadEstablishmentPhotos = async (estabelecimentoId: number, uris: string[]): Promise<string[]> => {
+  if (uris.length === 0) return [];
+  const formData = new FormData();
+  uris.forEach((uri, idx) => {
+    const file = buildImageFormFile(uri, `foto_${idx}.jpg`);
+    formData.append("imagens", file as unknown as Blob);
+  });
+  const r = await api.patch(`/estabelecimentos/${estabelecimentoId}/fotos`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  const body = r.data as { fotos?: string[] };
+  return body.fotos ?? [];
+};
+
+const removeEstablishmentPhoto = async (estabelecimentoId: number, photoPath: string): Promise<void> => {
+  const filename = photoPath.split("/").pop() ?? photoPath;
+  await api.delete(`/estabelecimentos/${estabelecimentoId}/fotos`, { data: { filename } });
 };
 
 const rateArtist = async (contratoId: number, data: { nota: number; comentario?: string; tags?: string[] }): Promise<any> => {
@@ -760,11 +982,15 @@ const rateArtist = async (contratoId: number, data: { nota: number; comentario?:
   return r.data;
 };
 
-const getNotifications = async (): Promise<any[]> => {
+const getNotifications = async (usuarioId?: number): Promise<any[]> => {
   try {
-    const r = await api.get("/notificacoes");
-    return toArray<any>(r.data);
-  } catch { return []; }
+    const r = await api.get("/notificacoes", { params: { limit: 50 } });
+    const items = toArray<any>(r.data);
+    if (!usuarioId) return items;
+    return items.filter((item) => Number(item.usuario_id) === Number(usuarioId));
+  } catch {
+    return [];
+  }
 };
 
 const markNotificationsRead = async (): Promise<void> => {
@@ -797,6 +1023,93 @@ const addMember = async (estabelecimentoId: number, email: string): Promise<any>
   return r.data;
 };
 
+export interface EstablishmentProfileStats {
+  totalEventos: number;
+  totalContratacoes: number;
+  totalAvaliacoes: number;
+}
+
+function resolveGigEstablishmentId(raw: Record<string, unknown>): number | null {
+  const establishment =
+    (raw.EstablishmentProfile as Record<string, unknown> | undefined) ??
+    (raw.establishmentProfile as Record<string, unknown> | undefined);
+  const id =
+    raw.perfil_estabelecimento_id ??
+    raw.estabelecimento_id ??
+    establishment?.id;
+  const parsed = Number(id);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function resolveContractEstablishmentId(raw: Record<string, unknown>): number | null {
+  const establishment =
+    (raw.EstablishmentProfile as Record<string, unknown> | undefined) ??
+    (raw.establishmentProfile as Record<string, unknown> | undefined) ??
+    (raw.establishment_profile as Record<string, unknown> | undefined);
+  const id =
+    raw.perfil_estabelecimento_id ??
+    raw.perfilEstabelecimentoId ??
+    establishment?.id;
+  const parsed = Number(id);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+/** Eventos do usuário logado (dono/membro), filtrados por perfil de estabelecimento. */
+async function fetchMyGigsForEstablishment(estabelecimentoId: number): Promise<Gig[]> {
+  const all: Gig[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const r = await api.get("/agendamentos/meus", { params: { page, limit: 100 } });
+    const body = r.data as Record<string, unknown>;
+    const pageGigs = toArray<Gig>(body).filter(
+      (gig) => resolveGigEstablishmentId(gig as unknown as Record<string, unknown>) === estabelecimentoId
+    );
+    all.push(...pageGigs);
+    const pagination = body.pagination as { totalPages?: number } | undefined;
+    totalPages = Math.max(1, pagination?.totalPages ?? 1);
+    page++;
+  } while (page <= totalPages);
+
+  return all;
+}
+
+const getEstablishmentProfileStats = async (
+  estabelecimentoId: number,
+  usuarioId?: number
+): Promise<EstablishmentProfileStats> => {
+  const [gigs, contractsRaw] = await Promise.all([
+    fetchMyGigsForEstablishment(estabelecimentoId),
+    getMyContracts(),
+  ]);
+
+  const contracts = contractsRaw.filter(
+    (item) => resolveContractEstablishmentId(item as Record<string, unknown>) === estabelecimentoId
+  );
+
+  const gigIds = new Set(gigs.map((g) => g.id));
+  const reviewResults = await Promise.allSettled(
+    gigs.map((gig) => avaliacaoService.getAvaliacoesByShow(gig.id))
+  );
+  const totalAvaliacoes = reviewResults.reduce((sum, result) => {
+    if (result.status !== "fulfilled") return sum;
+    if (usuarioId != null) {
+      const mine = result.value.avaliacoes.filter(
+        (a) => a.usuario_id === usuarioId && gigIds.has(a.agendamento_id)
+      );
+      return sum + mine.length;
+    }
+    return sum + result.value.avaliacoes.filter((a) => gigIds.has(a.agendamento_id)).length;
+  }, 0);
+
+  return {
+    totalEventos: gigs.length,
+    totalContratacoes: contracts.length,
+    totalAvaliacoes,
+  };
+};
+
 const removeMember = async (estabelecimentoId: number, usuarioId: number): Promise<void> => {
   await api.delete(`/estabelecimentos/${estabelecimentoId}/membros/${usuarioId}`);
 };
@@ -807,7 +1120,11 @@ export const establishmentService = {
   getGigApplications, acceptApplication, rejectApplication,
   searchArtists, searchEstablishments, getEstablishmentById, findArtistById, getBandById,
   getMyContracts, getMyContractsNormalized, getUpcomingConfirmedShows, getUpcomingConfirmedGigs, getUpcomingPublishedGigs, getContractById, getContractByEventId,
-  getMyEstablishmentProfile, updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
+  getMyEstablishmentProfile, getEstablishmentProfileForEdit, getAddressById,
+  updateMyEstablishmentProfile, createEndereco, createEstablishmentProfile,
+  updateAddress, uploadEstablishmentPhotos, removeEstablishmentPhoto,
+  getEstablishmentProfileStats,
   rateArtist, getNotifications, markNotificationsRead,
   listMembers, addMember, removeMember,
+  enrichGigWithAcceptedArtist,
 };

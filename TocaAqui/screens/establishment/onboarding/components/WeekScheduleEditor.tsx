@@ -8,9 +8,15 @@ interface Props {
   schedule: WeekSchedule;
   onToggleDay: (id: string) => void;
   onUpdateTime: (id: string, field: "inicio" | "fim", value: string) => void;
+  hasError?: boolean;
 }
 
-export default function WeekScheduleEditor({ schedule, onToggleDay, onUpdateTime }: Props) {
+export default function WeekScheduleEditor({
+  schedule,
+  onToggleDay,
+  onUpdateTime,
+  hasError,
+}: Props) {
   return (
     <View>
       {WEEK_DAYS.map((dia) => {
@@ -32,23 +38,27 @@ export default function WeekScheduleEditor({ schedule, onToggleDay, onUpdateTime
                 <View style={styles.timeField}>
                   <Text style={styles.timeLabel}>INÍCIO</Text>
                   <TextInput
-                    style={styles.timeInput}
+                    style={[styles.timeInput, hasError && styles.timeInputError]}
                     value={d.inicio}
                     onChangeText={(v) => onUpdateTime(dia.id, "inicio", v)}
                     placeholder="18:00"
                     placeholderTextColor={colors.placeholder}
                     textAlign="center"
+                    keyboardType="number-pad"
+                    maxLength={5}
                   />
                 </View>
                 <View style={styles.timeField}>
                   <Text style={styles.timeLabel}>FIM</Text>
                   <TextInput
-                    style={styles.timeInput}
+                    style={[styles.timeInput, hasError && styles.timeInputError]}
                     value={d.fim}
                     onChangeText={(v) => onUpdateTime(dia.id, "fim", v)}
                     placeholder="02:00"
                     placeholderTextColor={colors.placeholder}
                     textAlign="center"
+                    keyboardType="number-pad"
+                    maxLength={5}
                   />
                 </View>
               </View>
@@ -106,5 +116,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
     borderColor: colors.inputBorder,
+  },
+  timeInputError: {
+    borderColor: "#EF4444",
   },
 });
