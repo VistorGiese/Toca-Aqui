@@ -70,11 +70,23 @@ export const favoriteService = {
   },
 
   async check(tipo: FavoritavelTipo, itemId: number): Promise<boolean> {
+    const status = await this.checkWithCount(tipo, itemId);
+    return status.isFavorite;
+  },
+
+  async checkWithCount(
+    tipo: FavoritavelTipo,
+    itemId: number
+  ): Promise<{ isFavorite: boolean; totalFavorites: number }> {
     try {
       const r = await api.get(`/favoritos/${tipo}/${itemId}`);
-      return Boolean(r.data?.eh_favorito);
+      const total = Number(r.data?.total_favoritos);
+      return {
+        isFavorite: Boolean(r.data?.eh_favorito),
+        totalFavorites: Number.isFinite(total) && total >= 0 ? total : 0,
+      };
     } catch {
-      return false;
+      return { isFavorite: false, totalFavorites: 0 };
     }
   },
 

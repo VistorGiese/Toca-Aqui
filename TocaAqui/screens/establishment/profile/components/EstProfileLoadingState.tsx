@@ -1,0 +1,12 @@
+import React from "react";
+import { ActivityIndicator, View } from "react-native";
+import { DS } from "../constants";
+import { styles } from "../styles";
+
+export default function EstProfileLoadingState() {
+  return (
+    <View style={[styles.root, styles.loading]}>
+      <ActivityIndicator size="large" color={DS.accent} />
+    </View>
+  );
+}

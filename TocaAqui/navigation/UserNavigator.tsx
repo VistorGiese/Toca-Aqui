@@ -14,7 +14,7 @@ import UserCheckout from "@/screens/user/UserCheckout";
 import UserPurchaseConfirmation from "@/screens/user/UserPurchaseConfirmation";
 import UserTicketDetail from "@/screens/user/UserTicketDetail";
 import UserArtistProfile from "@/screens/user/UserArtistProfile";
-import UserEstablishmentProfile from "@/screens/user/UserEstablishmentProfile";
+import UserEstablishmentProfile from "@/screens/user/establishment-profile";
 import UserRateShow from "@/screens/user/UserRateShow";
 import UserComments from "@/screens/user/UserComments";
 import UserSettings from "@/screens/user/UserSettings";

@@ -245,7 +245,8 @@ export class ContractService {
 
   /**
    * Propõe edição no contrato. Ambas as partes podem editar campos permitidos.
-   * Toda edição reseta os aceites e registra histórico.
+   * Toda edição reseta os aceites e registra histórico,
+   * exceto reenvio de PDF/workflow com contrato já aceito (fluxo offline pós-aprovação).
    */
   async proposeEdit(
     contractId: number,
@@ -266,6 +267,9 @@ export class ContractService {
         throw new AppError('Contrato não pode ser editado neste status', 400);
       }
     }
+
+    const preserveAcceptanceState =
+      contrato.status === ContractStatus.ACEITO && onlyPdfAttachmentChanges;
 
     // Filtrar apenas campos editáveis
     const validChanges: Record<string, unknown> = {};
@@ -300,22 +304,28 @@ export class ContractService {
       return contrato;
     }
 
-    // Recalcular valor_sinal se cache_total ou percentual_sinal mudou
-    const cacheTotal = (validChanges.cache_total as number) ?? Number(contrato.cache_total);
-    const percentualSinal = (validChanges.percentual_sinal as number) ?? Number(contrato.percentual_sinal);
-    validChanges.valor_sinal = Number(((cacheTotal * percentualSinal) / 100).toFixed(2));
+    // Recalcular valor_sinal somente quando cachê ou percentual mudam
+    if ('cache_total' in validChanges || 'percentual_sinal' in validChanges) {
+      const cacheTotal = (validChanges.cache_total as number) ?? Number(contrato.cache_total);
+      const percentualSinal = (validChanges.percentual_sinal as number) ?? Number(contrato.percentual_sinal);
+      validChanges.valor_sinal = Number(((cacheTotal * percentualSinal) / 100).toFixed(2));
+    }
 
-    // Aplicar mudanças
-    await contrato.update({
+    const updatePayload: Record<string, unknown> = {
       ...validChanges,
-      aceite_contratante: false,
-      aceite_contratado: false,
-      data_aceite_contratante: undefined,
-      data_aceite_contratado: undefined,
       ultima_edicao_por: role,
       versao: contrato.versao + 1,
-      status: ContractStatus.RASCUNHO,
-    });
+    };
+
+    if (!preserveAcceptanceState) {
+      updatePayload.aceite_contratante = false;
+      updatePayload.aceite_contratado = false;
+      updatePayload.data_aceite_contratante = undefined;
+      updatePayload.data_aceite_contratado = undefined;
+      updatePayload.status = ContractStatus.RASCUNHO;
+    }
+
+    await contrato.update(updatePayload);
 
     // Registrar histórico
     await ContractHistoryModel.bulkCreate(historyEntries as any[]);

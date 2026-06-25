@@ -157,8 +157,13 @@ export const checkFavorite = asyncHandler(async (req: AuthRequest, res: Response
     where: { usuario_id, favoritavel_tipo, favoritavel_id }
   });
 
+  const total_favoritos = await FavoriteModel.count({
+    where: { favoritavel_tipo, favoritavel_id: Number(favoritavel_id) },
+  });
+
   res.json({
     eh_favorito: !!favorito,
+    total_favoritos,
     tipo: favoritavel_tipo,
     item_id: Number(favoritavel_id)
   });

@@ -11,45 +11,21 @@ import {
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { showService, Show, showToDetailParams, ShowDetailParams } from "@/http/showService";
-import { establishmentService, confirmedGigToShow } from "@/http/establishmentService";
 import { getGenreColor } from "@/utils/colors";
 import { parseGenres } from "@/utils/genres";
 
-type Theme = {
-  bg: string;
-  accent: string;
-  success: string;
-  textPrimary: string;
-  textSecondary: string;
-  card: string;
-  border: string;
-};
-
-const THEMES = {
-  establishment: {
-    bg: "#09090F",
-    accent: "#7B61FF",
-    success: "#00C853",
-    textPrimary: "#FFFFFF",
-    textSecondary: "#8888AA",
-    card: "#1E1635",
-    border: "#2D2545",
-  },
-  artist: {
-    bg: "#09090F",
-    accent: "#6C5CE7",
-    success: "#10B981",
-    textPrimary: "#FFFFFF",
-    textSecondary: "#A0A0B8",
-    card: "#16163A",
-    border: "#2D2545",
-  },
+const DS = {
+  bg: "#09090F",
+  accent: "#6C5CE7",
+  success: "#10B981",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#A0A0B8",
+  card: "#16163A",
+  border: "#2D2545",
 } as const;
 
 type Props = {
-  theme: keyof typeof THEMES;
   detailScreen: string;
 };
 
@@ -65,34 +41,24 @@ function formatDateBadge(d: string) {
   }
 }
 
-export default function AllConfirmedShows({ theme: themeKey, detailScreen }: Props) {
+/** Tela compartilhada de shows confirmados — uso exclusivo do fluxo artista. */
+export default function AllConfirmedShows({ detailScreen }: Props) {
   const navigation = useNavigation();
-  const DS = THEMES[themeKey];
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      if (themeKey === "establishment") {
-        const storedId = await AsyncStorage.getItem("estabelecimentoId");
-        const estId = storedId ? Number(storedId) : undefined;
-        const [gigs, profile] = await Promise.all([
-          establishmentService.getUpcomingPublishedGigs(estId, 50),
-          establishmentService.getMyEstablishmentProfile().catch(() => null),
-        ]);
-        setShows(gigs.map((gig) => confirmedGigToShow(gig, profile)));
-      } else {
-        const response = await showService.getConfirmedShows({ limit: 50 });
-        setShows(response.shows);
-      }
+      const response = await showService.getConfirmedShows({ limit: 50 });
+      setShows(response.shows);
     } catch {
       Alert.alert("Erro", "Não foi possível carregar os shows confirmados.");
       setShows([]);
     } finally {
       setLoading(false);
     }
-  }, [themeKey]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

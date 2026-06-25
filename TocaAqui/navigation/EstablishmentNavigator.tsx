@@ -3,25 +3,25 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 
-import EstHome from "@/screens/establishment/EstHome";
-import EstGigs from "@/screens/establishment/EstGigs";
-import EstSearch from "@/screens/establishment/EstSearch";
-import EstSchedule from "@/screens/establishment/EstSchedule";
-import EstProfile from "@/screens/establishment/EstProfile";
+import EstHome from "@/screens/establishment/home";
+import EstGigs from "@/screens/establishment/gigs";
+import EstSearch from "@/screens/establishment/search";
+import EstSchedule from "@/screens/establishment/schedule";
+import EstProfile from "@/screens/establishment/profile";
 
-import EstNewGig from "@/screens/establishment/EstNewGig";
-import EstGigApplications from "@/screens/establishment/EstGigApplications";
-import EstArtistProfile from "@/screens/establishment/EstArtistProfile";
-import EstAcceptContract from "@/screens/establishment/EstAcceptContract";
-import EstContractPreview from "@/screens/establishment/EstContractPreview";
-import EstShowDetail from "@/screens/establishment/EstShowDetail";
-import EstNotifications from "@/screens/establishment/EstNotifications";
-import EstRateArtist from "@/screens/establishment/EstRateArtist";
-import EstSettings from "@/screens/establishment/EstSettings";
-import EstEditProfile from "@/screens/establishment/EstEditProfile";
-import EstUpcomingShowDetail from "@/screens/establishment/EstUpcomingShowDetail";
-import EstAllConfirmedShows from "@/screens/establishment/EstAllConfirmedShows";
-import UserEstablishmentProfile from "@/screens/user/UserEstablishmentProfile";
+import EstNewGig from "@/screens/establishment/new-gig";
+import EstGigApplications from "@/screens/establishment/gig-applications";
+import EstArtistProfile from "@/screens/establishment/artist-profile";
+import EstAcceptContract from "@/screens/establishment/accept-contract";
+import EstContractPreview from "@/screens/establishment/contract-preview";
+import EstShowDetail from "@/screens/establishment/show-detail";
+import EstNotifications from "@/screens/establishment/notifications";
+import EstRateArtist from "@/screens/establishment/rate-artist";
+import EstSettings from "@/screens/establishment/settings";
+import EstEditProfile from "@/screens/establishment/edit-profile";
+import EstUpcomingShowDetail from "@/screens/establishment/upcoming-show-detail";
+import EstAllConfirmedShows from "@/screens/establishment/all-confirmed-shows";
+import UserEstablishmentProfile from "@/screens/user/establishment-profile";
 import { ArtistProfileSnapshot } from "@/utils/artistProfile";
 
 const DS = {
