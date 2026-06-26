@@ -8,13 +8,12 @@ export interface UserProfileViewModel {
   displayName: string;
   fotoPerfil: string | null;
   localizacao: string | null;
-  uploadingFoto: boolean;
   loading: boolean;
   proximosShows: Ingresso[];
   artistasFavoritados: FavoriteArtistItem[];
   estabelecimentosFavoritados: FavoriteEstablishmentItem[];
   stats: UserProfileStat[];
-  handleSelecionarFoto: () => Promise<void>;
+  goToEditProfile: () => void;
   goToSettings: () => void;
   goToShowDetail: (showId: number) => void;
   goToArtist: (artistId: number) => void;

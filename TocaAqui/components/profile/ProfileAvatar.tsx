@@ -11,13 +11,17 @@ import { colors } from "@/utils/colors";
 
 interface ProfileAvatarProps {
   fotoPerfil: string | null;
-  uploading: boolean;
-  onPress: () => void;
+  uploading?: boolean;
+  onPress?: () => void;
 }
 
-export default function ProfileAvatar({ fotoPerfil, uploading, onPress }: ProfileAvatarProps) {
-  return (
-    <TouchableOpacity style={styles.avatarWrapper} onPress={onPress} activeOpacity={0.85}>
+export default function ProfileAvatar({
+  fotoPerfil,
+  uploading = false,
+  onPress,
+}: ProfileAvatarProps) {
+  const content = (
+    <>
       <View style={styles.avatarBorder}>
         {fotoPerfil ? (
           <Image source={{ uri: fotoPerfil }} style={styles.avatarImage} />
@@ -27,13 +31,25 @@ export default function ProfileAvatar({ fotoPerfil, uploading, onPress }: Profil
           </View>
         )}
       </View>
-      <View style={styles.cameraBtn}>
-        {uploading ? (
-          <ActivityIndicator size={10} color={colors.white} />
-        ) : (
-          <FontAwesome5 name="camera" size={10} color={colors.white} />
-        )}
-      </View>
+      {onPress ? (
+        <View style={styles.cameraBtn}>
+          {uploading ? (
+            <ActivityIndicator size={10} color={colors.white} />
+          ) : (
+            <FontAwesome5 name="camera" size={10} color={colors.white} />
+          )}
+        </View>
+      ) : null}
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={styles.avatarWrapper}>{content}</View>;
+  }
+
+  return (
+    <TouchableOpacity style={styles.avatarWrapper} onPress={onPress} activeOpacity={0.85}>
+      {content}
     </TouchableOpacity>
   );
 }

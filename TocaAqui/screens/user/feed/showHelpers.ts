@@ -1,4 +1,5 @@
 import { Show } from "@/http/showService";
+import { resolveImageUrl } from "@/utils/adapters";
 import { colors, genreColorWithAlpha } from "@/utils/colors";
 import {
   formatBRL,
@@ -62,4 +63,13 @@ export function getShowCtaLabel(show: Show): string {
 export function getShowCardColor(show: Show, alpha = "55"): string {
   if (!show.genero_musical) return colors.cardFallback;
   return genreColorWithAlpha(show.genero_musical, alpha);
+}
+
+export function getShowCoverUrl(show: Show): string | null {
+  const candidates = [show.imagem_capa, show.foto_artista];
+  for (const path of candidates) {
+    const url = resolveImageUrl(path);
+    if (url) return url;
+  }
+  return null;
 }

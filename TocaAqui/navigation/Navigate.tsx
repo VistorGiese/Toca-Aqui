@@ -4,37 +4,26 @@ import React from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 
-import { Booking } from "@/http/bookingService";
-import Register from "../screens/register";
-import VerifyEmail from "../screens/VerifyEmail";
-import ResetPassword from "../screens/ResetPassword";
-import ArtistProfile from "../screens/ArtistProfile";
-import CreateEvent from "../screens/CreateEvent";
-import EventDetail from "../screens/EventDetail";
-import ForgotPassword from "../screens/ForgotPassword";
-import HomePage from "../screens/HomePage";
-import InfoEvent from "../screens/InfoEvent";
-import Initial from "../screens/Initial";
-import Login from "../screens/login";
-import Profile from "../screens/Profile";
-import Schedulling from "../screens/Schedulling";
-import SearchArtists from "../screens/SearchArtists";
+import Initial from "@/screens/initial";
+import Login from "@/screens/login";
+import Register from "@/screens/register";
+import ForgotPassword from "@/screens/forgot-password";
+import VerifyEmail from "@/screens/verify-email";
+import ResetPassword from "@/screens/reset-password";
 
 // Artista — onboarding
-import OnboardingArtistProfile from "../screens/OnboardingArtistProfile";
-import OnboardingArtistBio from "../screens/OnboardingArtistBio";
-import ArtistProfileEdit from "../screens/artist/ArtistProfileEdit";
-
+import OnboardingArtistProfile from "@/screens/artist/onboarding/profile";
+import OnboardingArtistBio from "@/screens/artist/onboarding/bio";
 // Artista — register
-import RegisterArtist from "../screens/artist/RegisterArtist";
+import RegisterArtist from "@/screens/artist/register";
 
 // Artista — navigator (bottom tabs + detail stack)
 import ArtistNavigator from "./ArtistNavigator";
 
 // Usuário comum — navigator e onboarding
 import UserNavigator from "./UserNavigator";
-import UserOnboardingGenres from "../screens/user/UserOnboardingGenres";
-import UserOnboardingLocation from "../screens/user/UserOnboardingLocation";
+import UserOnboardingGenres from "@/screens/user/onboarding/genres";
+import UserOnboardingLocation from "@/screens/user/onboarding/location";
 
 // Estabelecimento — onboarding (wizard com provider interno)
 import { EstablishmentOnboardingNavigator } from "../screens/establishment/onboarding";
@@ -82,16 +71,6 @@ export type RootStackParamList = {
   UserOnboardingLocation: { generos: string[] };
   UserNavigator: undefined;
 
-  // Estabelecimento — app
-  HomePage: undefined;
-  Schedulling: undefined;
-  CreateEvent: undefined;
-  InfoEvent: undefined;
-  ArtistProfile: undefined;
-  Profile: undefined;
-  EventDetail: { event: Booking };
-  SearchArtists: undefined;
-
   // Legado (manter para não quebrar imports existentes)
   ArtistHome: undefined;
   BrowseEvents: undefined;
@@ -101,7 +80,6 @@ export type RootStackParamList = {
   EditBand: { bandId: number };
   BandDetail: { bandId: number };
   MyContracts: undefined;
-  ArtistProfileEdit: undefined;
   ApplyConfirmation: {
     eventId: number;
     eventName: string;
@@ -172,17 +150,6 @@ export default function Navigate() {
           <Stack.Screen name="ArtistNavigator" component={ArtistNavigator} />
           <Stack.Screen name="OnboardingArtistProfile" component={OnboardingArtistProfile} />
           <Stack.Screen name="OnboardingArtistBio" component={OnboardingArtistBio} />
-          <Stack.Screen name="ArtistProfileEdit" component={ArtistProfileEdit} />
-
-          {/* Legado */}
-          <Stack.Screen name="HomePage" component={HomePage} />
-          <Stack.Screen name="Schedulling" component={Schedulling} />
-          <Stack.Screen name="CreateEvent" component={CreateEvent} />
-          <Stack.Screen name="InfoEvent" component={InfoEvent} />
-          <Stack.Screen name="ArtistProfile" component={ArtistProfile} />
-          <Stack.Screen name="Profile" component={Profile} />
-          <Stack.Screen name="EventDetail" component={EventDetail} />
-          <Stack.Screen name="SearchArtists" component={SearchArtists} />
         </>
       )}
     </Stack.Navigator>

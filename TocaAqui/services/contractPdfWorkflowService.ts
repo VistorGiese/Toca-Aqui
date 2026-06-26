@@ -388,7 +388,6 @@ export async function publishShowAfterContractApproval(
   await saveWorkflow(contractId, "approved", { approvedAt: new Date().toISOString() });
 }
 
-/** Corrige shows aprovados no workflow mas ainda privados (ex.: falha anterior ao publicar). */
 export async function syncShowPublicationIfApproved(
   eventoId: number,
   workflow: ContractPdfWorkflowMeta | null,

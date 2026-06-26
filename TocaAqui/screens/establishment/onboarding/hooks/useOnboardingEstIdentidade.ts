@@ -7,6 +7,7 @@ import * as ImagePicker from "expo-image-picker";
 import { EstablishmentOnboardingStackParamList } from "../EstablishmentOnboardingNavigator";
 import { useEstablishmentOnboarding } from "../context/EstablishmentOnboardingContext";
 import { EstablishmentTipo } from "../context/types";
+import { validateCnpjField } from "@/utils/documentValidation";
 import { maskCnpj, sanitizeCnpj, sanitizePhone } from "../utils";
 
 type NavProp = NativeStackNavigationProp<EstablishmentOnboardingStackParamList, "OnboardingEstIdentidade">;
@@ -74,9 +75,9 @@ export function useOnboardingEstIdentidade() {
         if (tel.length < 8) {
           nextErrors.telefone = "Telefone é obrigatório (mínimo 8 dígitos)";
         }
-        const cnpj = sanitizeCnpj(draft.cnpj);
-        if (cnpj && cnpj.length !== 14) {
-          nextErrors.cnpj = "CNPJ inválido (14 dígitos ou deixe em branco)";
+        const cnpjError = validateCnpjField(draft.cnpj, true);
+        if (cnpjError) {
+          nextErrors.cnpj = cnpjError;
         }
         if (Object.keys(nextErrors).length > 0) {
           setErrors(nextErrors);

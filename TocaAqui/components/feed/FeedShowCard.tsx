@@ -6,6 +6,7 @@ import { colors, getGenreColor, genreColorWithAlpha } from "@/utils/colors";
 import {
   formatShowDate,
   getShowCardColor,
+  getShowCoverUrl,
   getShowCtaLabel,
   getShowPriceLabel,
   getShowTitle,
@@ -13,7 +14,6 @@ import {
   isShowFree,
 } from "@/screens/user/feed/showHelpers";
 import ShowPurchaseCta from "./ShowPurchaseCta";
-import { resolveImageUrl } from "@/utils/adapters";
 
 interface FeedShowCardProps {
   show: Show;
@@ -30,12 +30,13 @@ export default function FeedShowCard({
 }: FeedShowCardProps) {
   const genreColor = getGenreColor(show.genero_musical ?? "");
   const isFree = isShowFree(show);
+  const coverUrl = getShowCoverUrl(show);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={[styles.image, { backgroundColor: getShowCardColor(show) }]}>
-        {show.imagem_capa ? (
-          <Image source={{ uri: resolveImageUrl(show.imagem_capa) }} style={styles.coverImage} />
+        {coverUrl ? (
+          <Image source={{ uri: coverUrl }} style={styles.coverImage} resizeMode="cover" />
         ) : (
           <FontAwesome5 name="music" size={22} color={colors.iconOnSurface} />
         )}

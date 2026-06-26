@@ -13,16 +13,20 @@ import ArtistEditProfile from "@/screens/artist/edit-profile";
 // Detail screens
 import ArtistEventDetail from "@/screens/artist/event-detail";
 import ArtistApplyConfirmation from "@/screens/artist/apply-confirmation";
-import ShowDetail from "@/screens/artist/ShowDetail";
+import ArtistShowDetail from "@/screens/artist/show-detail";
 import ArtistContractDetail from "@/screens/artist/contract-detail";
-import MyContracts from "@/screens/artist/MyContracts";
-import RateEstablishment from "@/screens/artist/RateEstablishment";
-import Subscription from "@/screens/artist/Subscription";
+import MyContracts from "@/screens/artist/my-contracts";
+import RateEstablishment from "@/screens/artist/rate-establishment";
+import ArtistSubscription from "@/screens/artist/subscription";
 import ArtistUpcomingShowDetail from "@/screens/artist/upcoming-show-detail";
 import ArtistAllConfirmedShows from "@/screens/artist/all-confirmed-shows";
 import UserArtistProfile from "@/screens/user/artist-profile";
 import UserEstablishmentProfile from "@/screens/user/establishment-profile";
 import ArtistNotifications from "@/screens/artist/notifications";
+import ArtistMyBands from "@/screens/artist/my-bands";
+import ArtistCreateBand from "@/screens/artist/create-band";
+import ArtistEditBand from "@/screens/artist/edit-band";
+import ArtistBandDetail from "@/screens/artist/band-detail";
 
 const DS = {
   bg: "#09090F",
@@ -73,6 +77,10 @@ export type ArtistStackParamList = {
     canBuyTickets?: boolean;
     viewerContext?: "establishment" | "user";
   };
+  MyBands: undefined;
+  CreateBand: undefined;
+  EditBand: { bandId: number };
+  BandDetail: { bandId: number };
 };
 
 const Tab = createBottomTabNavigator<ArtistTabParamList>();
@@ -160,17 +168,21 @@ export default function ArtistNavigator() {
       <Stack.Screen name="ArtistTabs" component={ArtistTabs} />
       <Stack.Screen name="EventDetailArtist" component={ArtistEventDetail} />
       <Stack.Screen name="ApplyConfirmation" component={ArtistApplyConfirmation} />
-      <Stack.Screen name="ShowDetail" component={ShowDetail} />
+      <Stack.Screen name="ShowDetail" component={ArtistShowDetail} />
       <Stack.Screen name="ContractDetail" component={ArtistContractDetail} />
       <Stack.Screen name="ArtistUpcomingShowDetail" component={ArtistUpcomingShowDetail} />
       <Stack.Screen name="ArtistAllConfirmedShows" component={ArtistAllConfirmedShows} />
       <Stack.Screen name="MyContracts" component={MyContracts} />
       <Stack.Screen name="RateEstablishment" component={RateEstablishment} />
-      <Stack.Screen name="Subscription" component={Subscription} />
+      <Stack.Screen name="Subscription" component={ArtistSubscription} />
       <Stack.Screen name="ArtistProfileManage" component={ArtistEditProfile} />
       <Stack.Screen name="ArtistNotifications" component={ArtistNotifications} />
       <Stack.Screen name="UserArtistProfile" component={UserArtistProfile} />
       <Stack.Screen name="UserEstablishmentProfile" component={UserEstablishmentProfile} />
+      <Stack.Screen name="MyBands" component={ArtistMyBands} />
+      <Stack.Screen name="CreateBand" component={ArtistCreateBand} />
+      <Stack.Screen name="EditBand" component={ArtistEditBand} />
+      <Stack.Screen name="BandDetail" component={ArtistBandDetail} />
     </Stack.Navigator>
   );
 }

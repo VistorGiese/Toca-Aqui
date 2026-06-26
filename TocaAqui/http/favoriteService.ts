@@ -1,4 +1,5 @@
 import api from "./api";
+import { normalizeShow, Show } from "./showService";
 import { parseJsonArray } from "@/utils/artistProfile";
 
 export type FavoritavelTipo =
@@ -26,6 +27,7 @@ function mapFavoriteArtist(raw: Record<string, unknown>): FavoriteArtistItem | n
     id,
     nome_artistico: String(raw.nome_artistico ?? "Artista"),
     generos: parseJsonArray(raw.generos ?? raw.generos_musicais),
+    foto_perfil: raw.foto_perfil != null ? String(raw.foto_perfil) : null,
   };
 }
 
@@ -37,7 +39,17 @@ function mapFavoriteEstablishment(raw: Record<string, unknown>): FavoriteEstabli
     id,
     nome_estabelecimento: String(raw.nome_estabelecimento ?? "Estabelecimento"),
     cidade: address?.cidade ?? (raw.cidade != null ? String(raw.cidade) : undefined),
+    foto_url: raw.foto_url != null ? String(raw.foto_url) : null,
   };
+}
+
+function mapFavoriteShow(
+  fav: { id?: number; item?: Record<string, unknown> }
+): FavoriteShowItem | null {
+  if (!fav.item) return null;
+  const show = normalizeShow(fav.item);
+  if (!show.id) return null;
+  return { favoritoId: Number(fav.id ?? 0), show };
 }
 
 export const favoriteService = {
@@ -64,6 +76,18 @@ export const favoriteService = {
           fav.item ? mapFavoriteEstablishment(fav.item) : null
         )
         .filter((item): item is FavoriteEstablishmentItem => item != null);
+    } catch {
+      return [];
+    }
+  },
+
+  async listFavoriteShows(): Promise<FavoriteShowItem[]> {
+    try {
+      const r = await api.get("/favoritos", { params: { tipo: "agendamento" } });
+      const favoritos = Array.isArray(r.data?.favoritos) ? r.data.favoritos : [];
+      return favoritos
+        .map((fav: { id?: number; item?: Record<string, unknown> }) => mapFavoriteShow(fav))
+        .filter((item): item is FavoriteShowItem => item != null);
     } catch {
       return [];
     }

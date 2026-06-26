@@ -1,0 +1,140 @@
+import { StyleSheet } from "react-native";
+import { DS } from "./constants";
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: DS.bg },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 52,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  backBtn: { padding: 4 },
+  headerSpacer: { width: 24 },
+  headerTitle: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 15,
+    color: DS.accent,
+    letterSpacing: 2,
+  },
+  showSubtitle: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 13,
+    color: DS.textSec,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  inputCard: {
+    marginHorizontal: 20,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    padding: 14,
+    marginBottom: 16,
+  },
+  inputCardError: {
+    borderColor: DS.inputError,
+  },
+  commentInput: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: DS.white,
+    minHeight: 70,
+    lineHeight: 22,
+  },
+  inputFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  charCounter: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 11,
+    color: DS.textDis,
+  },
+  publishBtn: {
+    backgroundColor: DS.accentBtn,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  publishBtnDisabled: { opacity: 0.4 },
+  publishBtnText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 12,
+    color: DS.white,
+    letterSpacing: 1,
+  },
+  commentsList: {
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: DS.textDis,
+    textAlign: "center",
+    marginTop: 40,
+  },
+  commentCard: {
+    flexDirection: "row",
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    flexShrink: 0,
+  },
+  avatarText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 14,
+    color: DS.white,
+  },
+  commentContent: { flex: 1 },
+  commentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  commentHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  deleteBtn: {
+    padding: 2,
+  },
+  commentName: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 13,
+    color: DS.white,
+  },
+  commentTime: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 11,
+    color: DS.textDis,
+  },
+  commentText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 13,
+    color: DS.textSec,
+    lineHeight: 20,
+  },
+  listBottomSpacer: { height: 20 },
+});

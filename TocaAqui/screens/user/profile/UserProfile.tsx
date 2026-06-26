@@ -28,11 +28,7 @@ export default function UserProfile() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.profileSection}>
-          <ProfileAvatar
-            fotoPerfil={vm.fotoPerfil}
-            uploading={vm.uploadingFoto}
-            onPress={vm.handleSelecionarFoto}
-          />
+          <ProfileAvatar fotoPerfil={vm.fotoPerfil} />
           <Text style={styles.displayName}>{vm.displayName}</Text>
           {vm.localizacao && (
             <View style={styles.locationRow}>
@@ -49,7 +45,11 @@ export default function UserProfile() {
         ) : (
           <>
             <ProfileStatsRow stats={vm.stats} />
-            <ProfileActionButton onPress={vm.goToSettings} />
+            <ProfileActionButton
+              label="EDITAR PERFIL"
+              icon="user-edit"
+              onPress={vm.goToEditProfile}
+            />
 
             <SectionHeader
               title="Próximos shows"

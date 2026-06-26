@@ -4,21 +4,22 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 
 import UserFeed from "@/screens/user/feed";
-import UserSearch from "@/screens/user/UserSearch";
-import UserTickets from "@/screens/user/UserTickets";
-import UserFavorites from "@/screens/user/UserFavorites";
+import UserSearch from "@/screens/user/search";
+import UserTickets from "@/screens/user/tickets";
+import UserFavorites from "@/screens/user/favorites";
 import UserProfile from "@/screens/user/profile";
 
-import UserShowDetail from "@/screens/user/UserShowDetail";
-import UserCheckout from "@/screens/user/UserCheckout";
-import UserPurchaseConfirmation from "@/screens/user/UserPurchaseConfirmation";
-import UserTicketDetail from "@/screens/user/UserTicketDetail";
+import UserShowDetail from "@/screens/user/show-detail";
+import UserCheckout from "@/screens/user/checkout";
+import UserPurchaseConfirmation from "@/screens/user/purchase-confirmation";
+import UserTicketDetail from "@/screens/user/ticket-detail";
 import UserArtistProfile from "@/screens/user/artist-profile";
 import UserEstablishmentProfile from "@/screens/user/establishment-profile";
-import UserRateShow from "@/screens/user/UserRateShow";
-import UserComments from "@/screens/user/UserComments";
-import UserSettings from "@/screens/user/UserSettings";
-import UserNotifications from "@/screens/user/UserNotifications";
+import UserRateShow from "@/screens/user/rate-show";
+import UserComments from "@/screens/user/comments";
+import UserSettings from "@/screens/user/settings";
+import UserNotifications from "@/screens/user/notifications";
+import UserEditProfile from "@/screens/user/edit-profile";
 
 const DS = {
   bg: "#09090F",
@@ -71,6 +72,7 @@ export type UserStackParamList = {
   UserComments: { showId: number; showTitle: string };
   UserSettings: undefined;
   UserNotifications: undefined;
+  UserEditProfile: undefined;
 };
 
 const Tab = createBottomTabNavigator<UserTabParamList>();
@@ -166,6 +168,7 @@ export default function UserNavigator() {
       <Stack.Screen name="UserComments" component={UserComments} />
       <Stack.Screen name="UserSettings" component={UserSettings} />
       <Stack.Screen name="UserNotifications" component={UserNotifications} />
+      <Stack.Screen name="UserEditProfile" component={UserEditProfile} />
     </Stack.Navigator>
   );
 }

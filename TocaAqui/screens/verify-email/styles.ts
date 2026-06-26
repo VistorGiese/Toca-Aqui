@@ -1,0 +1,70 @@
+import { StyleSheet } from "react-native";
+import { DS } from "./constants";
+
+export const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: DS.bg,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  bgTexture: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.06,
+  },
+  glow: {
+    position: "absolute",
+    top: "30%",
+    alignSelf: "center",
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: DS.accent,
+    opacity: 0.12,
+  },
+  iconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "rgba(123,97,255,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(123,97,255,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  title: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 22,
+    color: DS.white,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+    color: DS.textMuted,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  btn: {
+    backgroundColor: DS.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    width: "100%",
+    alignItems: "center",
+  },
+  btnText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 15,
+    color: DS.white,
+    letterSpacing: 1,
+  },
+});
