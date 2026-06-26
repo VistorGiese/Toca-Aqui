@@ -56,6 +56,7 @@ export default function OnboardingEstIdentidadeScreen() {
         value={vm.telefone}
         onChangeText={vm.setTelefone}
         keyboardType="phone-pad"
+        maxLength={15}
         error={vm.errors.telefone}
         containerStyle={{ width: "100%", marginBottom: 4 }}
       />

@@ -22,12 +22,13 @@ export function sanitizeCnpj(cnpj: string): string {
 
 export function maskPhone(raw: string): string {
   const cleaned = raw.replace(/\D/g, "").slice(0, 11);
-  if (cleaned.length > 7) {
-    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+  if (cleaned.length === 0) return "";
+  if (cleaned.length <= 2) return `(${cleaned}`;
+  if (cleaned.length <= 6) return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+  if (cleaned.length <= 10) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
   }
-  if (cleaned.length > 2) return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
-  if (cleaned.length > 0) return `(${cleaned.slice(0, 2)}`;
-  return cleaned;
+  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
 }
 
 export function maskCep(raw: string): string {

@@ -28,6 +28,7 @@ export default function OnboardingEstPerfilScreen() {
         onToggleEnabled={vm.setTemEstrutura}
         onToggleItem={vm.toggleEstruturaItem}
       />
+      <FieldError message={vm.estruturaError} />
 
       <Input
         label="CAPACIDADE DO PÚBLICO (APROX.)"
@@ -35,6 +36,7 @@ export default function OnboardingEstPerfilScreen() {
         value={vm.capacidade}
         onChangeText={vm.setCapacidade}
         keyboardType="numeric"
+        error={vm.capacidadeError}
         containerStyle={{ width: "100%", marginTop: 16 }}
       />
     </OnboardingEstShell>

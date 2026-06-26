@@ -1,3 +1,4 @@
+import { parseCurrencyBRL } from "@/screens/establishment/new-gig/utils";
 import { ApplyFormErrors } from "./types";
 
 export function getFirstName(fullName?: string | null): string {
@@ -15,8 +16,8 @@ export function validateApplyForm(
     errors.mensagem = "Mensagem de apresentação é obrigatória";
   }
 
-  const valorNum = parseFloat(valorProposto);
-  if (!valorProposto.trim() || isNaN(valorNum) || valorNum <= 0) {
+  const valorNum = parseCurrencyBRL(valorProposto);
+  if (!valorProposto.trim() || valorNum <= 0) {
     errors.valorProposto = "Valor proposto é obrigatório";
   }
 

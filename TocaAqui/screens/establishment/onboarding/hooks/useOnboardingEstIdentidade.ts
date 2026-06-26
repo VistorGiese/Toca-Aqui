@@ -8,7 +8,7 @@ import { EstablishmentOnboardingStackParamList } from "../EstablishmentOnboardin
 import { useEstablishmentOnboarding } from "../context/EstablishmentOnboardingContext";
 import { EstablishmentTipo } from "../context/types";
 import { validateCnpjField } from "@/utils/documentValidation";
-import { maskCnpj, sanitizeCnpj, sanitizePhone } from "../utils";
+import { maskCnpj, maskPhone, sanitizeCnpj, sanitizePhone } from "../utils";
 
 type NavProp = NativeStackNavigationProp<EstablishmentOnboardingStackParamList, "OnboardingEstIdentidade">;
 
@@ -84,7 +84,7 @@ export function useOnboardingEstIdentidade() {
           return;
         }
         setErrors({});
-        updateDraft({ telefone: tel });
+        updateDraft({ telefone: maskPhone(tel) });
         navigation.navigate("OnboardingEstFuncionamento");
         return;
       } else {
@@ -92,7 +92,7 @@ export function useOnboardingEstIdentidade() {
         updateDraft({
           nome: draft.nome.trim() || "Meu Espaço",
           tipo: (draft.tipo || "bar") as EstablishmentTipo,
-          telefone: tel,
+          telefone: maskPhone(tel),
           cnpj: maskCnpj(draft.cnpj),
         });
       }
@@ -111,7 +111,7 @@ export function useOnboardingEstIdentidade() {
   const setTelefone = useCallback(
     (telefone: string) => {
       clearError("telefone");
-      updateDraft({ telefone });
+      updateDraft({ telefone: maskPhone(telefone) });
     },
     [clearError, updateDraft]
   );

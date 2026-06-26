@@ -10,6 +10,8 @@ export function useOnboardingEstPerfil() {
   const navigation = useNavigation<NavProp>();
   const { draft, updateDraft } = useEstablishmentOnboarding();
   const [generosError, setGenerosError] = useState("");
+  const [estruturaError, setEstruturaError] = useState("");
+  const [capacidadeError, setCapacidadeError] = useState("");
 
   const toggleGenero = useCallback(
     (label: string) => {
@@ -24,6 +26,7 @@ export function useOnboardingEstPerfil() {
 
   const toggleEstruturaItem = useCallback(
     (item: string) => {
+      setEstruturaError("");
       const next = draft.estrutura.includes(item)
         ? draft.estrutura.filter((e) => e !== item)
         : [...draft.estrutura, item];
@@ -33,24 +36,65 @@ export function useOnboardingEstPerfil() {
   );
 
   const goNext = useCallback(() => {
+    let hasError = false;
+
     if (draft.generos.length === 0) {
       setGenerosError("Selecione pelo menos um gênero");
-      return;
+      hasError = true;
+    } else {
+      setGenerosError("");
     }
-    setGenerosError("");
+
+    if (draft.temEstrutura && draft.estrutura.length === 0) {
+      setEstruturaError("Selecione pelo menos um equipamento da estrutura");
+      hasError = true;
+    } else {
+      setEstruturaError("");
+    }
+
+    const capacidadeTrimmed = draft.capacidade.trim();
+    if (!capacidadeTrimmed) {
+      setCapacidadeError("Capacidade é obrigatória");
+      hasError = true;
+    } else {
+      const capacidadeNum = Number(capacidadeTrimmed);
+      if (!Number.isFinite(capacidadeNum) || capacidadeNum < 1) {
+        setCapacidadeError("Informe uma capacidade válida (mínimo 1 pessoa)");
+        hasError = true;
+      } else {
+        setCapacidadeError("");
+      }
+    }
+
+    if (hasError) return;
+
     navigation.navigate("OnboardingEstApresentacao");
-  }, [draft.generos.length, navigation]);
+  }, [
+    draft.capacidade,
+    draft.estrutura.length,
+    draft.generos.length,
+    draft.temEstrutura,
+    navigation,
+  ]);
 
   return {
     generos: draft.generos,
     generosError,
+    estruturaError,
+    capacidadeError,
     temEstrutura: draft.temEstrutura,
     estrutura: draft.estrutura,
     capacidade: draft.capacidade,
     toggleGenero,
-    setTemEstrutura: (v: boolean) => updateDraft({ temEstrutura: v }),
+    setTemEstrutura: (v: boolean) => {
+      setEstruturaError("");
+      updateDraft({ temEstrutura: v, ...(v ? {} : { estrutura: [] }) });
+    },
     toggleEstruturaItem,
-    setCapacidade: (capacidade: string) => updateDraft({ capacidade }),
+    setCapacidade: (capacidade: string) => {
+      setCapacidadeError("");
+      updateDraft({ capacidade: capacidade.replace(/\D/g, "") });
+    },
     goNext,
     goBack: () => navigation.goBack(),
   };

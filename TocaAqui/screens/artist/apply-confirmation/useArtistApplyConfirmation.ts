@@ -14,6 +14,7 @@ import {
   getFirstName,
   validateApplyForm,
 } from "./utils";
+import { maskCurrencyBRL } from "@/screens/artist/edit-profile/utils";
 
 type NavProp = NativeStackNavigationProp<ArtistStackParamList>;
 type RouteType = RouteProp<ArtistStackParamList, "ApplyConfirmation">;
@@ -72,7 +73,7 @@ export function useArtistApplyConfirmation() {
 
   const updateValorProposto = useCallback((value: string) => {
     setErrors((prev) => ({ ...prev, valorProposto: undefined }));
-    setValorProposto(value);
+    setValorProposto(maskCurrencyBRL(value));
   }, []);
 
   const submit = useCallback(async () => {

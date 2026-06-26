@@ -17,7 +17,7 @@ export default function ArtistApplyConfirmationValueSection({ value, error, onCh
       <Text style={styles.inputLabel}>Valor proposto (R$)</Text>
       <TextInput
         style={[styles.input, error && styles.inputError]}
-        placeholder="Ex: 350"
+        placeholder="0,00"
         placeholderTextColor={DS.textDis}
         keyboardType="numeric"
         value={value}
