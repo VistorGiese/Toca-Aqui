@@ -6,6 +6,7 @@ import * as ImagePicker from "expo-image-picker";
 import { EstStackParamList } from "@/navigation/EstablishmentNavigator";
 import { establishmentService } from "@/http/establishmentService";
 import { parsePressKit, resolveImageUrl } from "@/utils/adapters";
+import { validateCnpjField } from "@/utils/documentValidation";
 import { getApiErrorMessage, showApiError } from "@/utils/errorHandler";
 import { IbgeCidade, IbgeEstado, WeekSchedule } from "../onboarding/context/types";
 import { LocationPickerMode } from "../onboarding/components/LocationPickerModal";
@@ -330,11 +331,9 @@ export function useEstEditProfile() {
       next.telefone = "Telefone incompleto (mínimo 10 dígitos)";
     }
 
-    const cnpjDigits = sanitizeCnpj(cnpj);
-    if (!cnpjDigits) {
-      next.cnpj = "CNPJ é obrigatório";
-    } else if (cnpjDigits.length !== 14) {
-      next.cnpj = "CNPJ incompleto (14 dígitos)";
+    const cnpjError = validateCnpjField(cnpj);
+    if (cnpjError) {
+      next.cnpj = cnpjError;
     }
 
     if (generos.length === 0) {

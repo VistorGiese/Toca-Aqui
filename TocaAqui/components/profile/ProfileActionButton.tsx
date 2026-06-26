@@ -5,13 +5,19 @@ import { colors } from "@/utils/colors";
 
 interface ProfileActionButtonProps {
   onPress: () => void;
+  label?: string;
+  icon?: string;
 }
 
-export default function ProfileActionButton({ onPress }: ProfileActionButtonProps) {
+export default function ProfileActionButton({
+  onPress,
+  label = "EDITAR PREFERÊNCIAS MUSICAIS",
+  icon = "cog",
+}: ProfileActionButtonProps) {
   return (
     <TouchableOpacity style={styles.button} activeOpacity={0.8} onPress={onPress}>
-      <FontAwesome5 name="cog" size={14} color={colors.purpleLight} style={styles.icon} />
-      <Text style={styles.label}>EDITAR PREFERÊNCIAS MUSICAIS</Text>
+      <FontAwesome5 name={icon as "cog"} size={14} color={colors.purpleLight} style={styles.icon} />
+      <Text style={styles.label}>{label}</Text>
     </TouchableOpacity>
   );
 }

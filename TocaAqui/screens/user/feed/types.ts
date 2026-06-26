@@ -8,7 +8,6 @@ export const FEED_FILTERS = [
   "Todos",
   "Esta semana",
   "Fim de semana",
-  "Hoje",
   "Gratuitos",
 ] as const;
 

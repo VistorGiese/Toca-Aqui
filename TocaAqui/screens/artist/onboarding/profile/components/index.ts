@@ -1,0 +1,9 @@
+export { default as OnboardingArtistProfileProgressBar } from "./OnboardingArtistProfileProgressBar";
+export { default as OnboardingArtistProfileHeader } from "./OnboardingArtistProfileHeader";
+export { default as OnboardingArtistProfilePhotoSection } from "./OnboardingArtistProfilePhotoSection";
+export { default as OnboardingArtistProfileFormField } from "./OnboardingArtistProfileFormField";
+export { default as OnboardingArtistProfileTypeSection } from "./OnboardingArtistProfileTypeSection";
+export { default as OnboardingArtistProfileGenresSection } from "./OnboardingArtistProfileGenresSection";
+export { default as OnboardingArtistProfileCacheSection } from "./OnboardingArtistProfileCacheSection";
+export { default as OnboardingArtistProfileSoundSection } from "./OnboardingArtistProfileSoundSection";
+export { default as OnboardingArtistProfileActionsSection } from "./OnboardingArtistProfileActionsSection";

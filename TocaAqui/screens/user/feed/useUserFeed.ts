@@ -22,7 +22,6 @@ function buildShowsParams(filter: FeedFilter): ShowsParams {
   const params: ShowsParams = { limit: CONFIRMED_SHOWS_LIMIT };
   if (filter === "Esta semana") params.esta_semana = true;
   if (filter === "Fim de semana") params.fim_de_semana = true;
-  if (filter === "Hoje") params.esta_hoje = true;
   return params;
 }
 

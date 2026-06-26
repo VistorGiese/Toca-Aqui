@@ -1,8 +1,6 @@
 import { useCallback, useState } from "react";
-import { Alert } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import * as ImagePicker from "expo-image-picker";
 import { UserStackParamList } from "@/navigation/UserNavigator";
 import { useAuth } from "@/contexts/AuthContext";
 import { preferenciaService } from "@/http/artistaPublicoService";
@@ -30,7 +28,6 @@ export function useUserProfile(): UserProfileViewModel {
   const [showsPassados, setShowsPassados] = useState<Ingresso[]>([]);
   const [loading, setLoading] = useState(true);
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
-  const [uploadingFoto, setUploadingFoto] = useState(false);
   const [localizacao, setLocalizacao] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -67,36 +64,10 @@ export function useUserProfile(): UserProfileViewModel {
     }, [loadData])
   );
 
-  const handleSelecionarFoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permissão necessária",
-        "Precisamos de acesso à sua galeria para alterar a foto."
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (result.canceled) return;
-
-    setUploadingFoto(true);
-    try {
-      const data = await userService.uploadFoto(result.assets[0].uri);
-      setFotoPerfil(resolveImageUrl(data.foto_perfil));
-    } catch {
-      // silenciado temporariamente
-    } finally {
-      setUploadingFoto(false);
-    }
-  }, []);
-
+  const goToEditProfile = useCallback(
+    () => navigation.navigate("UserEditProfile"),
+    [navigation]
+  );
   const goToSettings = useCallback(() => navigation.navigate("UserSettings"), [navigation]);
   const goToShowDetail = useCallback(
     (showId: number) => navigation.navigate("UserShowDetail", { showId }),
@@ -123,13 +94,12 @@ export function useUserProfile(): UserProfileViewModel {
     displayName: user?.nome_completo || "Usuário",
     fotoPerfil,
     localizacao,
-    uploadingFoto,
     loading,
     proximosShows,
     artistasFavoritados,
     estabelecimentosFavoritados,
     stats,
-    handleSelecionarFoto,
+    goToEditProfile,
     goToSettings,
     goToShowDetail,
     goToArtist,

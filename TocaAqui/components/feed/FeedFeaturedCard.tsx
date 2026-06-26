@@ -4,6 +4,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { Show } from "@/http/showService";
 import { colors, getGenreColor, genreColorWithAlpha } from "@/utils/colors";
 import {
+  getShowCoverUrl,
   getShowCtaLabel,
   getShowPriceLabel,
   getShowTitle,
@@ -11,7 +12,6 @@ import {
   isShowFree,
 } from "@/screens/user/feed/showHelpers";
 import ShowPurchaseCta from "./ShowPurchaseCta";
-import { resolveImageUrl } from "@/utils/adapters";
 
 interface FeedFeaturedCardProps {
   show: Show;
@@ -22,6 +22,7 @@ export default function FeedFeaturedCard({ show, onPress }: FeedFeaturedCardProp
   const genre = show.genero_musical ?? "";
   const genreColor = getGenreColor(genre);
   const isFree = isShowFree(show);
+  const coverUrl = getShowCoverUrl(show);
 
   return (
     <TouchableOpacity
@@ -29,8 +30,8 @@ export default function FeedFeaturedCard({ show, onPress }: FeedFeaturedCardProp
       onPress={onPress}
       activeOpacity={0.9}
     >
-      {show.imagem_capa ? (
-        <Image source={{ uri: resolveImageUrl(show.imagem_capa) }} style={styles.coverImage} />
+      {coverUrl ? (
+        <Image source={{ uri: coverUrl }} style={styles.coverImage} resizeMode="cover" />
       ) : null}
       <View style={styles.overlay}>
         <View style={styles.liveBadge}>
