@@ -29,6 +29,18 @@ export type ContractStatus =
   | "recusado"
   | "concluido";
 
+export interface Notification {
+  id: number;
+  usuario_id: number;
+  tipo?: string;
+  titulo?: string;
+  mensagem?: string;
+  conteudo?: string;
+  lida?: boolean;
+  created_at?: string;
+  criado_em?: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

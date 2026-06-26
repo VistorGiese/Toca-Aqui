@@ -3,25 +3,26 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { FontAwesome5 } from "@expo/vector-icons";
 
-import ArtistHome from "@/screens/artist/ArtistHome";
-import BrowseEvents from "@/screens/artist/BrowseEvents";
+import ArtistHome from "@/screens/artist/home";
+import ArtistBrowseEvents from "@/screens/artist/browse-events";
 import ArtistSchedule from "@/screens/artist/schedule";
-import MyApplications from "@/screens/artist/MyApplications";
-import ArtistEPK from "@/screens/artist/ArtistEPK";
-import ArtistProfileManage from "@/screens/artist/ArtistProfileManage";
+import ArtistApplications from "@/screens/artist/applications";
+import ArtistProfile from "@/screens/artist/profile";
+import ArtistEditProfile from "@/screens/artist/edit-profile";
 
 // Detail screens
-import EventDetailArtist from "@/screens/artist/EventDetailArtist";
-import ApplyConfirmation from "@/screens/artist/ApplyConfirmation";
+import ArtistEventDetail from "@/screens/artist/event-detail";
+import ArtistApplyConfirmation from "@/screens/artist/apply-confirmation";
 import ShowDetail from "@/screens/artist/ShowDetail";
-import ContractDetail from "@/screens/artist/ContractDetail";
+import ArtistContractDetail from "@/screens/artist/contract-detail";
 import MyContracts from "@/screens/artist/MyContracts";
 import RateEstablishment from "@/screens/artist/RateEstablishment";
 import Subscription from "@/screens/artist/Subscription";
-import ArtistUpcomingShowDetail from "@/screens/artist/ArtistUpcomingShowDetail";
-import ArtistAllConfirmedShows from "@/screens/artist/ArtistAllConfirmedShows";
-import UserArtistProfile from "@/screens/user/UserArtistProfile";
+import ArtistUpcomingShowDetail from "@/screens/artist/upcoming-show-detail";
+import ArtistAllConfirmedShows from "@/screens/artist/all-confirmed-shows";
+import UserArtistProfile from "@/screens/user/artist-profile";
 import UserEstablishmentProfile from "@/screens/user/establishment-profile";
+import ArtistNotifications from "@/screens/artist/notifications";
 
 const DS = {
   bg: "#09090F",
@@ -65,6 +66,7 @@ export type ArtistStackParamList = {
   RateEstablishment: { contractId: number; venueName: string };
   Subscription: undefined;
   ArtistProfileManage: undefined;
+  ArtistNotifications: undefined;
   UserArtistProfile: { artistId: number; profile?: import("@/utils/artistProfile").ArtistProfileSnapshot; canBuyTickets?: boolean };
   UserEstablishmentProfile: {
     establishmentId: number;
@@ -110,7 +112,7 @@ function ArtistTabs() {
       />
       <Tab.Screen
         name="BrowseEvents"
-        component={BrowseEvents}
+        component={ArtistBrowseEvents}
         options={{
           tabBarLabel: "VAGAS",
           tabBarIcon: ({ color, size }) => (
@@ -130,7 +132,7 @@ function ArtistTabs() {
       />
       <Tab.Screen
         name="MyApplications"
-        component={MyApplications}
+        component={ArtistApplications}
         options={{
           tabBarLabel: "CANDIDATURAS",
           tabBarIcon: ({ color, size }) => (
@@ -140,7 +142,7 @@ function ArtistTabs() {
       />
       <Tab.Screen
         name="ArtistEPK"
-        component={ArtistEPK}
+        component={ArtistProfile}
         options={{
           tabBarLabel: "PERFIL",
           tabBarIcon: ({ color, size }) => (
@@ -156,16 +158,17 @@ export default function ArtistNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ArtistTabs" component={ArtistTabs} />
-      <Stack.Screen name="EventDetailArtist" component={EventDetailArtist} />
-      <Stack.Screen name="ApplyConfirmation" component={ApplyConfirmation} />
+      <Stack.Screen name="EventDetailArtist" component={ArtistEventDetail} />
+      <Stack.Screen name="ApplyConfirmation" component={ArtistApplyConfirmation} />
       <Stack.Screen name="ShowDetail" component={ShowDetail} />
-      <Stack.Screen name="ContractDetail" component={ContractDetail} />
+      <Stack.Screen name="ContractDetail" component={ArtistContractDetail} />
       <Stack.Screen name="ArtistUpcomingShowDetail" component={ArtistUpcomingShowDetail} />
       <Stack.Screen name="ArtistAllConfirmedShows" component={ArtistAllConfirmedShows} />
       <Stack.Screen name="MyContracts" component={MyContracts} />
       <Stack.Screen name="RateEstablishment" component={RateEstablishment} />
       <Stack.Screen name="Subscription" component={Subscription} />
-      <Stack.Screen name="ArtistProfileManage" component={ArtistProfileManage} />
+      <Stack.Screen name="ArtistProfileManage" component={ArtistEditProfile} />
+      <Stack.Screen name="ArtistNotifications" component={ArtistNotifications} />
       <Stack.Screen name="UserArtistProfile" component={UserArtistProfile} />
       <Stack.Screen name="UserEstablishmentProfile" component={UserEstablishmentProfile} />
     </Stack.Navigator>

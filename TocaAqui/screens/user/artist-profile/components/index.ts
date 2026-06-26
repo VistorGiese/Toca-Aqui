@@ -1,0 +1,14 @@
+export { default as UserArtistProfileCoverSection } from "./UserArtistProfileCoverSection";
+export { default as UserArtistProfileHeroSection } from "./UserArtistProfileHeroSection";
+export { default as UserArtistProfileStatsSection } from "./UserArtistProfileStatsSection";
+export { default as UserArtistProfileAboutSection } from "./UserArtistProfileAboutSection";
+export { default as UserArtistProfileGenresSection } from "./UserArtistProfileGenresSection";
+export { default as UserArtistProfileInstrumentsSection } from "./UserArtistProfileInstrumentsSection";
+export { default as UserArtistProfileSoundSection } from "./UserArtistProfileSoundSection";
+export { default as UserArtistProfileInfoSection } from "./UserArtistProfileInfoSection";
+export { default as UserArtistProfileSocialLinksSection } from "./UserArtistProfileSocialLinksSection";
+export { default as UserArtistProfileGallerySection } from "./UserArtistProfileGallerySection";
+export { default as UserArtistProfileShowsSection } from "./UserArtistProfileShowsSection";
+export { default as UserArtistProfileBottomBar } from "./UserArtistProfileBottomBar";
+export { default as UserArtistProfileLoadingState } from "./UserArtistProfileLoadingState";
+export { default as UserArtistProfileErrorState } from "./UserArtistProfileErrorState";
