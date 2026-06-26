@@ -67,16 +67,15 @@ export function normalizeArtistProfileSnapshot(raw: Record<string, unknown>): Ar
       (raw.foto_url as string | undefined) ??
       (raw.foto_artista as string | undefined),
     esta_disponivel:
-      typeof raw.esta_disponivel === "boolean" ? raw.esta_disponivel : undefined,
-    tipo_atuacao:
-      (raw.tipo_atuacao as string | undefined) ??
-      (raw.tipo as string | undefined),
+      metaFields.esta_disponivel ??
+      (typeof raw.esta_disponivel === "boolean" ? raw.esta_disponivel : undefined),
+    tipo_atuacao: metaFields.tipo_atuacao,
     cache_minimo: toOptionalNumber(raw.cache_minimo),
     cache_maximo: toOptionalNumber(raw.cache_maximo ?? raw.cache_medio),
     tem_estrutura_som: metaFields.tem_estrutura_som,
     estrutura_som: metaFields.estrutura_som,
-    cidade: raw.cidade as string | undefined,
-    estado: raw.estado as string | undefined,
+    cidade: metaFields.cidade,
+    estado: metaFields.estado,
     links_sociais: stripMetaLinks(allLinks),
     press_kit: parseJsonArray(raw.press_kit),
     shows_realizados: toOptionalNumber(raw.shows_realizados),

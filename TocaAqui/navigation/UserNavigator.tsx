@@ -13,7 +13,7 @@ import UserShowDetail from "@/screens/user/UserShowDetail";
 import UserCheckout from "@/screens/user/UserCheckout";
 import UserPurchaseConfirmation from "@/screens/user/UserPurchaseConfirmation";
 import UserTicketDetail from "@/screens/user/UserTicketDetail";
-import UserArtistProfile from "@/screens/user/UserArtistProfile";
+import UserArtistProfile from "@/screens/user/artist-profile";
 import UserEstablishmentProfile from "@/screens/user/establishment-profile";
 import UserRateShow from "@/screens/user/UserRateShow";
 import UserComments from "@/screens/user/UserComments";

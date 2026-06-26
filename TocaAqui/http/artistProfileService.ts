@@ -48,6 +48,10 @@ export type ArtistProfileUpdatePayload = Partial<{
   links_sociais: string[];
   url_portfolio: string;
   press_kit: string[];
+  tipo_atuacao: string;
+  cidade: string;
+  estado: string;
+  esta_disponivel: boolean;
 }>;
 
 function normalizeProfile(raw: Record<string, unknown>): ArtistProfileData {
@@ -64,14 +68,14 @@ function normalizeProfile(raw: Record<string, unknown>): ArtistProfileData {
     anos_experiencia: Number(raw.anos_experiencia ?? 0),
     url_portfolio: raw.url_portfolio ? String(raw.url_portfolio) : undefined,
     foto_perfil: raw.foto_perfil ? String(raw.foto_perfil) : undefined,
-    esta_disponivel: raw.esta_disponivel !== false,
-    tipo_atuacao: raw.tipo_atuacao ? String(raw.tipo_atuacao) : undefined,
+    esta_disponivel: metaFields.esta_disponivel ?? raw.esta_disponivel !== false,
     cache_minimo: raw.cache_minimo != null ? Number(raw.cache_minimo) : undefined,
     cache_maximo: raw.cache_maximo != null ? Number(raw.cache_maximo) : undefined,
     tem_estrutura_som: metaFields.tem_estrutura_som,
     estrutura_som: metaFields.estrutura_som,
-    cidade: raw.cidade ? String(raw.cidade) : undefined,
-    estado: raw.estado ? String(raw.estado) : undefined,
+    tipo_atuacao: metaFields.tipo_atuacao ?? (raw.tipo_atuacao ? String(raw.tipo_atuacao) : undefined),
+    cidade: metaFields.cidade ?? (raw.cidade ? String(raw.cidade) : undefined),
+    estado: metaFields.estado ?? (raw.estado ? String(raw.estado) : undefined),
     links_sociais: publicLinks,
     press_kit: parsePressKit(raw.press_kit),
     datas_indisponiveis: parseJsonArray(raw.datas_indisponiveis),
@@ -86,32 +90,39 @@ function buildPayload(
 ): ArtistProfileUpdatePayload {
   const payload: ArtistProfileUpdatePayload = { ...data };
 
-  const touchesSoundOrInstruments =
+  const touchesMeta =
     data.instrumentos !== undefined ||
     data.estrutura_som !== undefined ||
-    data.tem_estrutura_som !== undefined;
+    data.tem_estrutura_som !== undefined ||
+    data.tipo_atuacao !== undefined ||
+    data.cidade !== undefined ||
+    data.estado !== undefined ||
+    data.esta_disponivel !== undefined ||
+    data.links_sociais !== undefined;
 
-  if (touchesSoundOrInstruments) {
-    const instrumentos = data.instrumentos ?? current.instrumentos;
-    const estrutura_som = data.estrutura_som ?? current.estrutura_som;
-    const tem_estrutura_som = data.tem_estrutura_som ?? current.tem_estrutura_som;
-    payload.instrumentos = instrumentos;
-    payload.estrutura_som = estrutura_som;
-    payload.tem_estrutura_som = tem_estrutura_som;
-    payload.links_sociais = buildLinksWithMeta(current.links_sociais, {
-      instrumentos,
-      estrutura_som,
-      tem_estrutura_som,
-    });
+  if (touchesMeta) {
+    const publicLinks =
+      data.links_sociais !== undefined ? stripMetaLinks(data.links_sociais) : current.links_sociais;
+    const meta = {
+      instrumentos: data.instrumentos ?? current.instrumentos,
+      estrutura_som: data.estrutura_som ?? current.estrutura_som,
+      tem_estrutura_som: data.tem_estrutura_som ?? current.tem_estrutura_som,
+      tipo_atuacao: data.tipo_atuacao ?? current.tipo_atuacao,
+      cidade: data.cidade ?? current.cidade,
+      estado: data.estado ?? current.estado,
+      esta_disponivel: data.esta_disponivel ?? current.esta_disponivel,
+    };
+
+    if (data.instrumentos !== undefined) payload.instrumentos = meta.instrumentos;
+    if (data.estrutura_som !== undefined) payload.estrutura_som = meta.estrutura_som;
+    if (data.tem_estrutura_som !== undefined) payload.tem_estrutura_som = meta.tem_estrutura_som;
+    payload.links_sociais = buildLinksWithMeta(publicLinks, meta);
   }
 
-  if (data.links_sociais !== undefined && !touchesSoundOrInstruments) {
-    payload.links_sociais = buildLinksWithMeta(data.links_sociais, {
-      instrumentos: current.instrumentos,
-      estrutura_som: current.estrutura_som,
-      tem_estrutura_som: current.tem_estrutura_som,
-    });
-  }
+  delete payload.tipo_atuacao;
+  delete payload.cidade;
+  delete payload.estado;
+  delete payload.esta_disponivel;
 
   return payload;
 }
