@@ -11,29 +11,22 @@ import ForgotPassword from "@/screens/forgot-password";
 import VerifyEmail from "@/screens/verify-email";
 import ResetPassword from "@/screens/reset-password";
 
-// Artista — onboarding
 import OnboardingArtistProfile from "@/screens/artist/onboarding/profile";
 import OnboardingArtistBio from "@/screens/artist/onboarding/bio";
-// Artista — register
 import RegisterArtist from "@/screens/artist/register";
 
-// Artista — navigator (bottom tabs + detail stack)
 import ArtistNavigator from "./ArtistNavigator";
 
-// Usuário comum — navigator e onboarding
 import UserNavigator from "./UserNavigator";
 import UserOnboardingGenres from "@/screens/user/onboarding/genres";
 import UserOnboardingLocation from "@/screens/user/onboarding/location";
 
-// Estabelecimento — onboarding (wizard com provider interno)
 import { EstablishmentOnboardingNavigator } from "../screens/establishment/onboarding";
 
-// Estabelecimento — navigator (bottom tabs + detail stack)
 import EstablishmentNavigator from "./EstablishmentNavigator";
 import { resolveAppRoute } from "./resolveAppRoute";
 
 export type RootStackParamList = {
-  // Antes do login
   Initial: undefined;
   Login: undefined;
   Register: undefined;
@@ -41,15 +34,12 @@ export type RootStackParamList = {
   VerifyEmail: { token: string };
   ResetPassword: { token: string };
 
-  // Estabelecimento — onboarding (fluxo em stack aninhado)
   EstablishmentOnboarding: undefined;
   /** @deprecated Use EstablishmentOnboarding — mantido para compatibilidade de deep links */
   OnboardingEstIdentidade: undefined;
 
-  // Estabelecimento — app principal
   EstablishmentNavigator: undefined;
 
-  // Artista — registro e onboarding
   RegisterArtist: undefined;
   OnboardingArtistProfile: undefined;
   OnboardingArtistBio: {
@@ -63,15 +53,12 @@ export type RootStackParamList = {
     fotoUri?: string;
   };
 
-  // Artista — app principal (bottom tabs + detail stack encapsulados)
   ArtistNavigator: undefined;
 
-  // Usuário comum — onboarding e app principal
   UserOnboardingGenres: undefined;
   UserOnboardingLocation: { generos: string[] };
   UserNavigator: undefined;
 
-  // Legado (manter para não quebrar imports existentes)
   ArtistHome: undefined;
   BrowseEvents: undefined;
   EventDetailArtist: { eventId: number };
@@ -125,7 +112,6 @@ export default function Navigate() {
     <Stack.Navigator key={isAuthenticated ? "app" : "auth"} initialRouteName={isAuthenticated ? initialRoute : "Login"} screenOptions={{ headerShown: false }}>
       {!isAuthenticated ? (
         <>
-          {/* Telas de autenticação e registro */}
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Initial" component={Initial} />
           <Stack.Screen name="Register" component={Register} />
@@ -136,17 +122,14 @@ export default function Navigate() {
         </>
       ) : (
         <>
-          {/* Usuário comum — onboarding e app principal */}
           <Stack.Screen name="UserNavigator" component={UserNavigator} />
           <Stack.Screen name="UserOnboardingGenres" component={UserOnboardingGenres} />
           <Stack.Screen name="UserOnboardingLocation" component={UserOnboardingLocation} />
 
-          {/* Estabelecimento — onboarding e app */}
           <Stack.Screen name="EstablishmentNavigator" component={EstablishmentNavigator} />
           <Stack.Screen name="EstablishmentOnboarding" component={EstablishmentOnboardingNavigator} />
           <Stack.Screen name="OnboardingEstIdentidade" component={EstablishmentOnboardingNavigator} />
 
-          {/* Artista — onboarding e app */}
           <Stack.Screen name="ArtistNavigator" component={ArtistNavigator} />
           <Stack.Screen name="OnboardingArtistProfile" component={OnboardingArtistProfile} />
           <Stack.Screen name="OnboardingArtistBio" component={OnboardingArtistBio} />

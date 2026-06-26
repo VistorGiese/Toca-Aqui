@@ -23,7 +23,6 @@ function pickString(raw: Record<string, unknown>, ...keys: string[]): string {
   return "";
 }
 
-/** Mapeia resposta da API de contrato para dados do template PDF. */
 export function mapApiContractToTemplateData(raw: Record<string, unknown>): ContractTemplateData {
   const event = (raw.Event ?? raw.event) as Record<string, unknown> | undefined;
   const tituloEvento =

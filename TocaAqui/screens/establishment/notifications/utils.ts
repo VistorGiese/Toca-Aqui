@@ -35,7 +35,6 @@ export function getNotificationTimestamp(item: EstNotification): string {
   return item.created_at ?? item.criado_em ?? "";
 }
 
-/** Mantém apenas notificações do usuário autenticado. */
 export function filterNotificationsByUser(
   items: EstNotification[],
   userId?: number | null

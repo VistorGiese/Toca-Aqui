@@ -6,7 +6,6 @@ export function isEstablishmentRole(role?: string | null): boolean {
   return role === "establishment_owner" || role === "establishment";
 }
 
-/** Define a tela inicial após login ou restauração de sessão. */
 export function resolveAppRoute(
   user: User | null,
   _paginas: MinhasPaginas | null

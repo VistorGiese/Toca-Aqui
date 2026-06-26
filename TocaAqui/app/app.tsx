@@ -11,7 +11,6 @@ import { customFonts } from "../assets/fonts/fonts";
 
 SplashScreen.preventAutoHideAsync();
 
-// TODO: reativar logs na tela quando estabilizar carregamento dos perfis
 if (__DEV__) {
   LogBox.ignoreAllLogs(true);
 }

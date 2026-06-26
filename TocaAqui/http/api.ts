@@ -2,10 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Constants from "expo-constants";
 
-/**
- * Retorna o host da máquina de dev detectado pelo Expo Go em tempo de execução.
- * Funciona com `expo start --lan`. Retorna null com --tunnel ou em produção.
- */
 function getExpoDevHost(): string | null {
   if (!__DEV__) return null;
   const hostUri: string | undefined =
@@ -13,16 +9,9 @@ function getExpoDevHost(): string | null {
     (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost ??
     (Constants as any)?.manifest?.debuggerHost;
   if (!hostUri) return null;
-  // hostUri é "IP:8081" — pega só o IP
   return hostUri.split(":")[0] ?? null;
 }
 
-/**
- * Resolve a baseURL da API na seguinte ordem:
- * 1. EXPO_PUBLIC_API_URL (override via .env.development.local) — controle total
- * 2. Em dev, host detectado pelo Expo + porta 3000 — sem precisar mexer no .env todo dia
- * 3. Fallback "http://localhost:3000" — emulador iOS / caso nenhum host seja detectado
- */
 let devBaseUrlMismatchWarned = false;
 
 export function getApiBaseUrl(): string {
@@ -42,9 +31,7 @@ export function getApiBaseUrl(): string {
               "Se o login falhar com erro de rede, comente EXPO_PUBLIC_API_URL em .env.development.local."
           );
         }
-      } catch {
-        // URL inválida em .env — segue com o valor informado
-      }
+      } catch {}
       return fromEnv;
     }
 
@@ -53,7 +40,6 @@ export function getApiBaseUrl(): string {
 
   if (fromEnv) return fromEnv;
 
-  // Produção: EXPO_PUBLIC_API_URL é obrigatória
   throw new Error("EXPO_PUBLIC_API_URL não definida para produção.");
 }
 

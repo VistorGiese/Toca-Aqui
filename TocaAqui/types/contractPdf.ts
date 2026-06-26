@@ -4,7 +4,6 @@
  */
 export const PDF_TEXT_FIELD_LIMIT = 4_500_000;
 
-/** Estados do fluxo de contrato PDF (offline + assinatura manual). */
 export type ContractPdfWorkflowStatus =
   | "generated"
   | "est_signed_attached"

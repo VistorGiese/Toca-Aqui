@@ -20,7 +20,6 @@ export function useArtistMyBands() {
       const data = await bandService.getMyBands();
       setBands(Array.isArray(data) ? data : []);
     } catch {
-      // error handled silently
     } finally {
       setLoading(false);
       setRefreshing(false);

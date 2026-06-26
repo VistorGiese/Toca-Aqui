@@ -31,7 +31,6 @@ export interface ProfileResponse {
   endereco: EnderecoResponse;
 }
 
-/** Perfil de artista mínimo (tela legada HomePage). */
 export const createArtistProfile = async (data: {
   nome_dono?: string;
   nome?: string;

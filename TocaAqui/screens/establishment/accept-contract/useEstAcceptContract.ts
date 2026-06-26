@@ -124,7 +124,6 @@ export function useEstAcceptContract() {
               try {
                 await establishmentService.updateGig(gigId, { esta_publico: false });
               } catch {
-                // não bloqueia fluxo se falhar
               }
 
               if (!contractId) {

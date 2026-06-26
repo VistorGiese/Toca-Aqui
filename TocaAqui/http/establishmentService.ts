@@ -44,7 +44,6 @@ export const isGigAberta = (status: Gig["status"]) =>
 export const isGigEncerrada = (status: Gig["status"]) =>
   status === "aceito" || status === "encerrada" || status === "realizado" || status === "cancelado";
 
-/** Mesmo critério da aba Minhas Vagas > Encerradas (artista contratado). */
 export const isGigConfirmada = (status: Gig["status"]) => status === "aceito";
 
 export const isGigFutura = (dataShow: string): boolean => {
@@ -359,7 +358,6 @@ const acceptApplication = async (applicationId: number): Promise<any> => {
   return r.data?.data ?? r.data;
 };
 
-/** Busca contrato do evento após aceite (fallback se resposta não trouxer contrato). */
 const getContractByEventId = async (eventoId: number): Promise<any | null> => {
   try {
     const r = await api.get(`/contratos/evento/${eventoId}`);
@@ -474,7 +472,6 @@ const getAddressById = async (id: number): Promise<EstablishmentAddress> => {
   return address;
 };
 
-/** Completa perfil via GET /estabelecimentos/:id e GET /enderecos/:id (sem depender de /usuarios/perfil). */
 async function enrichEstablishmentProfile(base: EstablishmentProfile): Promise<EstablishmentProfile> {
   const profileId = Number(base.id);
   if (!Number.isFinite(profileId) || profileId <= 0) return base;
@@ -511,7 +508,6 @@ async function enrichEstablishmentProfile(base: EstablishmentProfile): Promise<E
       enriched.Address = nestedAddress;
     }
   } catch {
-    // segue para tentar /enderecos/:id
   }
 
   if (enderecoId > 0) {
@@ -519,7 +515,6 @@ async function enrichEstablishmentProfile(base: EstablishmentProfile): Promise<E
       enriched.Address = await getAddressById(enderecoId);
       enriched.endereco_id = enderecoId;
     } catch {
-      // mantém endereço parcial, se houver
     }
   }
 
@@ -529,7 +524,6 @@ async function enrichEstablishmentProfile(base: EstablishmentProfile): Promise<E
   return enriched;
 }
 
-/** Busca registro completo em endpoints que já retornam todos os campos da tabela. */
 const fetchFullArtistFromContracts = async (
   artistId: number
 ): Promise<ArtistProfileSnapshot | null> => {
@@ -546,7 +540,6 @@ const fetchFullArtistFromContracts = async (
       }
     }
   } catch {
-    // endpoint pode falhar se usuário não tiver contratos
   }
   return null;
 };
@@ -565,12 +558,10 @@ const fetchFullArtistFromFavorites = async (
       }
     }
   } catch {
-    // ignorar — favoritos são opcionais
   }
   return null;
 };
 
-/** GET /shows/buscar?tipo=artistas retorna todos os campos de perfis_artistas (sem alterar backend). */
 const fetchFullArtistFromShowSearch = async (
   artistId: number,
   nomeArtistico?: string
@@ -599,13 +590,11 @@ const fetchFullArtistFromShowSearch = async (
         return normalizeArtistProfileSnapshot(found);
       }
     } catch {
-      // tenta próxima query
     }
   }
   return null;
 };
 
-/** Busca artista via GET /artistas/busca + enriquecimento de contratos/favoritos. */
 const findArtistById = async (
   artistId: number,
   hint?: Partial<ArtistProfileSnapshot>
@@ -753,7 +742,6 @@ const getMyContractsNormalized = async (): Promise<EstablishmentContract[]> => {
   return raw.map((item) => normalizeEstablishmentContract(item as Record<string, unknown>));
 };
 
-/** Shows futuros com contrato aceito por ambas as partes (artista confirmado). */
 const getUpcomingConfirmedShows = async (limit = 3): Promise<EstablishmentContract[]> => {
   const contracts = await getMyContractsNormalized();
   const today = new Date();
@@ -787,10 +775,6 @@ async function enrichGigWithAcceptedArtist(gig: Gig): Promise<ConfirmedGig> {
   }
 }
 
-/**
- * Próximos shows confirmados — mesma fonte da aba Minhas Vagas > Encerradas
- * (agendamentos com status "aceito"), filtrados por data futura.
- */
 const getUpcomingPublishedGigs = async (
   estabelecimentoId?: number,
   limit = 3
@@ -809,7 +793,6 @@ const getUpcomingPublishedGigs = async (
   return Promise.all(upcoming.map(enrichGigWithAcceptedArtist));
 };
 
-/** Converte vaga publicada do estabelecimento para o formato Show da UI. */
 export function confirmedGigToShow(
   gig: ConfirmedGig,
   establishment?: EstablishmentProfile | null
@@ -914,7 +897,6 @@ const getMyEstablishmentProfile = async (): Promise<EstablishmentProfile> => {
   return enrichEstablishmentProfile(base);
 };
 
-/** Alias semântico para telas de edição — mesma fonte que getMyEstablishmentProfile. */
 const getEstablishmentProfileForEdit = (): Promise<EstablishmentProfile> =>
   getMyEstablishmentProfile();
 
@@ -994,10 +976,8 @@ const getNotifications = async (usuarioId?: number): Promise<any[]> => {
 };
 
 const markNotificationsRead = async (): Promise<void> => {
-  try { await api.put("/notificacoes/marcar-lidas"); } catch { /* ignore */ }
+  try { await api.put("/notificacoes/marcar-lidas"); } catch {}
 };
-
-// --- Gerenciadores/Membros do estabelecimento ---
 
 export interface EstablishmentMember {
   id: number;
@@ -1054,7 +1034,6 @@ function resolveContractEstablishmentId(raw: Record<string, unknown>): number | 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-/** Eventos do usuário logado (dono/membro), filtrados por perfil de estabelecimento. */
 async function fetchMyGigsForEstablishment(estabelecimentoId: number): Promise<Gig[]> {
   const all: Gig[] = [];
   let page = 1;

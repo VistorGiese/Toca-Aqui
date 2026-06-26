@@ -1,4 +1,3 @@
-/** Campos da tabela `perfis_artistas` (subset exposto por GET /artistas/busca). */
 import type { ArtistaPublico } from "@/http/artistaPublicoService";
 import { mergeProfileMetaFields, stripMetaLinks } from "@/utils/artistProfileMeta";
 
@@ -119,7 +118,6 @@ export const TIPO_ATUACAO_LABEL: Record<string, string> = {
   trio: "TRIO",
 };
 
-/** Converte snapshot da busca em formato usado pela tela pública do artista. */
 export function snapshotToArtistaPublico(snapshot: ArtistProfileSnapshot): ArtistaPublico {
   return {
     id: snapshot.id,

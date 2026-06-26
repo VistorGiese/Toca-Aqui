@@ -4,7 +4,6 @@ import React from "react";
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Artist } from "../../utils/ArtistProfileMock";
 
-// Obtemos as dimensões da tela atual
 const { width, height } = Dimensions.get('window');
 
 interface CardArtistProfileProps {
@@ -60,8 +59,8 @@ export default function CardArtistProfile({ artist, onPress }: CardArtistProfile
 const styles = StyleSheet.create({
     cardContainer: {
         backgroundColor: "#1C1C29",
-        borderRadius: width * 0.06, // Aprox 6% da largura
-        marginBottom: height * 0.03, // Aprox 3% da altura
+        borderRadius: width * 0.06,
+        marginBottom: height * 0.03,
         overflow: "hidden",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
     },
     cardImage: {
         width: "100%",
-        height: height * 0.25, // 25% da altura da tela
+        height: height * 0.25,
         resizeMode: "cover",
     },
     favoriteIconBadge: {
@@ -86,11 +85,11 @@ const styles = StyleSheet.create({
         padding: width * 0.02,
     },
     cardContent: {
-        padding: width * 0.05, // 5% da largura como padding interno
+        padding: width * 0.05,
     },
     artistName: {
         color: "#fff",
-        fontSize: width * 0.055, // Fonte proporcional à largura
+        fontSize: width * 0.055,
         fontFamily: "AkiraExpanded-Superbold",
         marginBottom: height * 0.015,
     },

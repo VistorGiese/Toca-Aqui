@@ -1,5 +1,3 @@
-// CardArtist.tsx
-
 import { View, Image, Text, StyleSheet, TouchableOpacity } from "react-native";
 import TagMusic from "./TagMusic";
 import ArtistType from "./ArtistType";

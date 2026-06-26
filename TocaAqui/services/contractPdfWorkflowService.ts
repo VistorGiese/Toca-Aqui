@@ -14,7 +14,6 @@ import { getApiErrorMessage } from "@/utils/errorHandler";
 const WORKFLOW_PREFIX = "__WF__";
 const PDF_PREFIX = "__B64__";
 
-/** Limite alinhado ao schema do backend (MEDIUMTEXT por campo). */
 const TEXT_FIELD_LIMIT = PDF_TEXT_FIELD_LIMIT;
 
 /** Campos do estabelecimento — não compartilhar com o artista. */
@@ -329,7 +328,6 @@ export async function sendToEstablishment(contractId: number): Promise<void> {
   });
 }
 
-/** Estabelecimento recusa o contrato assinado pelo artista — artista pode reenviar. */
 export async function rejectArtistSignedContract(contractId: number): Promise<void> {
   const current = (await fetchWorkflow(contractId)) ?? {
     v: 1 as const,
@@ -370,7 +368,6 @@ function formatGigUpdateError(err: unknown): string {
   return "Não foi possível publicar o show.";
 }
 
-/** Última etapa do fluxo PDF: aprova contrato, publica evento e libera venda de ingressos. */
 export async function publishShowAfterContractApproval(
   contractId: number,
   eventoId: number

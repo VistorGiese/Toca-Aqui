@@ -1,5 +1,3 @@
-// Tipos globais da aplicação Toca Aqui
-
 export type UserRole = "common_user" | "artist" | "establishment" | "establishment_owner" | "admin";
 
 export interface User {
@@ -21,7 +19,6 @@ export interface Band {
   updated_at?: string;
 }
 
-// Alias mantido para compatibilidade com ContractStatus usado em telas legadas
 export type ContractStatus =
   | "aguardando_aceite"
   | "aceito"
@@ -55,7 +52,6 @@ export interface MinhasPaginas {
   pagina_estabelecimento: { id: number; nome_estabelecimento: string; tipo_estabelecimento: string } | null;
 }
 
-/** Formulário legado (tela Profile / HomePage). */
 export type AccountProps = {
   nome?: string;
   tipo_usuario?: "establishment_owner" | "artist" | "common_user";

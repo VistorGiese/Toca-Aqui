@@ -2,7 +2,6 @@ import api from "./api";
 import { Booking } from "./bookingService";
 import { PaginatedResponse } from "../types";
 
-// Parâmetros suportados pelo BookingController no backend
 interface EventsParams {
   page?: number;
   limit?: number;

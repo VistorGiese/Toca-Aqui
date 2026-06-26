@@ -1,4 +1,3 @@
-/** Preço unitário do ingresso inteiro, conforme cadastrado pelo estabelecimento. */
 export function getTicketBaseUnitPrice(
   precoInteira: number | null | undefined,
   _capacidadeMaxima?: number | null | undefined,

@@ -38,13 +38,11 @@ export type UserTabParamList = {
 
 export type UserStackParamList = {
   UserTabs: undefined;
-  // Tab routes (accessible via stack navigator for cross-navigation)
   UserFeed: undefined;
   UserSearch: undefined;
   UserTickets: undefined;
   UserFavorites: undefined;
   UserProfile: undefined;
-  // Detail screens
   UserShowDetail: { showId: number };
   UserCheckout: {
     showId: number;

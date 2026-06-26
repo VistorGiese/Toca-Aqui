@@ -10,7 +10,6 @@ import ArtistApplications from "@/screens/artist/applications";
 import ArtistProfile from "@/screens/artist/profile";
 import ArtistEditProfile from "@/screens/artist/edit-profile";
 
-// Detail screens
 import ArtistEventDetail from "@/screens/artist/event-detail";
 import ArtistApplyConfirmation from "@/screens/artist/apply-confirmation";
 import ArtistShowDetail from "@/screens/artist/show-detail";
@@ -35,7 +34,6 @@ const DS = {
   bgSurface: "#1A1040",
 };
 
-// ---- Bottom Tab Param List ----
 export type ArtistTabParamList = {
   ArtistHome: undefined;
   BrowseEvents: undefined;
@@ -44,7 +42,6 @@ export type ArtistTabParamList = {
   ArtistEPK: undefined;
 };
 
-// ---- Stack Param List (telas de detalhe dentro do navigator) ----
 export type ArtistStackParamList = {
   ArtistTabs: undefined;
   EventDetailArtist: { eventId: number };

@@ -4,7 +4,6 @@ import { colors } from "@/utils/colors";
 export const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
 
-  // Background
   bgTexture: {
     position: "absolute",
     top: 0,
@@ -24,7 +23,6 @@ export const styles = StyleSheet.create({
     opacity: 0.18,
   },
 
-  // Layout
   kav: { flex: 1 },
   scroll: {
     flexGrow: 1,
@@ -34,7 +32,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // Logo
   logoWrap: { alignItems: "center", marginBottom: 40 },
   logoImage: { width: 90, height: 90, marginBottom: 14 },
   logoTitle: {
@@ -51,7 +48,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 3,
   },
 
-  // Heading
   headingWrap: { marginBottom: 32 },
   heading: {
     fontFamily: "Montserrat-Bold",
@@ -65,7 +61,6 @@ export const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  // Fields
   fieldWrap: { marginBottom: 16 },
   label: {
     fontFamily: "Montserrat-SemiBold",
@@ -104,7 +99,6 @@ export const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  // Esqueci senha
   forgotWrap: { alignItems: "flex-end", marginBottom: 28, marginTop: 4 },
   forgotText: {
     fontFamily: "Montserrat-SemiBold",
@@ -112,7 +106,6 @@ export const styles = StyleSheet.create({
     color: colors.purpleLight,
   },
 
-  // Botão
   btn: {
     backgroundColor: colors.purplePrimary,
     borderRadius: 14,
@@ -130,7 +123,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
 
-  // Cadastre-se
   registerRow: {
     flexDirection: "row",
     justifyContent: "center",

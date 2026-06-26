@@ -56,7 +56,6 @@ export function useArtistCreateBand() {
           setSearchResults(filtered);
           setShowDropdown(filtered.length > 0);
         } catch {
-          // silent
         } finally {
           setIsSearching(false);
         }
@@ -101,7 +100,6 @@ export function useArtistCreateBand() {
           try {
             await bandService.inviteMember(newBand.id, member.id);
           } catch {
-            // silent
           }
         }
         navigation.goBack();

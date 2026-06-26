@@ -13,7 +13,6 @@ interface LoginResponse {
   };
 }
 
-// getUserProfile retorna: { user: { id, nome, email, role, establishment_profiles, artist_profiles } }
 interface ProfileResponse {
   user: {
     id: number;
@@ -31,7 +30,6 @@ interface ProfileResponse {
   };
 }
 
-// registroSchema (backend): nome, email, senha (min 8, >=1 maiúscula, >=1 número), tipo_usuario (opcional)
 interface RegisterPayload {
   nome_completo: string;
   email: string;
@@ -39,8 +37,6 @@ interface RegisterPayload {
   tipo_usuario?: string;
 }
 
-// Resposta de /usuarios/registro: { message, user: { id, nome, email } }
-// token NÃO é retornado pelo backend no registro — apenas no login
 interface RegisterResponse {
   message: string;
   user: {
@@ -95,9 +91,7 @@ export const userService = {
     delete api.defaults.headers.common["Authorization"];
     try {
       await api.post("/usuarios/logout");
-    } catch {
-      // ignore logout errors — token already cleared locally
-    }
+    } catch {}
   },
 
   async redefinirSenha(email: string): Promise<void> {

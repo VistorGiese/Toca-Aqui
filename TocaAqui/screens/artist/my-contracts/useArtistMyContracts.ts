@@ -22,7 +22,6 @@ export function useArtistMyContracts() {
       const result = await contractService.getMyContracts();
       setContracts(Array.isArray(result) ? result : []);
     } catch {
-      // error handled silently
     } finally {
       setLoading(false);
       setRefreshing(false);

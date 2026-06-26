@@ -63,7 +63,6 @@ const getMyApplications = async (): Promise<BandApplication[]> => {
   return parseApplications(response.data);
 };
 
-/** Candidaturas aceitas com data futura — espelha Minhas Vagas > Aceitas. */
 const getUpcomingConfirmedApplications = async (
   limit = 3,
   artistInfo?: { nome_artistico?: string; foto_perfil?: string | null }

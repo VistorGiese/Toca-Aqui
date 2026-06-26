@@ -21,5 +21,4 @@ export const GIG_GENRES = [
   "Blues",
 ] as const;
 
-/** Valor monetário padrão exibido quando o campo não foi preenchido. */
 export const ZERO_CURRENCY_DISPLAY = "0,00";

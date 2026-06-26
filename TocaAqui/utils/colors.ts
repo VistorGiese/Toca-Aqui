@@ -1,10 +1,8 @@
 export const colors = {
-  // Fundos
   background: "#09090F",
   purpleBlack: "#0A0212",
   purpleBlack2: "#0F0B1E",
 
-  // Roxos
   purpleDark: "#28024E",
   purple: "#48216B",
   purplePrimary: "#7B61FF",
@@ -12,19 +10,16 @@ export const colors = {
   purpleGlowBg: "rgba(123, 97, 255, 0.2)",
   purpleGlowBorder: "rgba(123, 97, 255, 0.35)",
 
-  // Textos
   white: "#FFFFFF",
   textMuted: "#8888AA",
   textSubtle: "#8888AA",
   textSecondary: "#A0A0B8",
   textTertiary: "#555577",
 
-  // Inputs
   inputBorder: "#1E1A30",
   placeholder: "#3D3D5C",
   error: "#EF4444",
 
-  // Outros
   neutral: "#6B7280",
   cyan: "#709D9B",
   green: "#6DB885",

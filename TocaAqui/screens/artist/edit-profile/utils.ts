@@ -6,7 +6,6 @@ export function toggleListItem(list: string[], item: string): string[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
 
-/** Converte cachê mascarado (BRL) em número; vazio retorna undefined. */
 export function parseCacheInput(value: string): number | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -14,12 +13,10 @@ export function parseCacheInput(value: string): number | undefined {
   return Number.isFinite(num) ? num : undefined;
 }
 
-/** Anos de experiência: somente dígitos, máx. 2 caracteres. */
 export function maskExperienceYears(raw: string): string {
   return raw.replace(/\D/g, "").slice(0, 2);
 }
 
-/** Máscara AAAA-MM-DD enquanto o usuário digita. */
 export function maskDateIso(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 8);
   if (digits.length <= 4) return digits;

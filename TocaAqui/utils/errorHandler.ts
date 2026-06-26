@@ -12,13 +12,11 @@ type ApiErrorBody = {
   detalhes?: ApiValidationDetail[];
 };
 
-/** Extrai mensagem legível do formato da API (message, error ou detalhes Zod). */
 export function getApiErrorMessage(error: unknown, fallback = "Erro desconhecido"): string {
   if (!isAxiosError(error)) {
     return error instanceof Error ? error.message : fallback;
   }
 
-  // Sem resposta HTTP (rede, timeout, servidor inacessível)
   if (!error.response) {
     if (error.code === "ECONNABORTED") {
       return "O servidor demorou demais para responder. Tente novamente.";
@@ -61,7 +59,6 @@ const CAMPO_PARA_CAMPO_FORM: Record<string, string> = {
   tipo_usuario: "email",
 };
 
-/** Aplica erros de validação do backend nos campos do react-hook-form. */
 export function applyApiFieldErrors(
   detalhes: ApiValidationDetail[],
   setError: (name: any, error: { type: string; message: string }) => void

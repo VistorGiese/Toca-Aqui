@@ -167,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = await userService.getProfile();
       perfilArtistaId = profile.user.artist_profiles?.[0]?.id;
       await syncEstablishmentIdFromProfile(profile);
-    } catch { /* ignore */ }
+    } catch {}
 
     setUser({
       id: userData.id,
@@ -202,7 +202,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       await refreshPaginas();
     } catch {
-      // ignore
     }
   }, [refreshPaginas]);
 

@@ -46,7 +46,6 @@ async function resolveArtistProfile(
         unknown
       >;
     } catch {
-      // fallback abaixo
     }
   }
 

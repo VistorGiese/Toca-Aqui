@@ -45,7 +45,7 @@ const eventLocationStyles = StyleSheet.create({
     },
     cardImage: {
         width: '100%',
-        height: height * 0.2, // 20% da altura da tela
+        height: height * 0.2,
         resizeMode: 'cover',
     },
     cardContent: {

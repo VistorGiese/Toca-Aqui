@@ -10,7 +10,6 @@ export function maskDigits(raw: string, maxLength = 6): string {
   return raw.replace(/\D/g, "").slice(0, maxLength);
 }
 
-/** Formata dígitos brutos em moeda BRL (ex.: 1.234,56). */
 export function maskCurrencyBRL(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   if (!digits) return "";
@@ -21,7 +20,6 @@ export function maskCurrencyBRL(raw: string): string {
   });
 }
 
-/** Garante exibição monetária válida; vazio vira 0,00. */
 export function normalizeCurrencyDisplay(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return ZERO_CURRENCY_DISPLAY;
@@ -37,7 +35,6 @@ export function currencyFromNumber(value: number | null | undefined): string {
   });
 }
 
-/** Converte texto mascarado em número; vazio ou inválido retorna 0. */
 export function parseCurrencyBRL(value: string): number {
   const trimmed = value.trim();
   if (!trimmed) return 0;

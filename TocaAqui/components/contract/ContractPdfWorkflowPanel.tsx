@@ -293,7 +293,6 @@ function ActionBtn({
   );
 }
 
-/** Hook auxiliar para telas de contrato/show. */
 export function useContractPdfWorkflow(contractId: number) {
   const [workflow, setWorkflow] = useState<ContractPdfWorkflowMeta | null>(null);
 

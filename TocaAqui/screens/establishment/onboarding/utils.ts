@@ -36,7 +36,6 @@ export function maskCep(raw: string): string {
   return cleaned;
 }
 
-/** Máscara HH:MM enquanto o usuário digita. */
 export function maskTime(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 4);
   if (digits.length <= 2) return digits;
@@ -96,7 +95,6 @@ export function toBackendTime(value: string): string {
   return /^\d{2}:\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}:00`;
 }
 
-/** Reconstrói grade semanal a partir do par abertura/fechamento salvo no backend. */
 export function scheduleFromOpeningHours(abertura?: string, fechamento?: string): WeekSchedule {
   const schedule = createDefaultWeekSchedule();
   const inicio = normalizeTime(abertura);

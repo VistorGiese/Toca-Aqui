@@ -130,7 +130,6 @@ export function useOnboardingEstApresentacao() {
               headers: { "Content-Type": "multipart/form-data" },
             });
           } catch {
-            // Fotos opcionais
           }
         }
       }

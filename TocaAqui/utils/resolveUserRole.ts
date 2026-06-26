@@ -1,6 +1,5 @@
 import { UserRole } from "@/types";
 
-/** Extrai o papel principal a partir de role ou roles[] (resposta da API). */
 export function resolvePrimaryRole(
   user: { role?: string; roles?: string[] },
   fallback: UserRole = "common_user"
